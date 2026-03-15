@@ -10,6 +10,14 @@ To install the plugin:
 /plugin install co2-skills@co2
 ~~~
 
+# Disclaimer
+🤖 Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
+
+🪙 This workflow can consume a lot of tokens. It is designed to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
+
+🆕 This workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
+
+🚧 `**THIS IS STILL A WORK IN PROGRESS**`. We are continuously improving the workflow and the skills, so please expect some changes and updates in the future. We welcome any feedback and suggestions for improvement.
 
 # Compound Context (CO2) Workflow
 
@@ -376,11 +384,6 @@ Example of the BUG_MASTER.md structure:
       - BUG.md
     - (source code files)
 ~~~
-
-# Disclaimer
-- Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
-- This workflow can consume a lot  of tokens. It is design to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
-- This is workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
 
 # Contribution
 We welcome contributions from the community! Here are some ways you can contribute:
