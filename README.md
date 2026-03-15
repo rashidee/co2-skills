@@ -216,6 +216,21 @@ Example of the test specification output:
 ### Application Development
 _The skill goal is to develop the application based on all the context generated above, and you can track the development progress using the output from this skill._
 
+Example skill invocation for application development:
+~~~bash
+/conductor-feature-develop <app_name> ## For orchestrating full-stack application development module-by-module using all generated artifacts.
+~~~ 
+
+- Input:
+  - PRD.md (User Stories, Non-Functional Requirements and Constraints)
+  - Data Model (to understand the data structure and relationships)
+  - HTML Mockup (to understand the UI design and user interactions)
+  - Technical Specification (to understand the technical design and implementation)
+  - Test Specification (to understand the test cases and scenarios to validate the functionality and performance of the application)
+- Output:
+  - Source code files for the application, organized by module and component.
+  - **DEVELOP.md** — A development tracking document containing:
+    - Module overview
 
 # Bug Fixing Workflow
 
@@ -246,8 +261,25 @@ _The skill goal is to develop the application based on all the context generated
           - model.md
           - erd.mermaid
       - mockup
+        - <role_1_folder>
+          - screen1.html
+          - screen2.html
+        - <role_2_folder>
+          - screen1.html
+          - screen2.html
+        MOCKUP.html
       - specification
+        - <module_1_folder>
+          - SPEC.md
+        - <module_2_folder>
+          - SPEC.md
+        SPECIFICATION.md
       - test
+        - <module_1_folder>
+          - TEST_SPEC.md
+        - <module_2_folder>
+          - TEST_SPEC.md
+        TEST_PLAN.mmd
       - develop
       - bug
       - PRD.md
