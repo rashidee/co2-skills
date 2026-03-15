@@ -23,7 +23,7 @@
    - Technical Specifications
    - Test Specifications
 
-# Workflow
+# Development Workflow
 
 ## Context Window Preparation
 
@@ -131,6 +131,7 @@ Example skill invocation for HTML mockup generation:
   - Data Model (to understand the data structure and relationships)
 - Output:
   - HTML mockup screens for the application, served via Node.js + Express + HTMX
+  - **MOCKUP.html** — A landing page for all the mockup screens with links to each screen, and each screen will have a link back to the related User Stories, Non-Functional Requirements and Constraints in PRD.md for traceability.
 
 Example of the HTML mockup output:
 ~~~markdown
@@ -164,13 +165,59 @@ Example skill invocation for technical specification generation:
   - HTML Mockup (to understand the UI design and user interactions)
 - Output:
   - Technical specification document containing:
-    - SPEC.md containig the 
+    - **SPEC.md** — A per-module specification file containing:
+      - Module overview (package, type, authentication)
+      - Traceability table mapping back to User Story IDs, NFR IDs and Constraint IDs
+      - Component design (components, responsibilities, interactions)
+    - **SPECIFICATION.md** — A summary of the technical specification for all the modules
+
+Example of the technical specification output:
+~~~markdown- context
+  - specification
+    - <module_1_folder>
+      - SPEC.md
+    - <module_2_folder>
+      - SPEC.md
+    SPECIFICATION.md ## A summary of the technical specification for all the modules
+~~~
 
 ### Test Specification Generation
+_The skill goal is to generate the test specification for the application, which includes the test cases and scenarios to validate the functionality and performance of the application, for you to **review** before proceeding to next step._
+
+Example skill invocation for test specification generation:
+~~~bash
+/testgen-functional <app_name> ## For generating Playwright E2E test plan and per-module test specifications as Markdown blueprints.
+~~~
+
+- Input:
+  - PRD.md (User Stories, Non-Functional Requirements and Constraints)
+  - Data Model (to understand the data structure and relationships)
+  - HTML Mockup (to understand the UI design and user interactions)
+  - Technical Specification (to understand the technical design and implementation)
+- Output:
+  - Test specification document containing:
+    - **TEST_SPEC.md** — A per-module test specification file containing:
+        - Module overview
+        - Traceability table mapping back to User Story IDs, NFR IDs and Constraint IDs
+        - Test cases and scenarios (test case ID, description, preconditions, steps, expected results)
+    - **TEST_PLAN.mmd** - Summary of all the test cases and scenarios.
+
+Example of the test specification output:
+~~~markdown
+- context
+  - test
+    - <module_1_folder>
+      - TEST_SPEC.md
+    - <module_2_folder>
+      - TEST_SPEC.md
+    TEST_PLAN.mmd ## A summary of all the test cases and scenarios in Mermaid syntax
+~~~
 
 ### Application Development
+_The skill goal is to develop the application based on all the context generated above, and you can track the development progress using the output from this skill._
 
-## Bug Fixing Phase
+
+# Bug Fixing Workflow
 
 ## Bug Reporting
 
