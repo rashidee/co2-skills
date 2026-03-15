@@ -1,11 +1,11 @@
 {
-  "name": "co2-skills",
+  "name": "co2",
   "version": "1.0.0",
   "description": "Compound Context Skills — an opinionated context engineering methodology for AI-driven software development. Generates data models, HTML mockups, technical specifications, test specifications, and orchestrates full-stack development from Agile user stories.",
   "author": {
-    "name": "Compound Context"
+    "name": "Rashidee M.Rashid"
   },
-  "repository": "https://github.com/compound-context/co2-skills",
+  "repository": "https://github.com/rashidee/co2-skills",
   "license": "MIT",
   "keywords": [
     "context-engineering",

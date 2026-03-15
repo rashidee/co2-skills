@@ -1,9 +1,9 @@
 # Plugin Information
 - Plugin Name: Compound Context (CO2) Workflow (see below for details)
 
-To install the plugin
+To install the plugin:
 ~~~bash
-
+claude plugin add github:rashidee/co2-skills
 ~~~
 
 
