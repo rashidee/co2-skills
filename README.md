@@ -43,8 +43,6 @@ _This is the initial step where you want to ensure the AI coding agent has all t
 
 ## PRD Development
 
----
-
 **PRD.md** is the main input for the development phase, which contains the User Stories, Non-Functional Requirements and Constraints. It is also the main reference for all the skills in this phase. The PRD.md should be updated and versioned as the project progresses.
 
 Example of the PRD.md structure:
@@ -76,8 +74,6 @@ Example of the PRD.md structure:
 ~~~
 
 ## PRD Clean Up
-
----
 
 _Since PRD.md is based on human input, it may require some validation and each new points added need to be tagged with unique ID for traceability:_
 
@@ -123,8 +119,6 @@ Example of the Model Markdown file structure:
 
 ### HTML Mockup
 
----
-
 _The skill goal is to generate the HTML mockup for each screen for you to **review** before proceeding to next step._
 
 Example skill invocation for HTML mockup generation:
@@ -153,14 +147,24 @@ Example of the HTML mockup output:
 
 ### Technical Specification
 
----
-
 _The skill goal is to generate the technical specification for the application, which includes the architecture, components, APIs, etc. for you to **review** before proceeding to next step._
+
+>⚠️ At this point, you should already **have determined the technology stack** as the technical specification generation will be based on the specific technology stack skill
 
 Example skill invocation for technical specification generation:
 ~~~bash
-/specgen-technical <app_name> ## For generating technical specification for the application
+/specgen-spring-jpa-jtehtmx <app_name> ## For generating Spring Boot 3 web application technical specification with JTE, Tailwind and htmx.
+/specgen-spring-jpa-restapi <app_name> ## For generating Spring Boot 3 REST API technical specification.
+/specgen-laravel-eloquent-bladehtmx <app_name> ## For generating Laravel 12 web application technical specification with Blade, Tailwind and htmx
 ~~~
+
+- Input:
+  - PRD.md (User Stories, Non-Functional Requirements and Constraints)
+  - Data Model (to understand the data structure and relationships)
+  - HTML Mockup (to understand the UI design and user interactions)
+- Output:
+  - Technical specification document containing:
+    - SPEC.md containig the 
 
 ### Test Specification Generation
 
@@ -173,8 +177,6 @@ Example skill invocation for technical specification generation:
 ## Bug Analysis and Bug Fixing Plan Generation
 
 ## Bug Fixing
-
----
 
 # Directory Structure
 - Each application will have its own root-level folder containing both context and source code.
@@ -206,11 +208,7 @@ Example skill invocation for technical specification generation:
     - (source code files)
 ~~~
 
----
-
 # Disclaimer
 - Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
 - This workflow can consume a lot  of tokens. It is design to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
 - This is workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
-
----
