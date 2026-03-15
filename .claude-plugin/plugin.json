@@ -1,0 +1,22 @@
+{
+  "name": "co2-skills",
+  "version": "1.0.0",
+  "description": "Compound Context Skills — an opinionated context engineering methodology for AI-driven software development. Generates data models, HTML mockups, technical specifications, test specifications, and orchestrates full-stack development from Agile user stories.",
+  "author": {
+    "name": "Compound Context"
+  },
+  "repository": "https://github.com/compound-context/co2-skills",
+  "license": "MIT",
+  "keywords": [
+    "context-engineering",
+    "user-stories",
+    "code-generation",
+    "ddd",
+    "spring-boot",
+    "laravel",
+    "playwright",
+    "mockups",
+    "specifications",
+    "data-modeling"
+  ]
+}

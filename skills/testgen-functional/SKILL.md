@@ -1,0 +1,1094 @@
+---
+name: testgen-functional
+description: >
+  Generate Playwright E2E test plan and specification documents from project artifacts
+  (user stories, module models, mockups, specifications). Produces a TEST_PLAN.md root
+  summary and per-module TEST_SPEC.md files containing test scenarios, data seeding
+  scripts, and cleanup scripts — all as detailed Markdown blueprints, not actual test code.
+  Input: application name (mandatory), version (mandatory), module (optional).
+  Output: TEST_PLAN.md + per-module TEST_SPEC.md files in the auto-resolved test output folder.
+  Trigger on keywords: "generate test plan",
+  "generate test spec", "create test specification", "E2E test plan", "Playwright test plan",
+  "test plan from user stories", "test spec from PRD.md", "generate test scenarios",
+  "create test blueprint". Accepts application name and version as input
+  (e.g., `/testgen-functional hub_middleware v1.0.3`).
+  Optionally accepts a module name to limit generation to test specs for that module only
+  (e.g., `/testgen-functional hub_middleware v1.0.3 module:Location Information`).
+  Automatically excludes strikethrough (deprecated/removed) items.
+---
+
+# Test Generator
+
+Generate Playwright E2E test plan and specification documents from PRD.md and
+related project artifacts. Outputs are **Markdown documents** (TEST_PLAN.md and per-module
+TEST_SPEC.md files) that serve as detailed blueprints for a developer or coding agent to
+implement actual Playwright test code. This skill does NOT generate Playwright code.
+
+## Core Concept: 4-Layer Data Seeding Strategy
+
+Every module is classified into one of 4 data seeding layers. This classification drives
+the seeding strategy, execution order, and test design for each module.
+
+| Layer | Purpose | Detection Heuristic | Seeding Tool |
+|-------|---------|---------------------|--------------|
+| L1: Auth | Test user setup | Modules about User/Auth; SSO/OAuth references in CLAUDE.md | Auth provider CLI (e.g., Keycloak `kcadm`, Laravel `artisan tinker`, or DB seed) |
+| L2: Reference Data | Admin-configured master data | User stories with "manage", "configure" by admin roles; no inbound message queue trigger | Direct DB insert via database CLI (e.g., `mongosh`, `mysql`, `psql`, `artisan tinker`) |
+| L3: Transactional Data | Message-driven data | NFRs mentioning "incoming messages", "message queue", "inbound messages"; Reference section linking to MESSAGE_*.md files | Message queue publish via broker CLI (e.g., `rabbitmqadmin`) |
+| L4: Side-Effect Data | Data generated as byproduct | NFRs mentioning "auto-generated", "system generated", "automatically"; modules like Activities, Audit Trail, Notifications | No seeding — asserted as side effects of L2/L3 operations |
+
+## Input
+
+This skill uses standardized input resolution. Provide:
+
+| Argument | Required | Example | Description |
+|----------|----------|---------|-------------|
+| `<application>` | Yes | `hub_middleware` | Application name to locate the context folder |
+| `<version>` | Yes | `v1.0.3` | Version to scope processing |
+| `module:<name>` | No | `module:Location Information` | Limit to a single module |
+
+### Application Folder Resolution
+
+The application name is matched against root-level application folders:
+1. Strip any leading `<number>_` prefix from folder names
+2. Match case-insensitively
+3. Accept snake_case, kebab-case, or title-case input
+4. If no match found, list available applications and stop
+
+### Auto-Resolved Paths
+
+| File | Resolved Path |
+|------|---------------|
+| PRD.md | `<app_folder>/context/PRD.md` |
+| Module Models | `<app_folder>/context/model/` |
+| Specifications | `<app_folder>/context/specification/` |
+| HTML Mockups | `<app_folder>/context/mockup/` |
+| References | `<app_folder>/context/reference/` |
+| Output (test) | `<app_folder>/context/test/` |
+
+### Example Invocations
+
+- `/testgen-functional hub_middleware v1.0.3` (all modules, up to v1.0.3)
+- `/testgen-functional hub_middleware v1.0.3 module:Location Information` (one module)
+- `/testgen-functional "Hub Middleware" v1.0.3 module:Employer` (title-case)
+
+### Version and Module Filtering
+
+- Only include user stories, NFRs, constraints,
+  and references from sections whose version tag is **less than or equal to** the target version
+- If a module is provided (e.g., `module:Location Information`), only generate the test spec
+  for that specific module. TEST_PLAN.md is still generated but scoped to that module.
+- If no module is provided, process all modules (default behavior)
+
+**Argument parsing**: The `module:` prefix is the canonical form. Also accept:
+- `module:"Location Information"` (quoted, with space)
+- `module:location_information` (snake_case — convert to title-case for matching)
+- Natural language: `for Location Information module`, `only Location Information`
+
+---
+
+## Workflow
+
+### Step 1: Parse PRD.md
+
+Read the file and extract:
+
+1. **Application name**: Derive from the parent folder name containing PRD.md.
+   Strip leading number and underscore prefix, then title-case.
+   Example: `1_hub_middleware` -> "Hub Middleware"
+
+2. **Application initials**: First letter of each word, uppercase.
+   Example: `1_hub_middleware` -> "HM"
+
+3. **Module categories and modules**: Each `# Module Category` heading groups related modules.
+   Each `## Module Name` section under a category is a module.
+   Record the module name, its category, and its description (the line after the heading).
+
+4. **User stories per module**: Lines matching `- [USxx#####] As a {Role} user, I want to...`
+   Extract: tag, role, action summary, sub-items (indented lines under the story).
+
+5. **NFRs per module**: Lines matching `- [NFRxx####] ...`
+   Extract: tag, full text.
+
+6. **Constraints per module**: Lines matching `- [CONSxx###] ...`
+   Extract: tag, full text.
+
+7. **References per module**: Lines matching `- [REFxx####] ...`
+   Extract: tag, description, linked file path (if any).
+
+8. **Unique roles**: Collect all distinct roles from user stories.
+
+9. **Version tag per item**: Each `### User Story`, `### Non Functional Requirement`,
+   and `### Constraint` section contains version blocks formatted as `[v1.0.x]`. Items
+   listed under a version tag belong to that version. Track the version for every
+   extracted user story, NFR, constraint, and reference. Carry this version through to
+   the Source Artifacts table, test scenario Source fields, and Traceability Matrix.
+
+10. **Deprecated item tracking**: Items marked with strikethrough in a newer version may
+    have been replaced by a new item. When an item is removed in version X and replaced by
+    item Y, track this replacement. Include a "Removed / Replaced" subsection in the
+    Source Artifacts of the TEST_SPEC.md, following the same format used in SPEC.md:
+    | ID | Type | Removed In | Replaced By | Reason |
+
+#### 1a: Version Filtering and Strikethrough Exclusion (MANDATORY)
+
+PRD.md is a version-controlled document. Each section has a version tag in square
+brackets, e.g., `[v1.0.1]`. Items may also be marked with strikethrough (`~~`).
+
+**Strikethrough exclusion** (always applied, regardless of version parameter):
+- Any line wrapped in `~~strikethrough~~` markup MUST be excluded from processing
+- This includes user stories, NFRs, constraints, and references
+- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` → **SKIP**
+- Partially strikethrough lines (where only part is struck) should still be excluded
+  if the tag identifier is within the strikethrough
+
+**Version filtering** (applied only when a target version is provided):
+- Each section under a module has one or more version tags like `[v1.0.0]` or `[v1.0.1]`
+- Items listed under a version tag belong to that version
+- When a target version is specified (e.g., `v1.0.1`):
+  - **Include** items from sections whose version tag is **<= target version**
+  - **Exclude** items from sections whose version tag is **> target version**
+- Version comparison uses semantic versioning: compare major, then minor, then patch
+- When no target version is specified, include all items from all versions (but still
+  exclude strikethrough items)
+
+#### 1b: Module Filtering (applied only when a module argument is provided)
+
+When a `module` argument is present:
+
+1. **Match the specified module** against the list of parsed modules (case-insensitive).
+   Also accept snake_case input by converting to title-case for comparison.
+2. If no module matches, stop and report the available module names to the user.
+3. When module-filtered, generate TEST_PLAN.md scoped to that module and only that module's
+   TEST_SPEC.md file.
+
+---
+
+### Step 2: Extract Project Information from CLAUDE.md (Already in Context)
+
+CLAUDE.md is automatically loaded into context. Extract the following from it:
+
+1. **Project name and description**
+2. **Infrastructure details**:
+   - Database type and version (MongoDB, MySQL, PostgreSQL)
+   - Database name(s) and connection info
+   - Message Queue type and version (RabbitMQ)
+   - Message Queue connection info (host, port, credentials)
+   - SSO/Auth type and version (Keycloak)
+   - SSO connection info (host, admin credentials, CLI path)
+3. **CLI tools available**: Map each infrastructure component to its CLI tool based on
+   what CLAUDE.md declares. Common mappings:
+   - MongoDB → `mongosh` (connection string from CLAUDE.md)
+   - MySQL → `mysql` (host, port, credentials from CLAUDE.md)
+   - PostgreSQL → `psql` (host, port, credentials from CLAUDE.md)
+   - RabbitMQ → `rabbitmqadmin` (host, port, credentials from CLAUDE.md)
+   - Keycloak → `kcadm` (CLI path, host, admin credentials from CLAUDE.md)
+   - Laravel artisan → `php artisan` (for seeder commands, tinker, queue management)
+
+   The skill auto-detects which tools apply from CLAUDE.md dependencies. Do not assume
+   a specific tech stack — read it from the project context.
+4. **Application dependencies**: What this application depends on (DB, MQ, SSO)
+
+---
+
+### Step 3: Load Module Models
+
+For each module, look for `<app_folder>/context/model/{module-kebab}/model.md`
+
+Convert module name to kebab-case:
+- Lowercase the module name, replace spaces with hyphens
+- Examples: "Location Information" → `location-information`, "Employer" → `employer`
+
+If the model file exists, extract:
+
+1. **Collection Catalog** (Section 2): collection names, DDD types, document types
+2. **Field Details** (Section 5): field name, type, nullable, constraints per collection
+3. **Embedded Document Definitions** (Section 6): embedded type name and sub-fields
+4. **Enum Definitions** (Section 7): enum name and allowed values
+5. **Index Recommendations** (Section 9): indexed fields (used for search/filter identification)
+6. **Module Prefix**: The prefix used for collections (e.g., `LIN`, `EMP`, `QUO`)
+
+This data is used to:
+- Generate realistic sample data for seeding scripts
+- Identify searchable/filterable fields for search test scenarios
+- Determine collection names for DB insert/cleanup commands
+- Map enum values to expected UI dropdown options
+
+---
+
+### Step 4: Load Specifications
+
+For each module, look for `<app_folder>/context/specification/{module-kebab}/SPEC.md`
+
+If found, extract:
+
+1. **Traceability section**: Maps user stories → collections → mockup screens
+2. **Public API** (Service Interface): Method signatures showing available operations
+3. **DTOs**: Field definitions showing what the API exposes
+4. **Validation rules**: Any documented validation logic
+5. **Business logic rules**: Documented business rules and constraints
+6. **Version tags**: If the SPEC.md traceability section uses versioned tables
+   (with ID | Version | Description columns), extract the version for each item.
+   Cross-reference with PRD.md version tags for consistency.
+
+This data enriches test scenarios with:
+- Expected API behavior for assertions
+- Validation rules to test (boundary conditions, required fields)
+- Business rule scenarios
+
+---
+
+### Step 5: Load Mockups
+
+For each module, scan `<app_folder>/context/mockup/{role_snake_case}/content/{module_snake_case}*.html`
+
+If mockup files exist, extract:
+
+1. **DOM selectors**: IDs and classes used on key elements (tables, forms, buttons)
+2. **Navigation paths**: HTMX `hx-get` routes showing page navigation flow
+3. **Form field names**: Input names and types from form elements
+4. **Table column headers**: `<th>` content from data tables
+5. **Tab structure**: Tab names and their linked content files
+6. **Action buttons**: View/Edit/Delete/Create button patterns and their targets
+7. **Sidebar navigation**: Menu items and their routes for the module
+
+This data provides:
+- Actual CSS selectors for Playwright `page.locator()` calls
+- Real navigation paths for `page.goto()` and click sequences
+- Form field identifiers for fill operations
+- Expected table column names for content assertions
+
+---
+
+### Step 6: Load Message References
+
+Scan `<app_folder>/context/reference/message/MESSAGE_*.md` and `REF_*.md`
+
+For modules classified as L3 (Transactional Data), these files provide:
+
+1. **Message structure**: JSON schema of inbound messages
+2. **Sample payloads**: Expanded JSON examples with realistic sample data
+3. **Referenced sub-structures**: `$REF_*.md` references that compose the full message
+4. **Metadata fields**: correlation ID, origin system, type, command, corridor info
+
+This data is used to generate:
+- Sample message JSON payloads for RabbitMQ seeding scripts
+- Expected field values for asserting message-driven data in the UI
+
+---
+
+### Step 7: Classify Modules into Layers
+
+For each module, apply the following classification heuristics **in order** (first match wins):
+
+**L1: Auth** — Module is classified as L1 if:
+- Module name is "User" or contains "Authentication", "Authorization", "SSO"
+- User stories reference "profile", "password", "login", "logout"
+- NFRs reference "JWT", "SSO", "Keycloak", "token", "authentication"
+
+**L4: Side-Effect Data** — Module is classified as L4 if:
+- Module name is "Activities", "Audit Trail", "Notification", or similar
+- NFRs mention "auto-generated", "system generated", "automatically logged"
+- NFRs mention "will be logged", "will be recorded automatically"
+- No user stories with "manage" or "configure" actions (only "view" actions)
+
+**L3: Transactional Data** — Module is classified as L3 if:
+- NFRs mention "incoming messages", "message queue", "inbound messages"
+- Reference section links to `MESSAGE_*.md` files
+- NFRs mention "unique view ... based on incoming"
+- User stories are primarily "view" and "search" (no "manage"/"configure"/"add"/"create")
+
+**L2: Reference Data** — Module is classified as L2 if:
+- User stories contain "manage", "configure", "add", "create", "edit", "delete"
+- Actions are performed by admin roles
+- No message queue triggers (no MESSAGE_*.md references)
+- Data is master/reference data maintained through the UI
+
+**Record the classification** for each module with the reasoning (which heuristic matched).
+
+---
+
+### Step 8: Determine Dependencies
+
+Build a dependency graph between modules:
+
+1. **Model references**: If a module's model references another module's collection
+   (e.g., `countryCode` referencing `lin_countries`), the referencing module depends on
+   the referenced module.
+
+2. **NFR references**: If NFRs state data is "based on incoming X messages" and X is
+   another module, there is a dependency.
+
+3. **User story references**: If user stories mention "view associated X" where X is
+   another module, there is a dependency.
+
+4. **Layer ordering**: L1 → L2 → L3 → L4 (higher layers depend on lower layers implicitly)
+
+5. **Within-layer dependencies**: Within L2, reference data that other L2 modules depend on
+   must be seeded first (e.g., Location Information before Employer, since employers have
+   country codes).
+
+**Output**: An ordered list of modules for test execution, respecting all dependencies.
+
+---
+
+### Step 9: Generate TEST_PLAN.md
+
+Write `<app_folder>/context/test/TEST_PLAN.md` with the following structure:
+
+```markdown
+# E2E Test Plan: {Application Name}
+
+**Generated**: {date}
+**Source**: {PRD.md path}
+**Version**: {target version or "all versions"}
+**Versions Covered**: v1.0.0 — v{LATEST_VERSION}
+**Module Filter**: {module name or "all modules"}
+
+---
+
+## 1. Application Overview
+
+- **Application**: {Application Name} ({Initials})
+- **Description**: {from PRD.md context line or CLAUDE.md}
+- **Stack**: {from CLAUDE.md — e.g., "Spring Boot 3 + MongoDB + Keycloak + RabbitMQ" or "Laravel 12 + MySQL + Keycloak + RabbitMQ"}
+
+---
+
+## 2. Test Infrastructure
+
+| Component | Type | CLI Tool | Connection |
+|-----------|------|----------|------------|
+| Database | {type + version from CLAUDE.md} | {CLI tool for that DB} | {connection string} |
+| Message Queue | {type + version from CLAUDE.md} | {CLI tool for that MQ} | {AMQP URL} |
+| SSO / Auth | {type + version from CLAUDE.md} | {CLI tool or artisan command} | {host URL} |
+
+### CLI Commands Reference
+
+{For each infrastructure component, provide the exact CLI command template with
+connection parameters filled in from CLAUDE.md}
+
+---
+
+## 3. Test Users
+
+| User | Role | Purpose | Seeding Method |
+|------|------|---------|----------------|
+| {username} | {role from user stories} | {what this user tests} | Keycloak CLI |
+
+---
+
+## 4. Layer Classification Summary
+
+| Module | Category | Layer | Seeding Strategy | Versions | Dependencies |
+|--------|----------|-------|-----------------|----------|--------------|
+| {module} | {System/Business} | {L1/L2/L3/L4} | {strategy} | {versions from PRD.md} | {deps} |
+
+---
+
+## 5. Execution Order
+
+{Ordered list of modules, respecting layer ordering and within-layer dependencies}
+
+1. **L1 — Auth Setup**: {modules}
+2. **L2 — Reference Data**: {modules in dependency order}
+3. **L3 — Transactional Data**: {modules in dependency order}
+4. **L4 — Side-Effect Assertions**: {modules}
+
+---
+
+## 6. Table of Contents
+
+{List all test spec files in strict dependency order derived from the dependency graph
+built in Step 8. A module only appears after ALL modules it depends on have been listed.
+Apply a topological sort within each layer, then order layers L1 → L2 → L3 → L4.
+Group by layer in the TOC for readability, but the numbering is globally sequential
+and reflects the dependency-resolved execution order throughout.}
+
+### L1 — Auth Setup
+
+1. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {comma-separated versions} — [Summary](#module-{module-anchor})
+
+### L2 — Reference Data
+
+{List L2 modules in topological order: if Module B depends on Module A, Module A comes first.}
+
+2. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+3. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+
+### L3 — Transactional Data
+
+{List L3 modules in topological order by their inter-module dependencies.}
+
+4. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+
+### L4 — Side-Effect Assertions
+
+{List L4 modules after all upstream L1–L3 modules they assert against.}
+
+5. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+
+---
+
+## 7. Module Summaries
+
+{One subsection per module. The order of subsections MUST follow the topological sort of
+the dependency graph (Step 8): a module's subsection only appears after all modules it
+depends on have already appeared. This is the same order as the TOC in Section 6.
+Each subsection summarizes what the module's TEST_SPEC.md covers, what data it seeds,
+what it depends on, and a breakdown of its test scenarios by type.}
+
+### Module: {Module Name} {#module-{module-anchor}}
+
+**Layer**: {L1/L2/L3/L4} — {layer purpose}
+**Seeding Strategy**: {Keycloak CLI / DB Insert / MQ Publish / No seeding (side effect)}
+**Spec File**: [{module-kebab}/TEST_SPEC.md]({module-kebab}/TEST_SPEC.md)
+
+**Dependencies**:
+
+| Prerequisite Module | Layer | Reason |
+|--------------------|-------|--------|
+| {module name} | {L1/L2/L3} | {why this module must be seeded first} |
+
+_(None — this module has no prerequisites.)_ ← use when no deps
+
+**Data Seeded**:
+
+| Collection / Entity | Record Count | Key Sample Fields |
+|--------------------|-------------|-------------------|
+| {collection} | {count} | {field: value, ...} |
+
+_(No seeding required — data is a side effect of upstream operations.)_ ← use for L4
+
+**Test Scenarios Summary**:
+
+| Type | Count | Description |
+|------|-------|-------------|
+| Navigation | {n} | Verify sidebar link reaches the {Module Name} screen |
+| Search | {n} | Search by {param1}, {param2}, ... |
+| View / Detail | {n} | View detail of {entity} with tabs: {tab names} |
+| CRUD — Create | {n} | Create new {entity} with required fields |
+| CRUD — Edit | {n} | Update {field} of an existing {entity} |
+| CRUD — Delete | {n} | Delete {entity} with confirmation dialog |
+| Validation | {n} | Required fields, {constraint description}, ... |
+| Mapping | {n} | Map {entity A} to {entity B} |
+| Toggle | {n} | Activate / Deactivate {entity} |
+| History / Audit | {n} | View change history of {entity} |
+| Raw Message | {n} | View raw inbound message payload |
+| Pagination | {n} | Paginate {entity} list, change page size |
+| **Total** | **{total}** | |
+
+_{Omit rows for types with 0 scenarios.}_
+
+**Roles Tested**: {comma-separated list of roles exercised in this module's scenarios}
+
+**Key Assertions**:
+- {Brief bullet summarising the most important expected behaviours to verify}
+- {e.g., "Dropdown for Country Code is populated from Location Information reference data"}
+- {e.g., "Status badge changes colour immediately after toggle without page reload"}
+
+---
+
+{Repeat the Module subsection above for every module, in execution order}
+
+---
+
+## 8. Global Setup
+
+### 8a. Auth Setup (L1)
+
+{Keycloak CLI commands to create test realm, clients, roles, and users}
+
+### 8b. Reference Data Setup (L2)
+
+{Summary of L2 modules and their seeding order}
+
+### 8c. Message Publishing (L3)
+
+{Summary of L3 modules and the messages to publish}
+
+---
+
+## 9. Global Teardown
+
+{Cleanup strategy — reverse order of setup}
+
+### 9a. Database Cleanup
+
+{CLI commands to drop test data from each collection/table, in reverse dependency order}
+
+### 9b. Message Queue Cleanup
+
+{CLI commands to purge test queues}
+
+### 9c. Auth Cleanup
+
+{CLI commands to remove test users/realm}
+```
+
+---
+
+### Step 10: Generate Per-Module TEST_SPEC.md
+
+For each module (or the filtered module), write `<app_folder>/context/test/{module-kebab}/TEST_SPEC.md`:
+
+```markdown
+# TEST_SPEC: {Module Name}
+
+**Application**: {Application Name} ({Initials})
+**Module**: {Module Name}
+**Category**: {System Module / Business Module}
+**Layer**: {L1 / L2 / L3 / L4} — {layer purpose}
+**Seeding Strategy**: {Keycloak CLI / DB Insert / MQ Publish / No seeding (side effect)}
+**Generated**: {date}
+**Version**: {target version or "all versions"}
+**Versions Covered**: {comma-separated list of versions present in this module}
+
+---
+
+## 1. Module Overview
+
+{Module description from PRD.md}
+
+### Layer Classification Reasoning
+
+{Why this module was classified into its layer — which heuristic matched}
+
+### Source Artifacts
+
+| Artifact Type | Reference | Version |
+|---------------|-----------|---------|
+| User Story    | {USHM tag} | {v1.0.x from PRD.md} |
+| NFR           | {NFRHM tag} | {v1.0.x} |
+| Constraint    | {CONSHM tag} | {v1.0.x} |
+
+| Artifact | Path | Status |
+|----------|------|--------|
+| User Stories | {PRD.md path} | Found |
+| Module Model | {model path or "Not found"} | {Found/Not found} |
+| Specification | {spec path or "Not found"} | {Found/Not found} |
+| Mockup | {mockup path or "Not found"} | {Found/Not found} |
+| Message Reference | {message ref path or "Not found"} | {Found/Not found} |
+
+{If any items were deprecated/removed and replaced, include:}
+
+### Removed / Replaced
+
+| ID | Type | Removed In | Replaced By | Reason |
+|---|---|---|---|---|
+| {old ID} | {User Story/NFR/Constraint} | {version removed} | {new ID or "—"} | {reason} |
+
+---
+
+## 2. Prerequisites
+
+{What must exist before tests for this module can run}
+
+| Prerequisite | Module | Layer | How to Verify |
+|-------------|--------|-------|--------------|
+| {description} | {module name} | {L1/L2/L3} | {verification method} |
+
+---
+
+## 3. Data Seeding
+
+### 3a. Seeding Script
+
+{Based on layer classification, generate appropriate seeding commands}
+
+**For L1 (Auth)** — use the auth provider's CLI or framework seeder:
+
+*If Keycloak (detected from CLAUDE.md):*
+```bash
+# Create test user in Keycloak
+{kcadm path} config credentials --server {host} --realm master --user {admin} --password {pass}
+{kcadm path} create users -r {realm} -s username={user} -s enabled=true ...
+```
+
+*If Laravel with DB-backed auth (detected from CLAUDE.md):*
+```bash
+# Seed test users via artisan
+php artisan tinker --execute="
+    \App\Models\User::factory()->create([
+        'name' => '{user}', 'email' => '{email}', 'password' => bcrypt('{pass}')
+    ])->assignRole('{role}');
+"
+```
+
+**For L2 (Reference Data / DB Insert)** — use the database CLI matching CLAUDE.md:
+
+*If MongoDB:*
+```bash
+mongosh "{connection string}" --eval '
+db.{collection}.insertMany([
+  {sample document based on model fields},
+  ...
+])
+'
+```
+
+*If MySQL:*
+```bash
+mysql -h {host} -P {port} -u {user} -p{password} {database} -e "
+INSERT INTO {table} ({columns}) VALUES
+  ({sample row based on model fields}),
+  ...;
+"
+```
+
+*If PostgreSQL:*
+```bash
+psql "{connection string}" -c "
+INSERT INTO {table} ({columns}) VALUES
+  ({sample row based on model fields}),
+  ...;
+"
+```
+
+*If Laravel (alternative to raw CLI):*
+```bash
+php artisan db:seed --class=Test{Module}Seeder
+```
+
+**For L3 (Transactional Data / MQ Publish)** — use the message broker CLI:
+
+*If RabbitMQ:*
+```bash
+rabbitmqadmin publish exchange={exchange} routing_key={key} payload='{
+  {sample message JSON from MESSAGE_*.md}
+}'
+```
+
+**For L4 (Side Effect)**:
+```
+No seeding required — data is generated as a side effect of L2/L3 operations.
+Assert existence after upstream tests complete.
+```
+
+### 3b. Seeded Data Summary
+
+| Collection/Entity | Record Count | Key Fields | Sample Values |
+|-------------------|-------------|------------|---------------|
+| {collection} | {count} | {key fields from model} | {sample values} |
+
+---
+
+## 4. Test Scenarios
+
+{Derived from user stories, grouped by test type. Each scenario includes:
+- Scenario ID (module prefix + sequential number)
+- Description
+- Source user story tag(s)
+- Role performing the test
+- Preconditions
+- Steps (numbered)
+- Expected results
+- Selectors (from mockups, if available)}
+
+### 4a. Navigation Tests
+
+{Derived from mockup sidebar links — verify the module screen is accessible}
+
+#### NAV-{prefix}-001: Navigate to {Module} screen
+
+- **Source**: Sidebar navigation [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: User is logged in
+- **Steps**:
+  1. Click "{Module Name}" in the sidebar navigation
+  2. Wait for content area to load
+- **Expected**:
+  - URL contains `/{role_snake_case}/{module_snake_case}`
+  - Page title/heading shows "{Module Name}"
+  - {If mockup exists: specific heading selector from mockup}
+- **Selectors** (from mockup):
+  - Sidebar link: `{selector from sidebar HTML}`
+  - Page heading: `{selector from content HTML}`
+
+### 4b. Search Tests
+
+{Derived from user stories matching "search for X based on Y"}
+
+#### SRCH-{prefix}-001: Search {entity} by {parameter}
+
+- **Source**: {user story tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: {seeded data exists}
+- **Steps**:
+  1. Navigate to {module} screen
+  2. Enter "{sample value}" in the {parameter} filter field
+  3. Click "Search" / press Enter
+  4. Wait for results to load
+- **Expected**:
+  - Results table shows matching records
+  - Each result row contains the search term in the {parameter} column
+  - Result count is displayed (e.g., "Showing 1-N of N results")
+- **Selectors** (from mockup):
+  - Filter input: `{selector}`
+  - Search button: `{selector}`
+  - Results table: `{selector}`
+  - Result count text: `{selector}`
+
+### 4c. View/Detail Tests
+
+{Derived from user stories matching "view details of X"}
+
+#### VIEW-{prefix}-001: View {entity} details
+
+- **Source**: {user story tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: {entity exists in system}
+- **Steps**:
+  1. Navigate to {module} list screen
+  2. Click "View" action on a record
+  3. Wait for detail page to load
+- **Expected**:
+  - Detail page shows all expected fields
+  - {For each field from model: field label and value are visible}
+  - Back button navigates to list
+- **Selectors** (from mockup):
+  - View button: `{selector}`
+  - Detail card: `{selector}`
+  - Back button: `{selector}`
+
+### 4d. CRUD Tests
+
+{Derived from user stories matching "manage", "configure", "add/create", "edit/update", "delete"}
+
+#### CRUD-{prefix}-001: Create new {entity}
+
+- **Source**: {user story tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: User has create permission
+- **Steps**:
+  1. Navigate to {module} list screen
+  2. Click "Add New" button
+  3. Fill in required fields:
+     {For each required field from model:}
+     - {field name}: "{sample value}"
+  4. Click "Save" / "Submit"
+- **Expected**:
+  - Success notification appears
+  - Redirected to list or detail screen
+  - New record appears in list
+- **Form Fields** (from mockup/model):
+  | Field | Selector | Type | Required | Sample Value |
+  |-------|----------|------|----------|--------------|
+  | {field} | {selector} | {input type} | {yes/no} | {value} |
+
+#### CRUD-{prefix}-002: Edit existing {entity}
+
+- **Source**: {user story tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: {entity exists}
+- **Steps**:
+  1. Navigate to {module} list or detail screen
+  2. Click "Edit" action
+  3. Modify field: {field name} = "{new value}"
+  4. Click "Save"
+- **Expected**:
+  - Success notification appears
+  - Updated value is reflected in detail/list view
+  - {Read-only fields remain unchanged}
+
+#### CRUD-{prefix}-003: Delete {entity}
+
+- **Source**: {user story tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: {entity exists}
+- **Steps**:
+  1. Navigate to {module} list screen
+  2. Click "Delete" action on a record
+  3. Confirm deletion in dialog
+- **Expected**:
+  - Confirmation dialog appears before deletion
+  - Record is removed from list after confirmation
+  - {If soft delete: record is flagged, not physically removed}
+
+### 4e. Validation Tests
+
+{Derived from constraints, NFRs, spec validation rules, and model field constraints}
+
+#### VAL-{prefix}-001: Required field validation on {entity} create
+
+- **Source**: {constraint/NFR tag} [v1.0.x]
+- **Role**: {role}
+- **Preconditions**: None
+- **Steps**:
+  1. Navigate to create {entity} screen
+  2. Leave all required fields empty
+  3. Click "Save"
+- **Expected**:
+  - Form is NOT submitted
+  - Validation errors appear for each required field:
+    {For each required field from model:}
+    - {field name}: shows required error message
+
+#### VAL-{prefix}-002: {Specific constraint validation}
+
+- **Source**: {constraint tag} [v1.0.x]
+- **Role**: {role}
+- **Steps**: {specific to the constraint}
+- **Expected**: {specific validation behavior}
+
+### 4f. Mapping Tests
+
+{Derived from user stories matching "map X to Y"}
+
+### 4g. Toggle Tests
+
+{Derived from user stories matching "activate/deactivate"}
+
+#### TOG-{prefix}-001: Toggle {entity} status
+
+- **Source**: {user story tag}
+- **Role**: {role}
+- **Steps**:
+  1. Navigate to {module} screen
+  2. Find an active {entity}
+  3. Click the toggle/deactivate control
+  4. Confirm if prompted
+- **Expected**:
+  - Status changes from Active to Inactive (or vice versa)
+  - Visual indicator updates (badge color, toggle state)
+
+### 4h. History/Audit Tests
+
+{Derived from user stories matching "view history", "view changes", "audit"}
+
+#### HIST-{prefix}-001: View {entity} change history
+
+- **Source**: {user story tag}
+- **Role**: {role}
+- **Preconditions**: {entity has been modified at least once}
+- **Steps**:
+  1. Navigate to {entity} detail screen
+  2. Click "History" tab or link
+  3. Wait for history records to load
+- **Expected**:
+  - History table shows chronological list of changes
+  - Each entry shows: change type, field changed, old value, new value, timestamp, changed by
+  - Most recent changes appear first
+
+### 4i. Raw Message View Tests
+
+{Derived from user stories referencing "view raw message" — typically for L3 modules}
+
+#### RAW-{prefix}-001: View raw inbound message
+
+- **Source**: {user story tag}
+- **Role**: {role}
+- **Steps**:
+  1. Navigate to {entity} detail screen
+  2. Click "Raw Message" tab
+  3. Wait for raw data to load
+- **Expected**:
+  - Raw JSON message is displayed
+  - JSON is formatted/syntax-highlighted
+  - Message contains expected fields from MESSAGE_*.md structure
+
+### 4j. Pagination Tests
+
+{Applied to every list screen — verify pagination works correctly}
+
+#### PAGE-{prefix}-001: Verify pagination on {entity} list
+
+- **Source**: General requirement (all list screens must paginate)
+- **Role**: {role}
+- **Preconditions**: More than 10 {entities} exist in system
+- **Steps**:
+  1. Navigate to {module} list screen
+  2. Verify default page shows 10 items
+  3. Click "Next" page button
+  4. Verify next page loads with different records
+  5. Change page size to 25
+  6. Verify 25 items are displayed
+- **Expected**:
+  - "Showing X-Y of Z results" text is accurate
+  - Page navigation buttons work correctly
+  - Page size selector changes the number of visible rows
+
+---
+
+## 5. Data Cleanup
+
+### 5a. Cleanup Script
+
+{Reverse of seeding — remove all test data}
+
+**For L2 (DB cleanup)** — use the database CLI matching CLAUDE.md:
+
+*If MongoDB:*
+```bash
+mongosh "{connection string}" --eval '
+db.{collection}.deleteMany({ _testData: true })
+'
+```
+
+*If MySQL:*
+```bash
+mysql -h {host} -P {port} -u {user} -p{password} {database} -e "
+DELETE FROM {table} WHERE _test_data = 1;
+"
+```
+
+*If PostgreSQL:*
+```bash
+psql "{connection string}" -c "
+DELETE FROM {table} WHERE _test_data = true;
+"
+```
+
+*If Laravel (alternative):*
+```bash
+php artisan test:cleanup --module={module}
+```
+
+**For L3 (Queue cleanup)** — use the message broker CLI:
+
+*If RabbitMQ:*
+```bash
+rabbitmqadmin purge queue name={queue_name}
+```
+
+### 5b. Cleanup Order
+
+{Reverse dependency order — clean dependents first, then dependencies}
+
+1. {last module in dependency order}
+2. ...
+3. {first module}
+
+---
+
+## 6. Traceability Matrix
+
+| Test Scenario ID | User Story | Version | NFR(s) | Constraint(s) | Test Type |
+|-----------------|------------|---------|--------|---------------|-----------|
+| NAV-{prefix}-001 | — | — | — | — | Navigation |
+| SRCH-{prefix}-001 | {tag} | v1.0.x | — | — | Search |
+| VIEW-{prefix}-001 | {tag} | v1.0.x | — | — | View |
+| CRUD-{prefix}-001 | {tag} | v1.0.x | — | — | Create |
+| CRUD-{prefix}-002 | {tag} | v1.0.x | — | — | Edit |
+| CRUD-{prefix}-003 | {tag} | v1.0.x | — | — | Delete |
+| VAL-{prefix}-001 | — | v1.0.x | — | {tag} | Validation |
+| TOG-{prefix}-001 | {tag} | v1.0.x | — | — | Toggle |
+| HIST-{prefix}-001 | {tag} | v1.0.x | — | — | History |
+| RAW-{prefix}-001 | {tag} | v1.0.x | — | — | Raw Message |
+| PAGE-{prefix}-001 | — | — | — | — | Pagination |
+```
+
+---
+
+### Step 11: Output Summary
+
+After generation, print a summary:
+
+```
+Test Specification Generation Complete
+=======================================
+Application: {App Name} ({Initials})
+Target Version: {version or "latest (all versions)"}
+Module Filter: {module name or "all modules"}
+Output: {output path}/
+
+Filtering Summary:
+- User stories included: {count}
+- User stories excluded (strikethrough): {count}
+- User stories excluded (version filter): {count}
+- User stories excluded (module filter): {count}
+- NFRs/Constraints included: {count}
+- NFRs/Constraints excluded: {count}
+
+Layer Classification:
+| Layer | Modules | Count |
+|-------|---------|-------|
+| L1: Auth | {modules} | {count} |
+| L2: Reference Data | {modules} | {count} |
+| L3: Transactional Data | {modules} | {count} |
+| L4: Side-Effect Data | {modules} | {count} |
+
+Files generated:
+- TEST_PLAN.md
+- {module-kebab}/TEST_SPEC.md (× {N} modules)
+
+| Module | Layer | Scenarios | Spec File |
+|--------|-------|-----------|-----------|
+| {module} | {layer} | {count} | {module-kebab}/TEST_SPEC.md |
+
+Total: {N} files, {M} test scenarios
+```
+
+---
+
+## Important Rules
+
+### Generic Design
+- **No hardcoded module names**: Module names, collection names, prefixes, and message types
+  are ALL derived from input artifacts. Never hardcode "Employer", "Quota", etc.
+- **No hardcoded collection prefixes**: Read the prefix from the model's Module Prefix Map.
+- **No hardcoded message types**: Read message types from MESSAGE_*.md files.
+- **Infrastructure from CLAUDE.md**: CLI paths, connection strings, and credentials come
+  from CLAUDE.md. Use generic placeholders if CLAUDE.md is not found.
+
+### Document Quality
+- **Documents, not code**: Output is Markdown spec documents. Never generate Playwright
+  JavaScript/TypeScript code.
+- **Actionable steps**: Each test scenario must have specific enough steps that a developer
+  can implement the Playwright test without ambiguity.
+- **Real selectors**: When mockup HTML files exist, extract actual CSS selectors, IDs, and
+  classes. Do not invent selectors.
+- **Real sample data**: When model files exist, use field names, types, enum values, and
+  constraints to generate realistic sample data. Do not use generic placeholders.
+- **Real message payloads**: When MESSAGE_*.md files exist, use the expanded sample JSON
+  as the basis for MQ seeding payloads.
+
+### Parsing Rules
+- **Strikethrough items MUST always be excluded**: Lines wrapped in `~~` are deprecated/removed.
+- **Version filtering**: When a target version is provided, only include items from sections
+  with version tags <= target version.
+- **Version + module are independent axes**: Both may be combined freely. A story must
+  satisfy BOTH filters to be included.
+
+### Layer Classification
+- **Classification order matters**: Check L1 first, then L4, then L3, then L2 (L2 is the
+  default/fallback).
+- **One layer per module**: Each module belongs to exactly one layer.
+- **Record reasoning**: Always document which heuristic matched for each classification.
+
+### Dependencies
+- **Respect execution order**: L1 → L2 → L3 → L4. Within each layer, respect inter-module
+  dependencies.
+- **Seeding before testing**: All prerequisite data must be seeded before a module's tests run.
+- **Cleanup in reverse order**: Clean up in reverse dependency order to avoid foreign key
+  or reference violations.
+
+### Traceability
+- **Every test scenario maps to at least one source**: User story, NFR, constraint, or
+  general requirement (like pagination).
+- **Every user story should produce at least one test scenario**: If a user story has no
+  corresponding test scenario, flag it in the traceability matrix.
+- **Traceability matrix must be complete**: No gaps between user stories and test coverage.
+
+### Mockup Integration
+- **Selector accuracy**: Only reference selectors that actually exist in the mockup HTML.
+  If no mockup exists, omit the Selectors section from test scenarios.
+- **Navigation paths**: Use actual HTMX routes from mockups for navigation steps.
+- **Form fields**: Use actual input names and types from mockup forms.
+
+### Version Tracking in Output
+- **Version tags in Source Artifacts**: Every user story, NFR, and constraint in the
+  Source Artifacts table must include its version from PRD.md.
+- **Version tags in test scenarios**: The "Source" field in each test scenario must
+  include the version tag (e.g., `USHM00228 [v1.0.3]`).
+- **Version column in Traceability Matrix**: The traceability matrix must include a
+  Version column showing which version introduced each test scenario's source requirement.
+- **Removed / Replaced tracking**: When items are deprecated/removed in a newer version
+  and replaced by new items, include a "Removed / Replaced" subsection in Source Artifacts.
+- **Versions Covered field**: Both TEST_PLAN.md and TEST_SPEC.md must include a
+  "Versions Covered" field showing the range of versions included.
+
+### Following Existing Patterns
+- Same frontmatter format as mockgen-tailwind, specgen-spring-jpa-jtehtmx, and specgen-laravel-eloquent-bladehtmx skills
+- Same argument parsing conventions (module:, version, path)
+- Same version filtering and strikethrough exclusion logic
+- Same output summary format (table-based, with file counts)
