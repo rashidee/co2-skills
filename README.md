@@ -3,7 +3,11 @@
 
 To install the plugin:
 ~~~bash
-claude plugin add github:rashidee/co2-skills
+# Step 1: Add the marketplace
+/plugin marketplace add rashidee/co2-skills
+
+# Step 2: Install the plugin
+/plugin install co2-skills@co2
 ~~~
 
 

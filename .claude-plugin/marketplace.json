@@ -1,0 +1,36 @@
+{
+  "name": "co2",
+  "owner": {
+    "name": "Rashidee M.Rashid"
+  },
+  "metadata": {
+    "description": "Compound Context (CO2) Workflow — an opinionated context engineering methodology for AI-driven software development",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "co2-skills",
+      "source": "./",
+      "description": "Compound Context Skills — generates data models, HTML mockups, technical specifications, test specifications, and orchestrates full-stack development from Agile user stories.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Rashidee M.Rashid"
+      },
+      "repository": "https://github.com/rashidee/co2-skills",
+      "license": "MIT",
+      "keywords": [
+        "context-engineering",
+        "user-stories",
+        "code-generation",
+        "ddd",
+        "spring-boot",
+        "laravel",
+        "playwright",
+        "mockups",
+        "specifications",
+        "data-modeling"
+      ],
+      "category": "development"
+    }
+  ]
+}
