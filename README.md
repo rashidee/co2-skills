@@ -1,3 +1,12 @@
+# Plugin Information
+- Plugin Name: Compound Context (CO2) Workflow (see below for details)
+
+To install the plugin
+~~~bash
+
+~~~
+
+
 # Compound Context (CO2) Workflow
 
 | Logo                | Description                                                                                                                                                                              |
