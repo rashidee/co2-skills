@@ -45,7 +45,7 @@ To install the plugin:
    - Test Specifications
 
 # Pre-requisites
-- Claude Code
+- Claude Code (Preferably MAX plan)
 - Claude Code Plugins
   - Playwright Test Generator Plugin (for generating Playwright test specifications and test scripts)
   - Ralph Loop Plugin (for orchestrating the development and bug fixing process)
