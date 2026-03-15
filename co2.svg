@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <text x="100" y="55" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="bold" fill="#2563EB" text-anchor="middle">
+    CO<tspan font-size="32" baseline-shift="-8">2</tspan>
+  </text>
+</svg>

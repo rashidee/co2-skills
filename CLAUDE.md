@@ -6,9 +6,9 @@
 - Project Code: C02SKILLS
 - Project Name: Compound Context Skills
 - Project Description:  
-  - This is an Open Source context engineering methodology for software development using AI coding agent. 
-  - This methodology is an OPINIONATED approach which utilizes User Stories, Non-Functional Requirements and Constraints as the main input.
-  - This methodology supports versioning and updating of the context as the project progresses.
+  - This is an Open Source software development workflow using AI coding agent.
+  - This workflow is an OPINIONATED approach which utilizes User Stories, Non-Functional Requirements and Constraints as the main input.
+  - This workflow supports versioning and updating of the context as the project progresses.
   - From the User Stories, Non-Functional Requirements and Constraints, AI coding agent with the use of specific skills will generate:
     - Data Models
     - HTML Mockups
@@ -16,7 +16,7 @@
     - Test Specifications
     - Development Plan
   - Finally, the AI coding agent will develop the application based on all the context generated above.
-  - The methodology also covers the bug fixing phase where:
+  - The workflow also covers bug fixing phase where:
     - User will report the bug with as much detail as possible.
     - AI coding agent will analyze the bug report and generate the bug fixing plan.
     - AI coding agent will fix the bug based on the generated plan and context from the development phase.
@@ -51,7 +51,7 @@
 
 # Folder structure
 - The project folder structure is as follows:
-  - .claude: Folder containing all the skills and tools for the compound-context methodology
+  - .claude: Folder containing all the skills and tools for the compound-context workflow
   - skills: Folder containing Claude skills for compound-context methodology
     - util-ustagger: Tags untagged User Stories, NFRs, Constraints and References in PRD.md with unique 9-character ID codes. (Prerequisite: PRD.md)
     - util-usanalyzer: Analyzes PRD.md for quality issues such as incomplete stories, bad references, contradictions and duplicates. (Prerequisite: PRD.md)
