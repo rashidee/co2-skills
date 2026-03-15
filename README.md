@@ -381,3 +381,33 @@ Example of the BUG_MASTER.md structure:
 - Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
 - This workflow can consume a lot  of tokens. It is design to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
 - This is workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
+
+# Contribution
+We welcome contributions from the community! Here are some ways you can contribute:
+
+## Specification Generator Skills (`specgen-*`)
+
+This is the **highest impact area** for contribution. The CO2 workflow is designed to be technology-agnostic, but each `specgen-*` skill targets a specific technology stack. We currently support:
+
+| Skill | Technology Stack |
+|-------|-----------------|
+| `specgen-spring-jpa-jtehtmx` | Spring Boot 3 + JTE + Tailwind + htmx |
+| `specgen-spring-jpa-restapi` | Spring Boot 3 REST API |
+| `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
+
+We are looking for contributors to create new `specgen-*` skills for other technology stacks, such as:
+
+- **Backend**: Django, FastAPI, Express.js, NestJS, ASP.NET Core, Ruby on Rails, Phoenix (Elixir), Go (Gin/Echo/Fiber)
+- **Frontend**: Next.js, Nuxt.js, SvelteKit, Remix, Astro
+- **Mobile**: Flutter, React Native, Swift (iOS), Kotlin (Android)
+- **Full-stack**: T3 Stack, RedwoodJS, Adonis.js, Meteor
+
+Each `specgen-*` skill takes the same inputs (PRD.md, data models, HTML mockups) and produces a `SPECIFICATION.md` summary and per-module `SPEC.md` files tailored to the target stack. If you are experienced in a technology stack not listed above, your contribution would help the community generate specifications for that stack.
+
+## Other Contribution Areas
+
+- **Data Model Skills (`modelgen-*`)** — Support for additional database types (e.g., graph databases like Neo4j, time-series databases like InfluxDB)
+- **Mockup Generator Skills (`mockgen-*`)** — Alternative UI frameworks or design systems (e.g., Bootstrap, Material UI, Ant Design)
+- **Test Generator Skills (`testgen-*`)** — Support for additional testing frameworks (e.g., Cypress, Selenium)
+- **Bug reports and feature requests** — Open an issue at https://github.com/rashidee/co2-skills/issues
+- **Documentation improvements** — Help improve the README, skill documentation, or examples
