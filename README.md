@@ -23,6 +23,13 @@
    - Technical Specifications
    - Test Specifications
 
+# Pre-requisites
+- Claude Code
+- Claude Code Plugins
+  - Playwright Test Generator Plugin (for generating Playwright test specifications and test scripts)
+  - Ralph Loop Plugin (for orchestrating the development and bug fixing process)
+- Node and npm version 18 or above (for serving the HTML mockups and running the Playwright test scripts)
+
 # Development Workflow
 
 ## Context Window Preparation
@@ -249,10 +256,66 @@ Example skill invocation for application development:
 # Bug Fixing Workflow
 
 ## Bug Reporting
+Report bugs in `<app_folder>/context/BUG.md` following the module-based structure:
+~~~markdown
+# Business Module
 
-## Bug Analysis and Bug Fixing Plan Generation
+## <Module Name>
+[v1.0.4]
+- Bug description here
+  - Priority: High
+  - Steps to Reproduce:
+  - Expected Result:
+~~~
 
 ## Bug Fixing
+
+Example skill invocation for bug fixing:
+~~~bash
+/conductor-defect <app_name> ## For orchestrating bug fixing from BUG.md
+~~~
+
+- Input:
+  - BUG.md (bug reports organized by module)
+  - All context artifacts from the development phase (PRD.md, models, mockups, specifications, test specs)
+- Flow:
+  1. **Tag untagged bugs** — Assign sequential `[BUG-XXX]` tags to new bug entries in BUG.md
+  2. **Create BUG_MASTER.md** — Master tracking checklist with all bugs, statuses and summary counts
+  3. **For each bug** (processed sequentially):
+     - **Reproduce** — Write and run a Playwright script to reproduce the bug, capture screenshot
+     - **Write test spec** — Create `BUG_TEST_SPEC.md` with verification steps and expected results
+     - **Analyze and plan** — Identify root cause, assess impact, create `BUG_FIX_PLAN.md` with fix checklist
+     - **Apply fix** — Make code changes as planned, log progress in fix plan
+     - **Verify fix** — Run Playwright verification script, capture post-fix screenshot
+     - **Update artifacts** — Sync affected mockups, specifications, models and PRD.md with the fix
+  4. **Completion** — Update BUG_MASTER.md status to COMPLETED when all bugs are resolved
+- Output:
+  - **BUG_MASTER.md** — Master tracking file with bug statuses (NEW, IN_PROGRESS, FIXED, CANNOT_REPRODUCE, HIGH_IMPACT)
+  - **Per-bug folder** (`<app_folder>/context/bug/<module-slug>/<BUG-XXX>/`) containing:
+    - `reproduce.spec.ts` — Playwright reproduction script
+    - `screenshot_reproduce.png` — Pre-fix screenshot
+    - `BUG_TEST_SPEC.md` — Test specification for verification
+    - `BUG_FIX_PLAN.md` — Fix plan with checklist, files to modify, and timestamped fix log
+    - `screenshot_fixed.png` — Post-fix screenshot
+
+Example of the BUG_MASTER.md structure:
+~~~markdown
+- context
+  - bug
+    - <module_1_folder>
+      - <BUG-001>
+        - reproduce.spec.ts
+        - screenshot_reproduce.png
+        - BUG_TEST_SPEC.md
+        - BUG_FIX_PLAN.md
+        - screenshot_fixed.png
+      - <BUG-002>
+        ...
+    - <module_2_folder>
+      - <BUG-003>
+        ...
+    BUG_MASTER.md ## Master tracking file for all bugs in the application
+~~~
 
 # Directory Structure
 - Each application will have its own root-level folder containing both context and source code.
