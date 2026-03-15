@@ -229,8 +229,22 @@ Example skill invocation for application development:
   - Test Specification (to understand the test cases and scenarios to validate the functionality and performance of the application)
 - Output:
   - Source code files for the application, organized by module and component.
-  - **DEVELOP.md** — A development tracking document containing:
-    - Module overview
+  - **IMPLEMENTATION_MASTER.md** — Master tracking file containing:
+    - Application overview (name, source code path, context path)
+    - Overall status (PENDING → IN PROGRESS → COMPLETED)
+    - Execution order (copied from TEST_PLAN.md)
+    - Pre-implementation checklist (project skeleton, build config, security, layouts, database, error handling, theming, pagination, Playwright setup)
+    - Module implementation status table (module name, layer, status, start/completion dates)
+    - Module details with dependencies and resource paths
+  - **IMPLEMENTATION_MODULE.md** — Per-module tracking file containing:
+    - Module overview (name, layer, status, dates)
+    - Resources table (user story IDs, model/schema/specification/test spec/mockup paths)
+    - Implementation checklist (entities, repositories, services, mappers, controllers, views, tests)
+    - User Stories and NFR completion checklists for traceability
+    - Visual consistency checklist (colors, spacing, layout, typography)
+    - Source files created table
+    - Implementation log with timestamped entries
+  - **Playwright E2E test suite** — functional and visual consistency tests per module
 
 # Bug Fixing Workflow
 
