@@ -6,8 +6,6 @@
 
 # Key Features
 
----
-
 📝 User Story to drive UI and UX design + Non-Functional Requirement to drive business logic and technical design + Constraints to drive technical design and implementation.
 
 🔄 Versioning to keep track of the changes and updates in the context as the project progresses.
@@ -27,11 +25,7 @@
 
 # Workflow
 
----
-
 ## Context Window Preparation
-
----
 
 _This is the initial step where you want to ensure the AI coding agent has all the information needed to work._
 
@@ -96,8 +90,6 @@ The skills to invoke the `clean-up` process are:
 | util-ustagger   | /util-ustagger app1/context/PRD.md                                              | Traceability                     | Each newly added point in PRD.md will be tagged with a unique 9-character ID code, which can be used for traceability in the later stages of the development. Example: [USL000009], [NFRL000009], [CONL000009], [REFL000009]                                                                                                                                |
 
 ## Data Model
-
-----
 
 _The skill goal is to generate the data model for each module for you to **review** before proceeding to next step._
 
