@@ -1,24 +1,3 @@
-# Plugin Information
-- Plugin Name: Compound Context (CO2) Workflow (see below for details)
-
-To install the plugin:
-~~~bash
-# Step 1: Add the marketplace
-/plugin marketplace add rashidee/co2-skills
-
-# Step 2: Install the plugin
-/plugin install co2-skills@co2
-~~~
-
-# Disclaimer
-🤖 Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
-
-🪙 This workflow can consume a lot of tokens. It is designed to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
-
-🆕 This workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
-
-🚧 `**THIS IS STILL A WORK IN PROGRESS**`. We are continuously improving the workflow and the skills, so please expect some changes and updates in the future. We welcome any feedback and suggestions for improvement.
-
 # Compound Context (CO2) Workflow
 
 | Logo                | Description                                                                                                                                                                              |
@@ -50,6 +29,18 @@ To install the plugin:
   - Playwright Test Generator Plugin (for generating Playwright test specifications and test scripts)
   - Ralph Loop Plugin (for orchestrating the development and bug fixing process)
 - Node and npm version 18 or above (for serving the HTML mockups and running the Playwright test scripts)
+
+# Getting Started
+- Plugin Name: Compound Context (CO2) Workflow (see below for details)
+
+To install the plugin:
+~~~bash
+# Step 1: Add the marketplace
+/plugin marketplace add rashidee/co2-skills
+
+# Step 2: Install the plugin
+/plugin install co2-skills@co2
+~~~
 
 # Development Workflow
 
@@ -424,3 +415,13 @@ Below are example applications developed using the CO2 workflow. More examples w
    - Landing Page: Laravel 12 + Blade + htmx
    - Database: PostgreSQL 14
    - Repository: [co2-example-simplecms](https://github.com/rashidee/co2-example-simplecms)
+
+# Disclaimer
+🤖 Currently only Claude Code Agent is supported, but we are planning to support more AI coding agents in the future.
+
+🪙 This workflow can consume a lot of tokens. It is designed to generate consistent and comprehensive context for the AI coding agent, which may require a large amount of tokens. Please be mindful of the token usage when using this workflow.
+
+🆕 This workflow is currently designed for new application development, not maintenance of existing application. We are planning to support maintenance of existing application in the future, but for now please use this workflow for new application development only.
+
+🚧 `**THIS IS STILL A WORK IN PROGRESS**`. We are continuously improving the workflow and the skills, so please expect some changes and updates in the future. We welcome any feedback and suggestions for improvement.
+
