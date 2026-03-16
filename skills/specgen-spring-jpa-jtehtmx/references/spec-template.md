@@ -187,10 +187,15 @@ to the user's choices.
 
 ### application.yml (default profile)
 
+**IMPORTANT: Environment variable externalization.** All configuration values that may
+change between environments (ports, hostnames, credentials, URIs) MUST use Spring's
+`${ENV_VAR:default}` syntax. This ensures the application works out-of-the-box in local
+development while allowing production deployments to override via environment variables.
+
 **Always include:**
 ```yaml
 server:
-  port: {{SERVER_PORT}}
+  port: ${SERVER_PORT:{{SERVER_PORT}}}
   servlet:
     context-path: /
 
@@ -209,7 +214,7 @@ gg:
 
 app:
   cors:
-    allowed-origins: http://localhost:3000
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   theme:
     default: light
     cookie-name: theme
@@ -217,8 +222,8 @@ app:
 
 logging:
   level:
-    root: WARN
-    {{BASE_PACKAGE}}: INFO
+    root: ${LOG_LEVEL_ROOT:WARN}
+    {{BASE_PACKAGE}}: ${LOG_LEVEL_APP:INFO}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{userId}] %-5level %logger{36} - %msg%n"
 ```
@@ -228,7 +233,7 @@ logging:
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/{{DB_NAME}}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/{{DB_NAME}}}
       auto-index-creation: true
 
 logging:
@@ -240,9 +245,9 @@ logging:
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/{{DB_NAME}}
-    username: {{DB_USER}}
-    password: {{DB_PASSWORD}}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/{{DB_NAME}}}
+    username: ${DB_USERNAME:{{DB_USER}}}
+    password: ${DB_PASSWORD:{{DB_PASSWORD}}}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -265,9 +270,9 @@ logging:
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/{{DB_NAME}}
-    username: {{DB_USER}}
-    password: {{DB_PASSWORD}}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/{{DB_NAME}}}
+    username: ${DB_USERNAME:{{DB_USER}}}
+    password: ${DB_PASSWORD:{{DB_PASSWORD}}}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -294,16 +299,16 @@ spring:
       client:
         registration:
           keycloak:
-            client-id: {{KEYCLOAK_CLIENT_ID}}
-            client-secret: {{KEYCLOAK_CLIENT_SECRET}}
+            client-id: ${KEYCLOAK_CLIENT_ID:{{KEYCLOAK_CLIENT_ID}}}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:{{KEYCLOAK_CLIENT_SECRET}}}
             scope: openid,profile,email
         provider:
           keycloak:
-            issuer-uri: {{KEYCLOAK_ISSUER_URI}}
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:{{KEYCLOAK_ISSUER_URI}}}
 
 app:
   security:
-    keycloak-client-id: {{KEYCLOAK_CLIENT_ID}}
+    keycloak-client-id: ${KEYCLOAK_CLIENT_ID:{{KEYCLOAK_CLIENT_ID}}}
     public-paths:
       - /static/**
       - /assets/**
@@ -338,7 +343,7 @@ spring:
     properties:
       org.quartz.threadPool.threadCount: 5
       org.quartz.jobStore.class: io.fluidsonic.mirror.quartz.MongoDBJobStore
-      org.quartz.jobStore.mongoUri: mongodb://localhost:27017/{{DB_NAME}}
+      org.quartz.jobStore.mongoUri: ${MONGODB_URI:mongodb://localhost:27017/{{DB_NAME}}}
       org.quartz.jobStore.dbName: {{DB_NAME}}
       org.quartz.jobStore.collectionPrefix: qrtz_
 ```
@@ -399,11 +404,11 @@ spring:
 ```yaml
 spring:
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    virtual-host: /
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 app:
   batch:
@@ -419,11 +424,11 @@ app:
 ```yaml
 spring:
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    virtual-host: /
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 app:
   messaging:
