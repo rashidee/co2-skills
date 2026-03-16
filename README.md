@@ -414,3 +414,13 @@ Each `specgen-*` skill takes the same inputs (PRD.md, data models, HTML mockups)
 - **Test Generator Skills (`testgen-*`)** — Support for additional testing frameworks (e.g., Cypress, Selenium)
 - **Bug reports and feature requests** — Open an issue at https://github.com/rashidee/co2-skills/issues
 - **Documentation improvements** — Help improve the README, skill documentation, or examples
+
+# Example Applications
+
+Below are example applications developed using the CO2 workflow. More examples will be added over time to demonstrate the versatility of the workflow across different domains and technology stacks.:
+
+1. **SimpleCMS** — A simple content management system built from structured requirements through to working code. Demonstrates the full CO2 workflow end-to-end.
+   - Admin Portal: Spring Boot 3 + JTE + Tailwind + htmx
+   - Landing Page: Laravel 12 + Blade + htmx
+   - Database: PostgreSQL 14
+   - Repository: [co2-example-simplecms](https://github.com/rashidee/co2-example-simplecms)
