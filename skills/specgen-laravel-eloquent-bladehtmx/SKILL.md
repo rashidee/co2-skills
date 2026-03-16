@@ -525,7 +525,11 @@ Complete `package.json` with Vite, Tailwind CSS, Alpine.js, htmx, and build scri
 Full `.env` and `config/` files covering database connection (MongoDB URI or SQL DSN
 depending on selection), auth settings (Keycloak/OAuth2 if selected, or Breeze if selected),
 scheduling config (if selected), theme defaults, and logging configuration. Use actual
-database names and credentials from CLAUDE.md.
+database names and credentials from CLAUDE.md as default values. **All environment-sensitive
+values (ports, hostnames, credentials, URIs) MUST be externalized using Laravel's
+`env('VAR', 'default')` helper in config files**, with sensible defaults for local
+development. The `.env` file provides local defaults; production overrides via system
+environment variables or `.env.production`.
 
 #### 4. Build & Tooling
 Vite configuration (`vite.config.js`), Tailwind CSS setup (using design tokens from

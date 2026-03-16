@@ -180,6 +180,12 @@ Include:
 
 Generate complete configuration files.
 
+**IMPORTANT: Environment variable externalization.** All configuration values that may
+change between environments (ports, hostnames, credentials, URIs) MUST be externalized
+to environment variables. Laravel's `env('VAR', 'default')` helper is used in config
+files. The `.env` file provides local development defaults, while production deployments
+override via system environment variables or `.env.production`.
+
 ### .env (default)
 
 **Always include:**
@@ -249,6 +255,65 @@ RABBITMQ_QUEUE=default
     'dsn' => env('DB_URI', 'mongodb://localhost:27017'),
     'database' => env('DB_DATABASE', '{{DB_NAME}}'),
 ],
+```
+
+**[If Database = PostgreSQL] add connection:**
+```php
+'pgsql' => [
+    'driver' => 'pgsql',
+    'host' => env('DB_HOST', 'localhost'),
+    'port' => env('DB_PORT', '5432'),
+    'database' => env('DB_DATABASE', '{{DB_NAME}}'),
+    'username' => env('DB_USERNAME', '{{DB_USER}}'),
+    'password' => env('DB_PASSWORD', ''),
+    'charset' => env('DB_CHARSET', 'utf8'),
+    'prefix' => '',
+    'schema' => 'public',
+    'sslmode' => env('DB_SSLMODE', 'prefer'),
+],
+```
+
+**[If Database = MySQL] add connection:**
+```php
+'mysql' => [
+    'driver' => 'mysql',
+    'host' => env('DB_HOST', 'localhost'),
+    'port' => env('DB_PORT', '3306'),
+    'database' => env('DB_DATABASE', '{{DB_NAME}}'),
+    'username' => env('DB_USERNAME', '{{DB_USER}}'),
+    'password' => env('DB_PASSWORD', ''),
+    'unix_socket' => env('DB_SOCKET', ''),
+    'charset' => env('DB_CHARSET', 'utf8mb4'),
+    'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+    'prefix' => '',
+    'strict' => true,
+    'engine' => null,
+],
+```
+
+**[If Auth = Keycloak] add to config/services.php:**
+```php
+'keycloak' => [
+    'client_id' => env('KEYCLOAK_CLIENT_ID'),
+    'client_secret' => env('KEYCLOAK_CLIENT_SECRET'),
+    'realm' => env('KEYCLOAK_REALM'),
+    'base_url' => env('KEYCLOAK_BASE_URL', 'http://localhost:8180'),
+    'redirect' => env('KEYCLOAK_REDIRECT_URI', env('APP_URL') . '/auth/callback'),
+],
+```
+
+**[If Messaging = yes] add to config/messaging.php:**
+```php
+return [
+    'rabbitmq' => [
+        'host' => env('RABBITMQ_HOST', 'localhost'),
+        'port' => env('RABBITMQ_PORT', 5672),
+        'user' => env('RABBITMQ_USER', 'guest'),
+        'password' => env('RABBITMQ_PASSWORD', 'guest'),
+        'vhost' => env('RABBITMQ_VHOST', '/'),
+        'queue' => env('RABBITMQ_QUEUE', 'default'),
+    ],
+];
 ```
 
 ### config/logging.php

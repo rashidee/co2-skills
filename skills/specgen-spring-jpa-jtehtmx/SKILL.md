@@ -542,7 +542,10 @@ Full `application.yml` covering Spring profiles (`default`, `dev`, `prod`), data
 connection (MongoDB URI or JDBC datasource depending on selection), auth settings
 (Keycloak/OAuth2 if selected, or form login if selected), JTE configuration, scheduling
 config (if selected), theme defaults, and logging configuration. Use actual database
-names and credentials from CLAUDE.md.
+names and credentials from CLAUDE.md as default values. **All environment-sensitive
+values (ports, hostnames, credentials, URIs) MUST use Spring's `${ENV_VAR:default}`
+syntax** to allow externalization via environment variables while keeping sensible
+defaults for local development.
 
 #### 4. Build & Tooling
 Vite configuration, Tailwind CSS setup (using design tokens from MOCKUP.html), PostCSS

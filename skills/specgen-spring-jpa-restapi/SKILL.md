@@ -442,7 +442,10 @@ Full `application.yml` covering Spring profiles (`default`, `dev`, `prod`), data
 connection (MongoDB URI or JDBC datasource depending on selection), auth settings
 (Keycloak Resource Server JWT validation if selected, or self-issued JWT if selected),
 scheduling config (if selected), and logging configuration. Use actual database
-names and credentials from CLAUDE.md.
+names and credentials from CLAUDE.md as default values. **All environment-sensitive
+values (ports, hostnames, credentials, URIs) MUST use Spring's `${ENV_VAR:default}`
+syntax** to allow externalization via environment variables while keeping sensible
+defaults for local development.
 
 #### 4. `.gitignore`
 Generate a `.gitignore` file at the project root that excludes all generated, downloaded,
