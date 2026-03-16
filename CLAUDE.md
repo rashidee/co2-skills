@@ -66,6 +66,7 @@
     - conductor-feature-prepare: Orchestrates the full artifact preparation pipeline — runs util-ustagger, modelgen-*, mockgen-tailwind, specgen-* and testgen-functional in sequence. (Prerequisite: PRD.md, CLAUDE.md)
     - conductor-feature-develop: Orchestrates full-stack application development module-by-module using all generated artifacts. (Prerequisite: conductor-feature-prepare output — model/, mockup/, specification/, test/)
     - conductor-defect: Orchestrates bug fixing from BUG.md — reproduces, fixes and verifies bugs and updates affected artifacts. (Prerequisite: BUG.md, conductor-feature-prepare output)
+    - conductor-upgrade-version: Orchestrates a full version upgrade by running conductor-defect (bug fixing) followed by conductor-feature-develop (feature development) in sequence. (Prerequisite: BUG.md, conductor-feature-prepare output)
 
 # Path and Credentials
 **There is no path and credentials for this project since this is not an application development project.**
