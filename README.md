@@ -1,5 +1,7 @@
 # Compound Context (CO2) Workflow
 
+> https://compound-context.com
+
 | Logo                | Description                                                                                                                                                                              |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![co2.svg](co2.svg) | an **OPINIONATED** approach to software development using AI coding agents. It emphasizes the importance of comprehensive and structured context to reduce AI hallucination and AI slop: |
