@@ -55,7 +55,6 @@
   - skills: Folder containing Claude skills for compound-context methodology
     - util-ustagger: Tags untagged User Stories, NFRs, Constraints and References in PRD.md with unique 9-character ID codes. (Prerequisite: PRD.md)
     - util-usanalyzer: Analyzes PRD.md for quality issues such as incomplete stories, bad references, contradictions and duplicates. (Prerequisite: PRD.md)
-    - util-modulesync: Synchronizes module structure across PRD.md and BUG.md to match the canonical structure defined in CLAUDE.md. (Prerequisite: CLAUDE.md, PRD.md, BUG.md)
     - modelgen-relational: Extracts relational (SQL) entity models from user stories using Domain-Driven Design principles. (Prerequisite: PRD.md)
     - modelgen-nosql: Extracts NoSQL document models (MongoDB, Couchbase, DynamoDB, Firestore, CosmosDB) from user stories. (Prerequisite: PRD.md)
     - mockgen-tailwind: Generates HTML mockup screens served via Node.js + Express + HTMX. (Prerequisite: PRD.md, modelgen-relational or modelgen-nosql)
