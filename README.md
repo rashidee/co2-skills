@@ -100,11 +100,11 @@ _Since PRD.md is based on human input, it may require some validation and each n
 
 The skills to invoke the `clean-up` process are:
 
-| Skill           | Example Skill Invovation                                                        | Objective                        | Output                                                                                                                                                                                                                                                                                                                                                      |
-|-----------------|---------------------------------------------------------------------------------|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| util-modulesync | /util-modulesync app1/context/CLAUDE.md app1/context/PRD.md app1/context/BUG.md | Module Structure Synchronization | Synchronize the module structure across CLAUDE.md, PRD.md and BUG.md to match the canonical structure defined in CLAUDE.md. This is to ensure the consistency of the module structure across all the artifacts. Example: If there is a new module added in CLAUDE.md, it should also be added in PRD.md and BUG.md with the same module name and structure. |
-| util-usanalyzer | /util-usanalyzer app1/context/PRD.md                                            | Quality Check                    | Identify any quality issues in the PRD.md such as incomplete stories, bad references, contradictions and duplicates. Output a report with the identified issues and suggestions for improvement. Example: "User Story 1 is incomplete because it does not have the acceptance criteria."                                                                    |
-| util-ustagger   | /util-ustagger app1/context/PRD.md                                              | Traceability                     | Each newly added point in PRD.md will be tagged with a unique 9-character ID code, which can be used for traceability in the later stages of the development. Example: [USL000009], [NFRL000009], [CONL000009], [REFL000009]                                                                                                                                |
+| Skill            | Example Skill Invocation     | Objective                                       | Output                                                                                                                                                                                                                                                                                                                                                                                     |
+|------------------|------------------------------|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| util-projectsync | /util-projectsync            | Project Structure Sync & Validation              | Validates dependencies (circular, missing, logical) and deployment environments (coverage, build/deploy consistency) across all applications in CLAUDE.md. Creates missing application folders, scaffolds PRD.md and BUG.md from templates, adds missing module sections, and writes the latest version to a VERSION file. Inserts [TODO] annotations in CLAUDE.md for validation failures. |
+| util-usanalyzer  | /util-usanalyzer app1        | Quality Check                                    | Identify any quality issues in the PRD.md such as incomplete stories, bad references, contradictions and duplicates. Output a report with the identified issues and suggestions for improvement. Example: "User Story 1 is incomplete because it does not have the acceptance criteria."                                                                                                    |
+| util-ustagger    | /util-ustagger app1 v1.0.3   | Traceability                                     | Each newly added point in PRD.md will be tagged with a unique 9-character ID code, which can be used for traceability in the later stages of the development. Example: [USL000009], [NFRL000009], [CONL000009], [REFL000009]                                                                                                                                                                |
 
 ## Data Model
 
@@ -377,6 +377,16 @@ Example of the BUG_MASTER.md structure:
       - BUG.md
     - (source code files)
 ~~~
+
+# Community
+
+| Document | Description |
+|----------|-------------|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Full contributor guide — repository structure, skill anatomy, development workflow, quality checklist, branch strategy and commit conventions |
+| [NEW_SKILL.md](NEW_SKILL.md) | Issue template for proposing a new skill before starting development |
+| [BUG_REPORT.md](BUG_REPORT.md) | Issue template for reporting incorrect behaviour in an existing skill |
+| [FEATURE_REQUEST.md](FEATURE_REQUEST.md) | Issue template for suggesting improvements to the workflow or existing skills |
+| [PULL_REQUEST_TEMPLATE.md](PULL_REQUEST_TEMPLATE.md) | PR template with checklists for structure, content, output contract and testing |
 
 # Contribution
 We welcome contributions from the community! Here are some ways you can contribute:
