@@ -1,22 +1,22 @@
 ---
 name: util-projectsync
 description: >
-  Synchronize project folder structure, PRD.md and BUG.md files based on the canonical application
-  and module definitions in CLAUDE.md. Validates dependencies (circular, missing, logical) and
-  deployment environments (coverage, build/deploy consistency) across all applications. Creates
-  missing application folders, scaffolds new PRD.md and BUG.md files from templates, and adds
-  missing module sections to existing files. Inserts [TODO] annotations into CLAUDE.md for
-  validation failures.
+  Synchronize project folder structure, PRD.md, BUG.md, and SECRET.md files based on the canonical
+  application and module definitions in CLAUDE.md. Validates dependencies (circular, missing, logical)
+  and deployment environments (coverage, build/deploy consistency) across all applications. Creates
+  missing application folders, scaffolds new PRD.md and BUG.md files from templates, reorganizes
+  SECRET.md with per-environment connection details for all services, and adds missing module sections
+  to existing files. Inserts [TODO] annotations into CLAUDE.md for validation failures.
   Trigger on keywords: "sync project", "project sync", "sync folders", "sync modules",
-  "sync PRD", "sync BUG", "initialize project structure", "scaffold project",
-  "create project folders", "sync application structure", "validate dependencies",
-  "validate deployment".
+  "sync PRD", "sync BUG", "sync SECRET", "sync secrets", "sync credentials",
+  "initialize project structure", "scaffold project", "create project folders",
+  "sync application structure", "validate dependencies", "validate deployment".
   Accepts no arguments — reads all configuration from CLAUDE.md.
 ---
 
 # Util Project Sync
 
-Synchronize project folder structure, PRD.md and BUG.md files to match the canonical structure defined in CLAUDE.md. Validates dependencies and deployment environments before syncing.
+Synchronize project folder structure, PRD.md, BUG.md, and SECRET.md files to match the canonical structure defined in CLAUDE.md. Validates dependencies and deployment environments before syncing.
 
 ## Input Resolution
 
@@ -29,6 +29,7 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 | `# Custom Applications` | List of custom applications to create folders for and validate |
 | `# Supporting 3rd Party Applications` | List of 3rd party applications referenced as dependencies |
 | `# Environment` | Deployment environments defined for the project |
+| `## External Services` | External services (SMTP, Push Notifications, WAF, AI) referenced by applications |
 | `# Modules` | Module definitions grouped under `## System Module` and `## Business Module` |
 
 ### Application Detection
@@ -42,6 +43,13 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 1. Read the `# Supporting 3rd Party Applications` section in CLAUDE.md
 2. Each 3rd party application is listed as a `## <Application Name>` heading under the section
 3. If the section contains `**No Supporting 3rd Party Applications**` or similar "none" indicator, treat as having zero 3rd party applications
+
+### External Services Detection
+
+1. Read the `## External Services` sub-section under `# Environment` in CLAUDE.md
+2. Each external service is listed as a `## <Service Name>` heading under the section
+3. Extract the service name and its technology/version from the content
+4. If the section does not exist or contains no services, treat as having zero external services
 
 ### Environment Detection
 
@@ -64,6 +72,7 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 Read CLAUDE.md from the project root and extract:
 - **Custom Application list**: names and their full content (description, dependencies, build strategy, deployment strategy) from `## <Name>` headings under `# Custom Applications`
 - **3rd Party Application list**: names and their full content from `## <Name>` headings under `# Supporting 3rd Party Applications`
+- **External Services list**: names and their content from `## <Name>` headings under `## External Services`
 - **All Application names**: combined list of both custom and 3rd party application names (used as the valid dependency pool)
 - **Environment list**: environment identifiers from `# Environment` section
 - **System Modules**: names from `### <Name>` headings under `## System Module`
@@ -235,7 +244,72 @@ PRD.md and BUG.md files are located inside the application folder. The exact pat
 
 Follow the folder structure defined in CLAUDE.md's `# Folder structure` section to determine the correct path.
 
-### 7. Resolve Latest Version
+### 7. Sync SECRET.md
+
+Reorganize `SECRET.md` in the project root so its structure mirrors the services and applications defined in CLAUDE.md, with connection details broken down per environment. This makes it easy for AI coding agents to look up the exact connection parameters when developing any application for any target environment.
+
+#### 7a. Inputs (from CLAUDE.md, already parsed in Step 1)
+
+- **External Services list**: names from `## <Name>` headings under `## External Services` (e.g., "SMTP Service", "Push Notification Service", "Web Firewall", "AI Service")
+- **Supporting 3rd Party Applications list**: names and their full content from `## <Name>` headings under `# Supporting 3rd Party Applications` (e.g., "Hub Search Engine", "Hub Core Database", "Hub Single Sign On"). Extract from each:
+  - **Version**: from the first bullet (e.g., "Meilisearch instance version 1.2.0." → version is "1.2.0")
+  - **Databases**: from the `- Databases:` or `- Database name:` bullet list, if present
+  - **Namespace per environment**: from `- Deployment Strategy:` → `- <env>:` → `Namespace/Group:` value
+- **Custom Applications list**: names, and each application's `- Depends on:` list (to derive the "Used by" field for each service)
+- **Environment list**: environment identifiers (e.g., `home_server`, `abc_cloud`)
+
+#### 7b. Build the "Used by" Map
+
+For each 3rd party application and external service, scan all custom applications' `- Depends on:` lists. Any custom application that references the service (directly or via parenthetical qualifier like `Hub Support Database (urp_hub_kc)`) is added to that service's "Used by" list.
+
+#### 7c. SECRET.md Does Not Exist
+
+Create a new `SECRET.md` using the SECRET.md Template (defined below). Populate all service sections with `TODO` placeholders for every environment.
+
+#### 7d. SECRET.md Already Exists
+
+1. **Read and parse** the existing SECRET.md to extract all current credential/connection values (hosts, ports, usernames, passwords, paths, URLs, CLI paths, etc.) into a key-value map keyed by service name and environment.
+2. **Generate** the new SECRET.md content using the SECRET.md Template, filling in known values from the parsed map and inserting `TODO` for any missing values.
+3. **Overwrite** SECRET.md with the reorganized content.
+
+**Value preservation rules:**
+- If the existing SECRET.md has a value for a service (even under a different section name or heading), carry it forward into the matching section of the new structure.
+- Match services by technology name keywords (e.g., existing `## MongoDB` matches "Hub Core Database (MongoDB)", existing `## Keycloak` matches "Hub Single Sign On (Keycloak)", existing `## Message Queue` or `## RabbitMQ` matches the RabbitMQ-based message queues).
+- If a value exists but the environment is not explicit in the old file, assign it to `local_dev` (assume existing flat credentials are for local development).
+- Never discard existing credential values — if unsure where a value belongs, place it under `local_dev` for the most likely matching service.
+- If the existing SECRET.md has sections not matching any CLAUDE.md service (e.g., "Development Tools" like JDK, Maven), preserve them in the `# Development Tools` section of the new file.
+
+#### 7e. Deriving Connection Fields per Technology Type
+
+Use the technology type to determine which connection fields to include for each service:
+
+| Technology | Fields |
+|-----------|--------|
+| MongoDB | Host (connection URI), Database, Username, Password, CLI, CLI Path |
+| MySQL | Host, Port, Username, Password, CLI |
+| Redis | Host, Port, Password, Database Index |
+| RabbitMQ | AMQP Host, Admin UI, Username, Password, CLI |
+| Meilisearch | Host, Master Key |
+| Keycloak | Host, Admin Username, Admin Password, Realm, Client ID, Roles, Test Users |
+| Kong | Proxy Host, Admin API |
+| Mailcatcher/SMTP | SMTP Host, SMTP Port, Web UI, Authentication |
+| Firebase | Project ID, Server Key, Sender ID |
+| Cloudflare | Account ID, API Token, Zone ID |
+| OpenAI | API Key, Organization ID |
+
+For technologies not listed above, include generic fields: Host, Port, Username, Password.
+
+#### 7f. Building the Application-to-Service Connection Map
+
+Build a summary table where:
+- **Rows** are custom applications (from `# Custom Applications`)
+- **Columns** are all services (external services + 3rd party applications)
+- **Cell value** is:
+  - `Yes` if the application depends on the service (from its `- Depends on:` list)
+  - The specific database name (e.g., `hub_supp`) if the dependency includes a database qualifier in parentheses
+  - `-` if no dependency exists
+
+### 8. Resolve Latest Version
 
 Scan all PRD.md and BUG.md files across all custom application folders and extract every version tag matching the pattern `[v{major}.{minor}.{patch}]`. Compare all found versions using semantic versioning rules and determine the highest version.
 
@@ -251,7 +325,7 @@ Write (or overwrite) a file named `VERSION` in the project root directory with t
 - Compare versions using semantic versioning: major takes precedence, then minor, then patch (e.g., `v2.0.0` > `v1.9.9`, `v1.2.0` > `v1.1.5`)
 - Only consider version tags in the format `[v{major}.{minor}.{patch}]` — ignore other bracketed content like tag codes (`[USHM00003]`)
 
-### 8. Output Summary
+### 9. Output Summary
 
 Print a summary of all actions taken, validation results, and warnings:
 
@@ -296,6 +370,14 @@ Print a summary of all actions taken, validation results, and warnings:
 |-------------|--------|---------------|----------|
 | hub_middleware | Updated | Payment, Billing | - |
 | hc_adapter | Created | (all modules) | - |
+
+### SECRET.md Sync
+| Section | Services Synced | Values Preserved | TODOs Added |
+|---------|----------------|-----------------|-------------|
+| External Services | 4 | 2 | 10 |
+| Supporting 3rd Party Apps | 10 | 15 | 45 |
+| Development Tools | 2 | 2 | 0 |
+| Connection Map | 13 apps x 14 services | - | - |
 
 ### VERSION
 - Latest version: 1.2.3 (written to VERSION file)
@@ -439,6 +521,84 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 ---
 ```
 
+## SECRET.md Template
+
+When creating or reorganizing SECRET.md, use this structure. The template shows the layout — actual content is populated from CLAUDE.md definitions and existing SECRET.md values.
+
+```markdown
+# Context
+- This document contains paths, credentials, and connection details for all services, 3rd party applications, and development tools used in this project.
+- Organized by environment as defined in CLAUDE.md: `local_dev` (developer machine), plus each environment from CLAUDE.md.
+- When developing or configuring an application, use the connection details matching the target environment.
+- **This file must NOT be committed to version control.**
+
+---
+
+# Development Tools
+
+## {{Tool Name}}
+- Version: {{version}}
+- Path: {{path}}
+
+---
+
+# External Services
+
+## {{External Service Name}} ({{Technology}})
+- Version: {{version from CLAUDE.md}}
+- Used by: {{comma-separated list of custom applications that depend on this service}}
+- local_dev:
+  - {{connection fields per technology type, value or TODO}}
+- {{environment_1}}:
+  - Namespace: {{namespace from CLAUDE.md deployment strategy, if applicable}}
+  - {{connection fields per technology type, TODO}}
+- {{environment_2}}:
+  - Namespace: {{namespace from CLAUDE.md deployment strategy, if applicable}}
+  - {{connection fields per technology type, TODO}}
+
+---
+
+# Supporting 3rd Party Applications
+
+## {{3rd Party App Name}} ({{Technology}})
+- Version: {{version from CLAUDE.md}}
+- Databases: {{if applicable, list database names and which app uses each, from CLAUDE.md}}
+- Used by: {{comma-separated list of custom applications whose "Depends on" references this app}}
+- local_dev:
+  - {{connection fields per technology type, value or TODO}}
+- {{environment_1}}:
+  - Namespace: {{namespace from CLAUDE.md deployment strategy}}
+  - {{connection fields per technology type, TODO}}
+- {{environment_2}}:
+  - Namespace: {{namespace from CLAUDE.md deployment strategy}}
+  - {{connection fields per technology type, TODO}}
+
+---
+
+# Application-to-Service Connection Map
+
+Quick reference for which services each custom application needs to connect to:
+
+| Application | {{Service 1}} | {{Service 2}} | ... |
+|---|---|---|---|
+| {{App 1}} | Yes / {{db name}} / - | Yes / {{db name}} / - | ... |
+| {{App 2}} | Yes / {{db name}} / - | Yes / {{db name}} / - | ... |
+```
+
+### SECRET.md Template Population Rules
+
+1. **"Used by" field**: For each 3rd party application or external service, scan all custom applications' `- Depends on:` lists. Any custom application that references the service (directly or via parenthetical qualifier) is listed. Do NOT hardcode or guess — derive exclusively from `- Depends on:` sections.
+
+2. **Namespace field**: Extract from the application's `- Deployment Strategy:` section in CLAUDE.md. Each environment's deployment strategy has a `Namespace/Group:` value — use that. If the service has no deployment strategy for an environment (e.g., external services like SMTP), omit the Namespace field for that environment.
+
+3. **Technology identification**: Determine the technology from the service's description in CLAUDE.md:
+   - First bullet usually states the technology and version (e.g., "MongoDB version 7.0.6.", "Redis version 7.2.1.", "Keycloak version 26.5.3.")
+   - Use the technology name in parentheses in the section heading (e.g., `## Hub Core Database (MongoDB)`)
+
+4. **Development Tools section**: Include entries for tools found in the existing SECRET.md that are development environment tooling (JDK, Maven, Node.js, etc.) — not services. These do not need per-environment breakdown. If the existing SECRET.md has no development tools, include the section header with no entries.
+
+5. **Connection Map table**: Rows are custom applications. Columns are all services (external + 3rd party). Cell value is `Yes` for general dependency, the specific database name if a parenthetical qualifier exists, or `-` for no dependency.
+
 ## Important Rules
 
 - **NEVER remove, modify, or delete existing content** in PRD.md or BUG.md. Only add new sections.
@@ -459,3 +619,9 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 - Do not insert duplicate `[TODO]` annotations. If re-running the skill, check for existing `[TODO]` lines above each application heading and skip if the same issue is already annotated.
 - When matching dependency names, strip parenthetical qualifiers (e.g., `Hub Support Database (urp_hub_kc)` matches `Hub Support Database`).
 - Validation is advisory — it does not block folder creation or PRD.md/BUG.md syncing. All steps run regardless of validation results.
+- **SECRET.md is fully overwritten** during sync (unlike PRD.md/BUG.md which are append-only). Existing credential values are preserved by parsing them before rewriting.
+- **Never invent or fabricate credentials.** Only carry forward values found in the existing SECRET.md. Use `TODO` for all unknown values.
+- **`local_dev` is always included** as the first environment under each service, even if it is not listed in CLAUDE.md's `# Environment` section. It represents the developer's local machine.
+- **Namespace values** come from CLAUDE.md's deployment strategy for each application, not from SECRET.md.
+- **"Used by" derivation** must scan all custom applications' `- Depends on:` sections — do not hardcode or guess which apps use which services.
+- If SECRET.md does not exist and CLAUDE.md has no external services or 3rd party applications, create a minimal SECRET.md with only the Context section and Development Tools section.
