@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Compound Context (CO2) Workflow — an opinionated context engineering methodology for AI-driven software development",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "plugins": [
     {
       "name": "co2-skills",
       "source": "./",
       "description": "Compound Context Skills — generates data models, HTML mockups, technical specifications, test specifications, and orchestrates full-stack development from Agile user stories.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "Rashidee M.Rashid"
       },

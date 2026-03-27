@@ -235,7 +235,23 @@ PRD.md and BUG.md files are located inside the application folder. The exact pat
 
 Follow the folder structure defined in CLAUDE.md's `# Folder structure` section to determine the correct path.
 
-### 7. Output Summary
+### 7. Resolve Latest Version
+
+Scan all PRD.md and BUG.md files across all custom application folders and extract every version tag matching the pattern `[v{major}.{minor}.{patch}]`. Compare all found versions using semantic versioning rules and determine the highest version.
+
+Write (or overwrite) a file named `VERSION` in the project root directory with the highest version number as raw content — no brackets, no prefix, no trailing newline beyond the version string.
+
+**Example:** If the highest version found across all files is `[v1.2.3]`, the VERSION file content is:
+```
+1.2.3
+```
+
+**Rules:**
+- If no version tags are found in any file, write `0.0.0` as the default
+- Compare versions using semantic versioning: major takes precedence, then minor, then patch (e.g., `v2.0.0` > `v1.9.9`, `v1.2.0` > `v1.1.5`)
+- Only consider version tags in the format `[v{major}.{minor}.{patch}]` — ignore other bracketed content like tag codes (`[USHM00003]`)
+
+### 8. Output Summary
 
 Print a summary of all actions taken, validation results, and warnings:
 
@@ -280,6 +296,10 @@ Print a summary of all actions taken, validation results, and warnings:
 |-------------|--------|---------------|----------|
 | hub_middleware | Updated | Payment, Billing | - |
 | hc_adapter | Created | (all modules) | - |
+
+### VERSION
+- Latest version: 1.2.3 (written to VERSION file)
+- Sources: hub_middleware/PRD.md [v1.2.3], hc_adapter/BUG.md [v1.1.0], ...
 
 ### Warnings
 - [hub_middleware/PRD.md] Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md — manual review recommended
