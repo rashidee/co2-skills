@@ -149,6 +149,12 @@ Verify that the set of environments referenced across all applications' deployme
 - Flag any application using an environment not defined in `# Environment`
 - Flag if any environment defined in `# Environment` is not used by any application
 
+**Check 8: No Orphaned Services or 3rd Party Applications**
+
+For each application in `# Supporting 3rd Party Applications` and each service in `## External Services`, check whether at least one custom application (from `# Custom Applications`) lists it in its `- Depends on:` section. Match by name, case-insensitively, stripping parenthetical qualifiers.
+
+Flag any 3rd party application or external service that is **not depended on by any custom application**. These are orphaned — they are defined in CLAUDE.md but no custom application uses them, which may indicate a missing dependency declaration or a service that is no longer needed.
+
 #### 2c. Insert TODO Annotations into CLAUDE.md
 
 For each validation issue found, insert a `[TODO]` annotation line **immediately above** the `## <Application Name>` heading of the affected application in CLAUDE.md.
@@ -173,6 +179,7 @@ For each validation issue found, insert a `[TODO]` annotation line **immediately
 | Unknown Environment | `UNKNOWN_ENV` |
 | Build/Deploy Inconsistency | `BUILD_DEPLOY_MISMATCH` |
 | Unused Environment | `UNUSED_ENV` |
+| Orphaned Service | `ORPHANED_SVC` |
 
 **Examples:**
 ```markdown
@@ -183,6 +190,7 @@ For each validation issue found, insert a `[TODO]` annotation line **immediately
 - [TODO] MISSING_DEPLOY: No Deployment Strategy defined
 - [TODO] MISSING_ENV: Missing deployment strategy for environment "abc_cloud"
 - [TODO] BUILD_DEPLOY_MISMATCH: Build strategy produces Docker image but deployment for "home_server" does not reference container-based deployment
+- [TODO] ORPHANED_SVC: No custom application depends on this service
 ## Hub Middleware
 ```
 
@@ -376,6 +384,7 @@ Print a summary of all actions taken, validation results, and warnings:
 | Unknown Environments | PASS/FAIL | 0 or count |
 | Build/Deploy Consistency | PASS/FAIL | 0 or count |
 | Unused Environments | PASS/FAIL | 0 or count |
+| Orphaned Services | PASS/FAIL | 0 or count |
 
 ### Validation TODOs Inserted
 | Application | Section | Issues |
