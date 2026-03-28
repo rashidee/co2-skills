@@ -288,15 +288,26 @@ For each environment folder that does not yet contain a `SECRET.md`, create a ne
 
 #### 7e. SECRET.md Already Exists for an Environment
 
-1. **Read and parse** the existing `deployment/<environment>/SECRET.md` to extract all current credential/connection values (hosts, ports, usernames, passwords, paths, URLs, CLI paths, etc.) into a key-value map keyed by service name.
-2. **Generate** the new SECRET.md content using the SECRET.md Template, filling in known values from the parsed map and inserting `TODO` for any missing values.
-3. **Overwrite** the SECRET.md with the reorganized content.
+When a `deployment/<environment>/SECRET.md` already exists, treat it as **append-only** — never overwrite, reorder, or remove existing content. Only add what is missing.
 
-**Value preservation rules:**
-- If the existing SECRET.md has a value for a service (even under a different section name or heading), carry it forward into the matching section of the new structure.
-- Match services by technology name keywords (e.g., existing `## MongoDB` matches "Hub Core Database (MongoDB)", existing `## Keycloak` matches "Hub Single Sign On (Keycloak)", existing `## Message Queue` or `## RabbitMQ` matches the RabbitMQ-based message queues).
-- Never discard existing credential values — if unsure where a value belongs, place it under the most likely matching service.
-- If the existing SECRET.md has sections not matching any CLAUDE.md service (e.g., "Development Tools" like JDK, Maven), preserve them in the `# Development Tools` section of the new file.
+1. **Read and parse** the existing SECRET.md to identify:
+   - Which `# <top-level sections>` exist (e.g., `# External Services`, `# Supporting 3rd Party Applications`, `# Development Tools`, `# Application-to-Service Connection Map`)
+   - Which `## <service headings>` exist under each top-level section
+   - Which connection fields exist under each service heading
+2. **Compare** against the expected structure derived from CLAUDE.md:
+   - **Missing top-level section**: Append the entire section (with all its service subsections and `TODO` fields) at the end of the file, before the `# Application-to-Service Connection Map` section if it exists
+   - **Missing service heading** (`## <Service Name>`): Append the service subsection at the end of its parent top-level section, using the template structure with `TODO` placeholders for all connection fields
+   - **Missing connection field** under an existing service: Append the missing field line(s) at the end of that service's field list, with `TODO` as the value
+   - **Existing service heading or field**: Do **nothing** — leave the existing content exactly as-is, even if the value differs from what the template would generate
+3. **Update the Connection Map table** (`# Application-to-Service Connection Map`): If the table exists, add missing rows (new applications) or missing columns (new services). Do not modify existing cell values. If the table does not exist, append it at the end of the file.
+
+**Rules:**
+- **NEVER remove, modify, or reorder** existing sections, headings, fields, or values
+- **NEVER overwrite** a non-`TODO` value — even if CLAUDE.md suggests a different value, the existing SECRET.md value takes precedence (the user may have manually configured it)
+- **NEVER reorganize** the file structure — if the user has reordered sections or added custom sections, preserve that layout
+- Existing sections that do not match any CLAUDE.md service (e.g., custom user-added sections) are left untouched
+- Match services by exact heading text first; if no exact match, fall back to technology name keywords (e.g., existing `## MongoDB` matches "Hub Core Database (MongoDB)", existing `## Keycloak` matches "Hub Single Sign On (Keycloak)")
+- When appending missing fields to an existing service, maintain the same indentation and formatting style used by the existing fields in that section
 
 #### 7f. Deriving Connection Fields per Technology Type
 
@@ -625,8 +636,9 @@ Quick reference for which services each custom application needs to connect to:
 - Do not insert duplicate `[TODO]` annotations. If re-running the skill, check for existing `[TODO]` lines above each application heading and skip if the same issue is already annotated.
 - When matching dependency names, strip parenthetical qualifiers (e.g., `Hub Support Database (urp_hub_kc)` matches `Hub Support Database`).
 - Validation is advisory — it does not block folder creation or PRD.md/BUG.md syncing. All steps run regardless of validation results.
-- **Each environment's SECRET.md is fully overwritten** during sync (unlike PRD.md/BUG.md which are append-only). Existing credential values are preserved by parsing them before rewriting.
-- **Never invent or fabricate credentials.** Only carry forward values found in existing SECRET.md files. Use `TODO` for all unknown values.
+- **Each environment's SECRET.md is append-only** during sync (same as PRD.md/BUG.md). Existing sections, headings, fields, and values are never removed, modified, or reordered. Only missing sections, services, and fields are added.
+- **NEVER overwrite a non-`TODO` value** in SECRET.md — the user may have manually configured it. Existing values always take precedence.
+- **Never invent or fabricate credentials.** Use `TODO` for all new/unknown values.
 - **`local_dev` is always included** as a deployment environment folder, even if it is not listed in CLAUDE.md's `# Environment` section. It represents the developer's local machine.
 - **The `deployment/` folder** is created at the project root. Each environment gets its own subfolder with its own SECRET.md — there is no root-level SECRET.md for new projects.
 - **Development Tools section** is only included in the `local_dev` environment's SECRET.md.
