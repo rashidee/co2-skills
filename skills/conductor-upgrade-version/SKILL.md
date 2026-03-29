@@ -82,7 +82,7 @@ following promise tag to signal the Ralph Loop that the version upgrade is done:
 
 **CRITICAL**: Only output this promise when:
 - Phase A: ALL bugs in BUG_MASTER.md have a terminal status (`FIXED`, `CANNOT_REPRODUCE`, or `HIGH_IMPACT`)
-- Phase B: ALL modules in IMPLEMENTATION_MASTER.md have status `COMPLETED` (including README generation)
+- Phase B: ALL modules in IMPLEMENTATION_MASTER.md have status `COMPLETED` (including deployment artifacts and README generation)
 
 Do NOT output the promise prematurely. Do NOT output it to escape the loop.
 
@@ -302,7 +302,7 @@ This phase delegates entirely to `conductor-feature-develop`. The delegation wor
 
 3. **Monitor completion**: After conductor-feature-develop returns or the iteration ends:
    - Check `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md`
-   - If ALL modules have status `COMPLETED` (and README is generated):
+   - If ALL modules have status `COMPLETED` (and deployment artifacts + README are generated):
      - Update UPGRADE_MASTER.md: Phase B = `COMPLETED`, record completion date
      - Log the completion event
      - Proceed to Phase 4
