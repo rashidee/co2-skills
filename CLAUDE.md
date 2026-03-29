@@ -16,6 +16,7 @@
     - Test Specifications
     - Development Plan
   - Finally, the AI coding agent will develop the application based on all the context generated above.
+  - After development, the AI coding agent will generate deployment artifacts (Dockerfile and deployment specification) for the application.
   - The workflow also covers bug fixing phase where:
     - User will report the bug with as much detail as possible.
     - AI coding agent will analyze the bug report and generate the bug fixing plan.
@@ -63,6 +64,7 @@
     - specgen-spring-jpa-jtehtmx: Generates Spring Boot 3 web application technical specification with JTE, Tailwind and htmx. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-spring-jpa-restapi: Generates Spring Boot 3 REST API technical specification. (Prerequisite: PRD.md, modelgen-*)
     - testgen-functional: Generates Playwright E2E test plan and per-module test specifications as Markdown blueprints. (Prerequisite: PRD.md, modelgen-*, specgen-*, mockgen-tailwind)
+    - depgen-ansible-k8s: Generates Dockerfile and DEPLOYMENT.md specification for deploying applications using Ansible and Kubernetes. Supports Spring Boot, Laravel, and Node.js stacks. (Prerequisite: SPECIFICATION.md, CLAUDE.md)
     - conductor-feature-prepare: Orchestrates the full artifact preparation pipeline — runs util-ustagger, modelgen-*, mockgen-tailwind, specgen-* and testgen-functional in sequence. (Prerequisite: PRD.md, CLAUDE.md)
     - conductor-feature-develop: Orchestrates full-stack application development module-by-module using all generated artifacts. (Prerequisite: conductor-feature-prepare output — model/, mockup/, specification/, test/)
     - conductor-defect: Orchestrates bug fixing from BUG.md — reproduces, fixes and verifies bugs and updates affected artifacts. (Prerequisite: BUG.md, conductor-feature-prepare output)

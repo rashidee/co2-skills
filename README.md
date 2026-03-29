@@ -267,6 +267,40 @@ Example skill invocation for application development:
     - Implementation log with timestamped entries
   - **Playwright E2E test suite** — functional and visual consistency tests per module
 
+### Deployment Artifacts
+
+_The skill goal is to generate deployment artifacts (Dockerfile and deployment specification) for the application, for you to **review** before deploying._
+
+>⚠️ This step is automatically invoked by `conductor-feature-develop` after all modules are completed. You can also invoke it manually.
+
+Example skill invocation for deployment artifact generation:
+~~~bash
+/depgen-ansible-k8s <app_name> ## For generating Dockerfile and DEPLOYMENT.md with Ansible + Kubernetes deployment specification
+~~~
+
+- Input:
+  - SPECIFICATION.md (to understand the technology stack and configuration)
+  - CLAUDE.md (to understand dependencies and 3rd party applications)
+  - Application source code (to detect stack via pom.xml, composer.json, or package.json)
+- Output:
+  - **Dockerfile** — Production-ready, multi-stage Docker build file at the application root
+  - **DEPLOYMENT.md** — Comprehensive deployment specification containing:
+    - Kubernetes manifests (Deployment, Service, ConfigMap, Secret, Ingress)
+    - Ansible playbook specifications for automated deployment
+    - Environment variable mapping from `.env` to Kubernetes ConfigMap/Secret
+    - Health check and readiness probe configuration
+
+Example of the deployment artifact output:
+~~~markdown
+- <application_folder>
+  - Dockerfile
+  - DEPLOYMENT.md
+~~~
+
+| Skill | Technology Stack |
+|-------|-----------------|
+| `depgen-ansible-k8s` | Ansible + Kubernetes (Spring Boot, Laravel, Node.js) |
+
 # Bug Fixing Workflow
 
 ## Bug Reporting
@@ -409,6 +443,24 @@ We are looking for contributors to create new `specgen-*` skills for other techn
 - **Full-stack**: T3 Stack, RedwoodJS, Adonis.js, Meteor
 
 Each `specgen-*` skill takes the same inputs (PRD.md, data models, HTML mockups) and produces a `SPECIFICATION.md` summary and per-module `SPEC.md` files tailored to the target stack. If you are experienced in a technology stack not listed above, your contribution would help the community generate specifications for that stack.
+
+## Deployment Generator Skills (`depgen-*`)
+
+We currently support:
+
+| Skill | Deployment Stack |
+|-------|-----------------|
+| `depgen-ansible-k8s` | Ansible + Kubernetes (Spring Boot, Laravel, Node.js) |
+
+We are looking for contributors to create new `depgen-*` skills for other deployment strategies, such as:
+
+- **Container Orchestration**: Docker Compose, Docker Swarm, Nomad
+- **Cloud-native**: AWS ECS/Fargate, Google Cloud Run, Azure Container Apps
+- **Platform-as-a-Service**: Heroku, Railway, Fly.io, Render
+- **Serverless**: AWS Lambda + API Gateway, Vercel, Netlify
+- **Infrastructure-as-Code**: Terraform, Pulumi, CDK
+
+Each `depgen-*` skill takes the same inputs (SPECIFICATION.md, CLAUDE.md, application source code) and produces a `Dockerfile` and a deployment specification document tailored to the target deployment strategy.
 
 ## Other Contribution Areas
 
