@@ -853,6 +853,38 @@ collection names, module names, and user stories from the context files. Generic
 placeholder names (`fieldOne`, `module1`, etc.) are only acceptable in the shared
 infrastructure sections (layouts, components, error handling) — never in modules.
 
+**Alpine.js v3 requires `'unsafe-eval'` in CSP `script-src`.** Alpine.js v3 uses
+`new Function()` for expression evaluation. The CspNonceFilter MUST include
+`'unsafe-eval'` in the `script-src` directive alongside the nonce. Without this,
+Alpine.js expressions will be silently blocked and all `x-data`, `x-show`, `@click`
+etc. will fail. The CSP `font-src` must also include `data:` for bundled font data
+URIs.
+
+**Tailwind CSS v4 requires an explicit `@source` directive to scan JTE templates.**
+In `app.css`, add `@source "../../../jte";` after the `@import "tailwindcss";` line.
+Without this, Tailwind v4's automatic content detection only scans the frontend
+`src/` directory and misses all utility classes used in JTE template files, resulting
+in a minimal CSS output missing most styling.
+
+**Do NOT generate UI elements without backend support.** Every interactive UI element
+in the spec (buttons, dropdowns, toggles) must be backed by a requirement in PRD.md
+or a functional backend endpoint. Specifically: do NOT include a locale/language
+switcher unless PRD.md has i18n requirements. Do NOT include features "for future use"
+— they will be non-functional and confuse users.
+
+**HTMX navigation in sidebar and header fragments MUST use direct module URLs**, NOT
+`/api/content/...` prefixed paths. The pattern is: `hx-get="${item.getHref()}"` with
+`hx-select="#content-area"` and `hx-target="#content-area"` to extract the content area
+from the full page response. Never use `/api/content/` as a URL prefix — this pattern
+creates a dependency on a non-existent content API and causes navigation failures.
+
+**Sidebar navigation must be filtered by the current user's roles.** The LayoutService
+(or equivalent) that builds `NavItem` lists MUST check the authenticated user's roles
+and only include menu items that the user is authorized to access. The role-to-menu
+mapping is derived from the mockup sidebar files (each role folder defines which menu
+items that role sees). Never show all menu items to all users — this exposes
+unauthorized functionality in the UI.
+
 ### Conditional Constraints
 
 **If Auth = Keycloak:**

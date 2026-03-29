@@ -82,6 +82,7 @@ public class SecurityConfig {
 
     private final CspNonceFilter cspNonceFilter;
     private final KeycloakGrantedAuthoritiesMapper keycloakGrantedAuthoritiesMapper;
+    private final LoginRedirectEntryPoint loginRedirectEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -94,11 +95,13 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userAuthoritiesMapper(keycloakGrantedAuthoritiesMapper)
                 )
-                .defaultSuccessUrl("/", true)
+                .defaultSuccessUrl("/home", true)
             )
-            .logout(logout -> logout
-                .logoutSuccessUrl("/")
-                .logoutUrl("/logout")
+            // Disable Spring's built-in logout to prevent LogoutFilter from intercepting
+            // before our custom LogoutController can handle Keycloak end_session
+            .logout(logout -> logout.disable())
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(loginRedirectEntryPoint)
             )
             .addFilterBefore(cspNonceFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -361,8 +364,15 @@ public class CspNonceFilter extends OncePerRequestFilter {
         String nonce = Base64.getUrlEncoder().withoutPadding().encodeToString(nonceBytes);
 
         request.setAttribute("cspNonce", nonce);
+        // 'unsafe-eval' required for Alpine.js v3 expression evaluation (new Function())
+        // 'data:' in font-src required for Vite-bundled font data URIs
         response.setHeader("Content-Security-Policy",
-            "default-src 'self'; script-src 'self' 'nonce-" + nonce + "'; style-src 'self' 'unsafe-inline';");
+            "default-src 'self'; " +
+            "script-src 'self' 'nonce-" + nonce + "' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "font-src 'self' data:; " +
+            "img-src 'self' data:; " +
+            "connect-src 'self';");
 
         filterChain.doFilter(request, response);
     }
@@ -394,6 +404,123 @@ public interface AuthAware {
             );
         }
         return UserProfile.anonymous();
+    }
+}
+```
+
+---
+
+## LoginRedirectEntryPoint
+
+Custom `AuthenticationEntryPoint` that redirects to the login page when authentication
+fails (e.g., session expired, no valid session). For HTMX requests, it returns an
+`HX-Redirect` header instead of a 302 redirect so that htmx can handle the full page
+navigation.
+
+This prevents the application from showing a raw 401 error page when the user's session
+expires while they are idle.
+
+```java
+package {{BASE_PACKAGE}}.shared.security;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+@Component
+public class LoginRedirectEntryPoint implements AuthenticationEntryPoint {
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException, ServletException {
+        if ("true".equals(request.getHeader("HX-Request"))) {
+            // HTMX request — send HX-Redirect header so htmx triggers full page navigation
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setHeader("HX-Redirect", "/login");
+        } else {
+            // Regular browser request — standard redirect
+            response.sendRedirect("/login");
+        }
+    }
+}
+```
+
+Wire this into SecurityConfig via:
+```java
+.exceptionHandling(ex -> ex
+    .authenticationEntryPoint(loginRedirectEntryPoint)
+)
+```
+
+---
+
+## LogoutController
+
+Custom logout controller that handles Keycloak end-session. Spring Security's built-in
+`LogoutFilter` must be disabled (`.logout(logout -> logout.disable())`) because it
+intercepts GET `/logout` before the custom controller when CSRF is disabled.
+
+The controller:
+1. Reads the OIDC ID token from the authenticated session
+2. Builds the Keycloak `end_session_endpoint` URL with `id_token_hint` and
+   `post_logout_redirect_uri`
+3. Invalidates the HTTP session
+4. Redirects to Keycloak's end_session_endpoint to destroy the SSO session
+
+**Prerequisite:** The Keycloak client must have `post_logout_redirect_uris` configured
+(e.g., `http://localhost:8080/*`) via the Keycloak admin console or admin API.
+
+```java
+package {{BASE_PACKAGE}}.config;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.util.UriComponentsBuilder;
+
+@Controller
+@RequiredArgsConstructor
+public class LogoutController {
+
+    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri}")
+    private String issuerUri;
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String idToken = null;
+
+        if (auth != null && auth.getPrincipal() instanceof OidcUser oidcUser) {
+            idToken = oidcUser.getIdToken().getTokenValue();
+        }
+
+        // Invalidate the HTTP session
+        request.getSession().invalidate();
+        SecurityContextHolder.clearContext();
+
+        // Build Keycloak end_session_endpoint URL
+        String endSessionUrl = UriComponentsBuilder
+            .fromUriString(issuerUri + "/protocol/openid-connect/logout")
+            .queryParam("post_logout_redirect_uri", getBaseUrl(request))
+            .queryParamIfPresent("id_token_hint",
+                idToken != null ? java.util.Optional.of(idToken) : java.util.Optional.empty())
+            .toUriString();
+
+        return "redirect:" + endSessionUrl;
+    }
+
+    private String getBaseUrl(HttpServletRequest request) {
+        return request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
     }
 }
 ```
