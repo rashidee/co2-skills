@@ -26,6 +26,7 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 |---------|---------|
 | `# Custom Applications` | List of custom applications to create folders for and validate |
 | `# Supporting 3rd Party Applications` | List of 3rd party applications referenced as dependencies |
+| `## External Services` | External services (SMTP, Push Notifications, AI, WAF, etc.) referenced as dependencies |
 | `# Modules` | Module definitions grouped under `## System Module` and `## Business Module` |
 
 ### Application Detection
@@ -39,6 +40,13 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 1. Read the `# Supporting 3rd Party Applications` section in CLAUDE.md
 2. Each 3rd party application is listed as a `## <Application Name>` heading under the section
 3. If the section contains `**No Supporting 3rd Party Applications**` or similar "none" indicator, treat as having zero 3rd party applications
+
+### External Services Detection
+
+1. Read the `## External Services` sub-section in CLAUDE.md (typically located under `# Supporting 3rd Party Applications` or as a standalone section)
+2. Each external service is listed as a `## <Service Name>` heading under the section
+3. Extract the service name from each heading
+4. If the section does not exist or contains no services, treat as having zero external services
 
 ### Module Detection
 
@@ -54,13 +62,14 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 Read CLAUDE.md from the project root and extract:
 - **Custom Application list**: names and their full content (description, dependencies) from `## <Name>` headings under `# Custom Applications`
 - **3rd Party Application list**: names and their full content from `## <Name>` headings under `# Supporting 3rd Party Applications`
-- **All Application names**: combined list of both custom and 3rd party application names (used as the valid dependency pool)
+- **External Services list**: names from `## <Name>` headings under `## External Services`
+- **All dependency target names**: combined list of custom application names, 3rd party application names, and external service names (used as the valid dependency pool)
 - **System Modules**: names from `### <Name>` headings under `## System Module`
 - **Business Modules**: names from `### <Name>` headings under `## Business Module`
 
 ### 2. Validate Dependencies
 
-Run all validation checks across **both** `# Custom Applications` and `# Supporting 3rd Party Applications`. Collect all issues found. After all checks are complete, insert `[TODO]` annotations into CLAUDE.md for each issue.
+Run all validation checks across `# Custom Applications`, `# Supporting 3rd Party Applications`, and `## External Services`. Collect all issues found. After all checks are complete, insert `[TODO]` annotations into CLAUDE.md for each issue.
 
 #### 2a. Dependency Validation
 
@@ -79,14 +88,14 @@ For each cycle found, record the full cycle path (e.g., `Hub Middleware -> HC Ad
 
 **Check 2: All Dependencies Exist**
 
-For each dependency listed, verify that a matching application exists in either `# Custom Applications` or `# Supporting 3rd Party Applications`. Match by name, case-insensitively. The dependency name may include a database name qualifier in parentheses (e.g., `Hub Support Database (urp_hub_kc)`) — match against the application name only (e.g., `Hub Support Database`).
+For each dependency listed, verify that a matching entry exists in `# Custom Applications`, `# Supporting 3rd Party Applications`, or `## External Services`. Match by name, case-insensitively. The dependency name may include a database name qualifier in parentheses (e.g., `Hub Support Database (urp_hub_kc)`) — match against the application/service name only (e.g., `Hub Support Database`).
 
 **Check 3: Dependencies Are Logical and Consistent**
 
 Check for logical issues:
 - **Duplicate dependencies**: The same dependency listed more than once under the same application (e.g., `Hub Cache` listed twice under Hub Middleware)
 - **Self-dependency**: An application listing itself as a dependency
-- **Dependency on application in wrong tier**: A 3rd party application depending on a custom application (3rd party should not depend on custom apps; custom apps depend on 3rd party or other custom apps)
+- **Dependency on application in wrong tier**: A 3rd party application or external service depending on a custom application (3rd party and external services should not depend on custom apps; custom apps depend on 3rd party, external services, or other custom apps)
 
 **Check 4: No Orphaned Services or 3rd Party Applications**
 
@@ -117,7 +126,7 @@ For each validation issue found, insert a `[TODO]` annotation line **immediately
 **Examples:**
 ```markdown
 - [TODO] CIRCULAR_DEP: Circular dependency detected: Hub Middleware -> HC Adapter Message Queue -> Hub Single Sign On -> Hub Middleware
-- [TODO] MISSING_DEP: Dependency "Hub Analytics" does not exist in Supporting 3rd Party Applications or Custom Applications
+- [TODO] MISSING_DEP: Dependency "Hub Analytics" does not exist in Custom Applications, Supporting 3rd Party Applications, or External Services
 - [TODO] DUP_DEP: Dependency "Hub Cache" is listed more than once
 - [TODO] ORPHANED_SVC: No custom application depends on this service
 ## Hub Middleware
@@ -391,7 +400,7 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 - Application folder names must use `snake_case`.
 - Folders are only created for `# Custom Applications`, not for `# Supporting 3rd Party Applications`.
 - PRD.md and BUG.md are only created/synced for `# Custom Applications`.
-- Dependency validation covers **both** `# Custom Applications` and `# Supporting 3rd Party Applications`.
+- Dependency validation covers `# Custom Applications`, `# Supporting 3rd Party Applications`, and `## External Services`.
 - When matching existing folders, account for numeric prefixes (e.g., `1_hub_middleware` matches application "Hub Middleware").
 - When adding modules to existing files, maintain the correct order: system modules under `# System Module`, business modules under `# Business Module`.
 - Always include separator lines (`---`) between module sections.
