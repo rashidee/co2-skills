@@ -200,7 +200,16 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 | `testgen-*` | Cypress, Selenium, JUnit 5 + Mockito |
 | `depgen-*` | Docker Compose, Terraform, AWS ECS/Fargate, Google Cloud Run, Serverless |
 
-### 3. Bug Fix
+### 3. Version Gate & Changelog Append Protocol
+
+All new skills that accept a `version` argument **MUST** include two protocol sections:
+
+1. **Version Gate** (`## Version Gate`) — placed before `## Input Resolution` or `## Workflow`. Reads `CHANGELOG.md` from the project root, determines the highest recorded version, and rejects execution if the requested version is lower.
+2. **Changelog Append** (`## Changelog Append`) — placed before `## Important Rules` or `## Output Format`. After successful completion, appends a row to the matching version section in `CHANGELOG.md` (or creates a new section if it doesn't exist).
+
+See any existing skill (e.g., `specgen-spring-jpa-jtehtmx/SKILL.md`) for the exact protocol text to copy.
+
+### 4. Bug Fix
 
 Corrections to existing skill logic — wrong output structure, incorrect version assumptions, broken input resolution, or instructions that produce inconsistent agent behaviour.
 

@@ -29,6 +29,16 @@ Trigger this skill when the user asks to:
 - Upgrade the model to a new version
 - Detect and fix outdated/invalid model elements
 
+## Version Gate
+
+Before starting any work, check `CHANGELOG.md` in the project root:
+
+1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
+2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+3. Compare the requested version against the highest version:
+   - If requested version **>=** highest version: proceed normally.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+
 ## Input Resolution
 
 The skill requires mandatory `<application>` and `<version>` arguments, with an optional `module:` argument.
@@ -367,6 +377,26 @@ Run the completeness and quality checklists from the methodology reference (Sect
 as a self-review. Fix any issues found before presenting the output.
 
 ---
+
+## Changelog Append
+
+After all model files are successfully generated, append an entry to `CHANGELOG.md` in the project root:
+
+1. Read `CHANGELOG.md` from the project root. If it does not exist, create it with:
+   ```markdown
+   # Changelog
+
+   - This file tracks all skill executions by version across all applications.
+   - The highest version recorded here is the current project version.
+   - Skills MUST NOT execute for a version lower than the highest version in this file.
+
+   ---
+   ```
+2. Search for a `## {version}` heading matching the current version.
+3. If the section **exists**: append a new row to its table.
+4. If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+5. Row format: `| {YYYY-MM-DD} | {application_name} | modelgen-relational | {module or "All"} | Generated relational module models |`
+6. **Never modify or delete existing rows.**
 
 ## Output Specification
 

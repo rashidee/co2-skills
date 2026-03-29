@@ -287,6 +287,17 @@ Example after tagging:
 - [BUG-001] Table formatting in document management is not consistent...
 ```
 
+## Version Gate
+
+Before starting any work, check `CHANGELOG.md` in the project root:
+
+1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
+2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+3. Compare the requested version against the highest version:
+   - If requested version **>=** highest version: proceed normally.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+4. If no version argument was provided (version filter = "All"), skip this check.
+
 ## Workflow
 
 ### Phase 0: Resume Check (Runs Every Ralph Loop Iteration)
@@ -612,7 +623,14 @@ After all bugs have been processed (every bug has a terminal status):
 1. Update BUG_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Update all Summary table counts
-2. Output the Ralph Loop completion promise: `<promise>ALL BUGS RESOLVED</promise>`
+2. Append an entry to `CHANGELOG.md` in the project root:
+   - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
+   - Search for a `## {version}` heading matching the current version (use the version filter; if "All", use the highest version found in BUG.md).
+   - If the section **exists**: append a new row to its table.
+   - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+   - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-defect | {module or "All"} | Fixed {count} bugs ({list of BUG codes}) |`
+   - **Never modify or delete existing rows.**
+3. Output the Ralph Loop completion promise: `<promise>ALL BUGS RESOLVED</promise>`
 
 ## Critical Rules
 

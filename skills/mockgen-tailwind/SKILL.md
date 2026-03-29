@@ -84,6 +84,16 @@ The application name is matched against root-level application folders:
 - `module:location_information` (snake_case — convert to title-case for matching)
 - Natural language: `for Location Information module`, `only Location Information`
 
+## Version Gate
+
+Before starting any work, check `CHANGELOG.md` in the project root:
+
+1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
+2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+3. Compare the requested version against the highest version:
+   - If requested version **>=** highest version: proceed normally.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+
 ## Workflow
 
 ### Step 1: Parse PRD.md
@@ -692,6 +702,26 @@ Before finalizing output, perform a link integrity check across ALL generated fi
 
 If any `href="#"` is found in the final output (excluding anchor-only usage), the generation
 is **incomplete**.
+
+## Changelog Append
+
+After all mockup files are successfully generated, append an entry to `CHANGELOG.md` in the project root:
+
+1. Read `CHANGELOG.md` from the project root. If it does not exist, create it with:
+   ```markdown
+   # Changelog
+
+   - This file tracks all skill executions by version across all applications.
+   - The highest version recorded here is the current project version.
+   - Skills MUST NOT execute for a version lower than the highest version in this file.
+
+   ---
+   ```
+2. Search for a `## {version}` heading matching the current version.
+3. If the section **exists**: append a new row to its table.
+4. If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+5. Row format: `| {YYYY-MM-DD} | {application_name} | mockgen-tailwind | {module or "All"} | Generated HTML mockup screens |`
+6. **Never modify or delete existing rows.**
 
 ## Important Rules
 

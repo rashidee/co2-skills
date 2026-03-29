@@ -376,6 +376,7 @@ Example of the BUG_MASTER.md structure:
 - <project_folder>
   - CLAUDE.md
   - SECRET.md
+  - CHANGELOG.md (auto-generated — tracks skill executions by version, serves as version gate)
   - <application_1_folder>
     - context
       - model

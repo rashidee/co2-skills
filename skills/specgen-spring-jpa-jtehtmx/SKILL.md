@@ -129,6 +129,16 @@ The user invokes this skill by specifying the target application and version, fo
 
 The skill then locates the matching context folder and reads all input files automatically.
 
+## Version Gate
+
+Before starting any work, check `CHANGELOG.md` in the project root:
+
+1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
+2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+3. Compare the requested version against the highest version:
+   - If requested version **>=** highest version: proceed normally.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+
 ## Input Resolution
 
 This skill uses standardized input resolution. Provide:
@@ -823,6 +833,26 @@ the status accurately reflects what is done vs. what remains.
 
 See `references/spec-template.md` Section "Module SPEC.md Template" for the
 exact template structure.
+
+## Changelog Append
+
+After all specification files are successfully generated, append an entry to `CHANGELOG.md` in the project root:
+
+1. Read `CHANGELOG.md` from the project root. If it does not exist, create it with:
+   ```markdown
+   # Changelog
+
+   - This file tracks all skill executions by version across all applications.
+   - The highest version recorded here is the current project version.
+   - Skills MUST NOT execute for a version lower than the highest version in this file.
+
+   ---
+   ```
+2. Search for a `## {version}` heading matching the current version.
+3. If the section **exists**: append a new row to its table.
+4. If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+5. Row format: `| {YYYY-MM-DD} | {application_name} | specgen-spring-jpa-jtehtmx | {module or "All"} | Generated Spring Boot web application technical specification |`
+6. **Never modify or delete existing rows.**
 
 ## Output Format
 

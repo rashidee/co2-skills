@@ -225,6 +225,17 @@ Before starting implementation, verify that all required context artifacts exist
 If any artifacts are missing, **stop and inform the user** to run `/conductor-feature-prepare`
 first. Do NOT attempt to generate artifacts — that is the responsibility of the prepare skill.
 
+## Version Gate
+
+Before starting any work, check `CHANGELOG.md` in the project root:
+
+1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
+2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+3. Compare the requested version against the highest version:
+   - If requested version **>=** highest version: proceed normally.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+4. If no version argument was provided, skip this check.
+
 ## Workflow
 
 ### Phase 0: Resume Check (Runs Every Ralph Loop Iteration)
@@ -777,8 +788,15 @@ playbook specifications for automated deployment.
 1. Update IMPLEMENTATION_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Add a note: `README.md generated at <source-code-path>/README.md`
-2. Output the Ralph Loop completion promise: `<promise>ALL MODULES IMPLEMENTED</promise>`
-3. This signals the Ralph Loop to exit
+2. Append an entry to `CHANGELOG.md` in the project root:
+   - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
+   - Search for a `## {version}` heading matching the current version. If no version argument was provided, use `v1.0.0` as the default.
+   - If the section **exists**: append a new row to its table.
+   - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+   - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-feature-develop | {module or "All"} | Implemented all modules — application development complete |`
+   - **Never modify or delete existing rows.**
+3. Output the Ralph Loop completion promise: `<promise>ALL MODULES IMPLEMENTED</promise>`
+4. This signals the Ralph Loop to exit
 
 ## Mockup Interpretation Guide (CRITICAL)
 
