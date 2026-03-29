@@ -66,7 +66,7 @@ The spec must include these in the Maven configuration section (always):
 - Spring Web (starter-web)
 - Spring Modulith (core, events-api)
 - JTE Spring Boot Starter (`gg.jte:jte-spring-boot-starter-3`)
-- JTE precompiler
+- JTE precompiler (`gg.jte:jte-maven-plugin` with `precompile` goal at `process-classes` phase, output to `target/jte-classes`)
 - Lombok
 - Spring Boot DevTools
 - MapStruct (with annotation processor)
@@ -546,14 +546,16 @@ a table listing every module with a link to its `<module>/SPEC.md` file.
 #### 2. Maven Configuration
 Complete `pom.xml` structure with all dependencies (core + selected conditional),
 plugin configurations (MapStruct annotation processor, Spring Boot Maven plugin,
-frontend-maven-plugin for Vite build), and property management.
+frontend-maven-plugin for Vite build, `maven-clean-plugin` to delete on-demand
+`jte-classes/` folder, `jte-maven-plugin` with `precompile` goal at `process-classes`
+phase outputting to `${project.build.directory}/jte-classes`), and property management.
 
 #### 3. Application Configuration *(conditional content varies)*
 A single `application.yml` (no profile-specific files like `application-dev.yml` or
 `application-prod.yml`) covering database connection (MongoDB URI or JDBC datasource
 depending on selection), auth settings (Keycloak/OAuth2 if selected, or form login if
-selected), JTE configuration, scheduling config (if selected), theme defaults, and
-logging configuration. **All environment-sensitive values (ports, hostnames, credentials,
+selected), JTE configuration (with `JTE_DEV_MODE` and `JTE_PRECOMPILED` env vars),
+scheduling config (if selected), theme defaults, and logging configuration. **All environment-sensitive values (ports, hostnames, credentials,
 URIs) MUST use Spring's `${ENV_VAR:default}` syntax** to allow externalization via
 environment variables while keeping sensible defaults for local development. Do NOT use
 Spring profiles or profile-specific YAML files — environment differences are handled

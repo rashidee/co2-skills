@@ -172,7 +172,16 @@ Include:
     `<compilerArgs>` to set `-Aspring.modulith.metadata.output.directory=${project.basedir}/build/generated-spring-modulith`
     so Spring Modulith writes its metadata inside the module directory instead of the repo root
   - `frontend-maven-plugin` to run `npm ci && npm run build` in `frontend/` before `process-resources`
-  - `gg.jte:jte-maven-plugin` for template precompilation (optional, prod profile)
+  - `maven-clean-plugin` configured with a `<fileset>` to delete `${project.basedir}/jte-classes`
+    on `mvn clean` (this removes stale on-demand compiled JTE classes created at runtime in dev mode)
+  - `gg.jte:jte-maven-plugin` for template precompilation:
+    - Goal: `precompile` (generates AND compiles `.class` files, not just `.java` sources)
+    - Phase: `process-classes` (must run after `compile` so application classes are available)
+    - `<sourceDirectory>`: `${project.basedir}/src/main/jte`
+    - `<targetDirectory>`: `${project.build.directory}/jte-classes` (inside `target/` so `mvn clean` removes it)
+    - `<contentType>`: `Html`
+    - **CRITICAL**: Do NOT use `${project.basedir}/jte-classes` as targetDirectory — that path is
+      outside `target/` and `mvn clean` will not remove it, causing stale precompiled templates.
 
 Specify the `dependencyManagement` section for Spring Modulith BOM.
 
@@ -208,9 +217,16 @@ spring:
 
 gg:
   jte:
-    development-mode: false
-    template-suffix: .jte
-    template-location: src/main/jte
+    developmentMode: ${JTE_DEV_MODE:false}
+    usePrecompiledTemplates: ${JTE_PRECOMPILED:true}
+    templateSuffix: .jte
+    contentType: Html
+
+spring:
+  jte:
+    templateLocation: src/main/jte
+    templateSuffix: .jte
+    contentType: Html
 
 app:
   cors:
@@ -440,13 +456,34 @@ app:
 > block is shared — include it only once. The batch partition queues (`batch.partition.*`)
 > and messaging queues (`app.*`) use different exchanges and do not conflict.
 
-### application-dev.yml
-Override JTE to development mode (`gg.jte.development-mode: true`), set debug log levels,
-relaxed CSP for Vite dev server if needed.
+### .env File — JTE Configuration
 
-### application-prod.yml
-Externalize all sensitive config via environment variables (database URI/URL, auth
-provider settings), set conservative log levels, disable JTE development mode.
+The `.env` file for local development **MUST** include JTE environment variables:
+
+```properties
+# --- JTE ---
+JTE_DEV_MODE=true
+JTE_PRECOMPILED=false
+```
+
+- `JTE_DEV_MODE=true`: JTE compiles templates on-the-fly from `.jte` sources (hot-reload during development)
+- `JTE_PRECOMPILED=false`: Disables precompiled template lookup so changes to `.jte` files are reflected immediately
+
+**For production** (no `.env` file), the defaults in `application.yml` apply: `JTE_DEV_MODE=false`,
+`JTE_PRECOMPILED=true` — the Maven `precompile` goal generates the precompiled classes in `target/jte-classes`.
+
+**CRITICAL — Stale JTE cache warning:** When `JTE_DEV_MODE=true`, JTE creates on-demand compiled
+`.class` files in a `jte-classes/` directory at the project root. These cached classes can become
+stale after template edits. The `maven-clean-plugin` configuration (Section 2) ensures `mvn clean`
+deletes this folder. Developers should always run `mvn clean` before `spring-boot:run` if they
+suspect stale templates. The `jte-classes/` folder MUST be listed in `.gitignore`.
+
+### No Profile-Specific YAML Files
+
+Do NOT generate `application-dev.yml` or `application-prod.yml`. All environment differences
+are handled via environment variables with `${ENV_VAR:default}` syntax in `application.yml`.
+JTE mode, log levels, and all other settings are controlled by the `.env` file locally and
+system environment variables in production.
 
 ---
 
