@@ -6,8 +6,8 @@ description: >
   checks for orphaned services across all applications. Creates missing application folders,
   scaffolds new PRD.md and BUG.md files from templates, adds missing module sections to
   existing files, and generates a Mermaid.js system architecture diagram (ARCHITECTURE.mermaid)
-  showing dependency relationships between custom applications, 3rd party applications, and
-  external services. Inserts [TODO] annotations into CLAUDE.md for validation failures.
+  showing dependency relationships between custom applications and 3rd party applications.
+  Inserts [TODO] annotations into CLAUDE.md for validation failures.
   Trigger on keywords: "sync project", "project sync", "sync folders", "sync modules",
   "sync PRD", "sync BUG", "initialize project structure", "scaffold project",
   "create project folders", "sync application structure", "validate dependencies".
@@ -196,11 +196,11 @@ Follow the folder structure defined in CLAUDE.md's `# Folder structure` section 
 
 ### 7. Generate System Architecture Diagram
 
-Generate a Mermaid.js diagram showing the dependency relationships between all custom applications, 3rd party supporting applications, and external services. Write the diagram to `ARCHITECTURE.mermaid` in the project root.
+Generate a Mermaid.js diagram showing the dependency relationships between custom applications and 3rd party supporting applications. External services are **excluded** from the diagram. Write the output to `ARCHITECTURE.mermaid` in the project root.
 
 #### 7a. Build the Diagram
 
-Using the data already parsed in Step 1 (custom applications, 3rd party applications, external services, and all their `- Depends on:` lists), generate a Mermaid flowchart with the following structure:
+Using the data already parsed in Step 1 (custom applications, 3rd party applications, and all their `- Depends on:` lists), generate a Mermaid flowchart with the following structure:
 
 **Node types (use subgraphs to group by tier):**
 
@@ -208,27 +208,23 @@ Using the data already parsed in Step 1 (custom applications, 3rd party applicat
 |------|---------------|------------|-------|
 | Custom Applications | `Custom Applications` | Rectangle `[name]` | All entries from `# Custom Applications` |
 | Supporting 3rd Party Applications | `Supporting 3rd Party Applications` | Rounded rectangle `(name)` | All entries from `# Supporting 3rd Party Applications` |
-| External Services | `External Services` | Stadium `([name])` | All entries from `## External Services` |
 
 **Edges:**
-- For each application (custom or 3rd party) that has a `- Depends on:` list, draw an arrow from the application to each of its dependencies.
+- For each application (custom or 3rd party) that has a `- Depends on:` list, draw an arrow from the application to each dependency that is a **custom application or 3rd party application**.
+- **Skip** any dependency that resolves to an External Service (e.g., `Push Notification Service`, `AI Service`) — do not draw edges to external services and do not include external service nodes.
 - Strip parenthetical qualifiers from dependency names when creating edges (e.g., `Hub Support Database (urp_hub_kc)` → edge to `Hub Support Database`).
 - Strip "for"/"to"/"when" clauses — only use the dependency name for the edge target.
+- Include edges from custom apps to other custom apps (e.g., `Hub Support Portal` → `Hub Middleware`).
+- Include edges from 3rd party apps to other 3rd party apps (e.g., `Hub Single Sign On` → `Hub Support Database`).
 
 **Node IDs:**
-- Convert each application/service name to a camelCase or snake_case identifier for the Mermaid node ID (e.g., `Hub Middleware` → `hubMiddleware`, `SMTP Server` → `smtpServer`).
+- Convert each application name to a camelCase identifier for the Mermaid node ID (e.g., `Hub Middleware` → `hubMiddleware`, `SMTP Server` → `smtpServer`).
 - Use the full display name as the node label.
 
 #### 7b. Mermaid Template
 
 ```mermaid
 flowchart TD
-
-    subgraph ext["External Services"]
-        {{for each external service}}
-        nodeId([Service Name])
-        {{end}}
-    end
 
     subgraph thirdparty["Supporting 3rd Party Applications"]
         {{for each 3rd party application}}
@@ -242,9 +238,9 @@ flowchart TD
         {{end}}
     end
 
-    %% Dependencies
+    %% Dependencies (excluding External Services)
     {{for each application with dependencies}}
-    {{for each dependency}}
+    {{for each dependency that is a custom app or 3rd party app}}
     sourceNodeId --> targetNodeId
     {{end}}
     {{end}}
@@ -254,11 +250,6 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-
-    subgraph ext["External Services"]
-        pushNotification([Push Notification Service])
-        aiService([AI Service])
-    end
 
     subgraph thirdparty["Supporting 3rd Party Applications"]
         smtpServer(SMTP Server)
@@ -290,6 +281,13 @@ flowchart TD
         scTrainingCenterPortal[SC Training Center Portal]
     end
 
+    %% 3rd party to 3rd party
+    hubSSO --> hubSupportDb
+    hcAdapterMQ --> hubSSO
+    scApiGateway --> hubSSO
+    scAdapterMQ --> hubSSO
+
+    %% Custom to 3rd party
     hubMiddleware --> smtpServer
     hubMiddleware --> hubSSO
     hubMiddleware --> hubSearchEngine
@@ -307,13 +305,43 @@ flowchart TD
     hcAdapter --> hcDb
     hcAdapter --> hcAdapterMQ
 
-    scWorkerBackend --> pushNotification
+    hcSupportPortal --> smtpServer
+    hcSupportPortal --> hcDb
+    hcSupportPortal --> hcAdapter
+
+    hcEmployerPortal --> smtpServer
+    hcEmployerPortal --> hcDb
+    hcEmployerPortal --> hcAdapter
+
+    scAdapter --> scDb
+    scAdapter --> scAdapterMQ
+
+    scSupportPortal --> smtpServer
+    scSupportPortal --> scDb
+    scSupportPortal --> scAdapter
+
+    scWorkerMobile --> scApiGateway
+    scWorkerMobile --> scWorkerBackend
+
     scWorkerBackend --> smtpServer
-    scWorkerBackend --> aiService
     scWorkerBackend --> scDb
     scWorkerBackend --> scAdapter
 
-    %% ... (remaining edges follow the same pattern)
+    scEmbassyPortal --> smtpServer
+    scEmbassyPortal --> scDb
+    scEmbassyPortal --> scAdapter
+
+    scAgentPortal --> smtpServer
+    scAgentPortal --> scDb
+    scAgentPortal --> scAdapter
+
+    scMedicalCenterPortal --> smtpServer
+    scMedicalCenterPortal --> scDb
+    scMedicalCenterPortal --> scAdapter
+
+    scTrainingCenterPortal --> smtpServer
+    scTrainingCenterPortal --> scDb
+    scTrainingCenterPortal --> scAdapter
 ```
 
 #### 7d. Write the File
@@ -321,7 +349,9 @@ flowchart TD
 1. Generate the complete Mermaid diagram with **all** nodes and **all** edges — do not abbreviate or use `...` placeholders.
 2. Write the diagram to `ARCHITECTURE.mermaid` in the project root.
 3. If `ARCHITECTURE.mermaid` already exists, **overwrite it completely** — the diagram is always regenerated from the current state of CLAUDE.md.
-4. Also include 3rd-party-to-3rd-party dependencies (e.g., `Hub Single Sign On` → `Hub Support Database`, `HC Adapter Message Queue` → `Hub Single Sign On`).
+4. Include 3rd-party-to-3rd-party dependencies (e.g., `Hub Single Sign On` → `Hub Support Database`, `HC Adapter Message Queue` → `Hub Single Sign On`).
+5. Include custom-to-custom dependencies (e.g., `Hub Support Portal` → `Hub Middleware`).
+6. **Exclude** all External Services — no nodes, no edges to/from them.
 
 ### 8. Output Summary
 
@@ -365,7 +395,7 @@ Print a summary of all actions taken, validation results, and warnings:
 | hc_adapter | Created | (all modules) | - |
 
 ### Architecture Diagram
-- Generated ARCHITECTURE.mermaid with 13 custom apps, 11 third-party apps, 2 external services, 45 dependency edges
+- Generated ARCHITECTURE.mermaid with 13 custom apps, 11 third-party apps, 42 dependency edges (external services excluded)
 
 ### Warnings
 - [hub_middleware/PRD.md] Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md — manual review recommended
