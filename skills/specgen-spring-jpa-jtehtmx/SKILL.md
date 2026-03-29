@@ -352,8 +352,9 @@ Examine the "Depends on" list in CLAUDE.md for the target application:
 | References "HC Database" or "SC Database" (MySQL) | Database = MySQL |
 | No database dependency listed | Database = none |
 
-Also check `CLAUDE.md`'s database section for the exact database name, host, and
-credentials to use in the spec's application configuration.
+Also check `CLAUDE.md`'s database section for the exact database name, and read
+`LOCAL.md` (in the project root) for host, port, and credentials to use in the
+spec's application configuration.
 
 ### Authentication Detection
 
@@ -450,7 +451,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Authentication**: Auto-determined (see above)
 - **Scheduling**: Auto-determined (see above)
 - **Messaging**: Auto-determined (see above)
-- **Database name/credentials**: From CLAUDE.md Secret section
+- **Database name/credentials**: From LOCAL.md (root-level file with local environment credentials)
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
@@ -541,11 +542,58 @@ frontend-maven-plugin for Vite build), and property management.
 Full `application.yml` covering Spring profiles (`default`, `dev`, `prod`), database
 connection (MongoDB URI or JDBC datasource depending on selection), auth settings
 (Keycloak/OAuth2 if selected, or form login if selected), JTE configuration, scheduling
-config (if selected), theme defaults, and logging configuration. Use actual database
-names and credentials from CLAUDE.md as default values. **All environment-sensitive
+config (if selected), theme defaults, and logging configuration. **All environment-sensitive
 values (ports, hostnames, credentials, URIs) MUST use Spring's `${ENV_VAR:default}`
 syntax** to allow externalization via environment variables while keeping sensible
 defaults for local development.
+
+#### 3b. `.env` File Generation from LOCAL.md
+Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
+The `.env` file maps LOCAL.md credential and platform values to the environment variable
+names referenced in `application.yml`. The spec must define the complete `.env` content
+with actual values from LOCAL.md.
+
+**Process:**
+1. Read `LOCAL.md` from the project root
+2. Extract relevant values from `# Credential` section (database hosts, ports, usernames,
+   passwords) and `# Platform` section (JDK path, Maven path, Node.js path, etc.)
+3. Map each value to the corresponding `${ENV_VAR}` name used in `application.yml`
+4. Generate the `.env` file with `KEY=value` pairs
+
+**Example `.env` output (derived from LOCAL.md):**
+```properties
+# Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=hub_supp
+DB_USERNAME=root
+DB_PASSWORD=B3st1n3t@2025
+
+# Authentication (Keycloak)
+KEYCLOAK_HOST=http://localhost:8180
+KEYCLOAK_REALM=urp
+KEYCLOAK_CLIENT_ID=hub-middleware-web
+
+# Messaging (RabbitMQ)
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=guest
+
+# Server
+SERVER_PORT=8080
+
+# Platform
+JAVA_HOME=C:\Users\rashidee.rashid.BESTINET\.jdks\azul-21.0.9
+MAVEN_HOME=C:\Users\rashidee.rashid.BESTINET\apache-maven-3.9.12
+```
+
+**Rules:**
+- Only include variables that are actually referenced in `application.yml`
+- Use actual values from LOCAL.md — never use placeholders or `TODO`
+- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+  development (e.g., `localhost`, default ports)
+- The `.env` file is gitignored (already covered in `.gitignore`)
 
 #### 4. Build & Tooling
 Vite configuration, Tailwind CSS setup (using design tokens from MOCKUP.html), PostCSS

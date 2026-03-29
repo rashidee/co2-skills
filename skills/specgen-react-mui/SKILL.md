@@ -464,8 +464,39 @@ Complete `package.json` with all dependencies (core + selected conditional), npm
 
 #### 3. Application Configuration
 Vite `vite.config.ts` (with proxy for backend API), TypeScript `tsconfig.json`, ESLint
-config, `.env.development` and `.env.production` files. All environment-sensitive values
-use `VITE_` prefix.
+config. All environment-sensitive values use `VITE_` prefix in environment files.
+
+#### 3b. `.env.development` File Generation from LOCAL.md
+Generate `.env.development` and `.env.production` files at the project root.
+The `.env.development` file is populated by reading `LOCAL.md` from the project root,
+mapping credential and platform values to `VITE_`-prefixed environment variable names.
+The `.env.production` file uses placeholder values for production deployment.
+
+**Process:**
+1. Read `LOCAL.md` from the project root
+2. Extract relevant values from `# Credential` section (backend API host/port,
+   Keycloak host/realm/client) and `# Platform` section (Node.js path)
+3. Map each value to the corresponding `VITE_` environment variable name
+4. Generate `.env.development` with actual local values
+5. Generate `.env.production` with production placeholder values
+
+**Example `.env.development` output (derived from LOCAL.md):**
+```properties
+# Backend API
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+
+# Authentication (Keycloak)
+VITE_KEYCLOAK_URL=http://localhost:8180
+VITE_KEYCLOAK_REALM=urp
+VITE_KEYCLOAK_CLIENT_ID=sc-worker-mobile-spa
+```
+
+**Rules:**
+- Only include variables that are actually used in the application code via `import.meta.env`
+- Use actual values from LOCAL.md — never use placeholders or `TODO`
+- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+  development (e.g., `localhost`, default ports)
+- Both `.env.development` and `.env.production` are gitignored
 
 #### 4. Directory Structure
 The complete source tree under `src/`. The structure follows feature-based architecture

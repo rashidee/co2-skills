@@ -341,8 +341,9 @@ Examine the "Depends on" list in CLAUDE.md for the target application:
 | References "HC Database" or "SC Database" (MySQL) | Database = MySQL |
 | No database dependency listed | Database = none |
 
-Also check `CLAUDE.md`'s database section for the exact database name, host, and
-credentials to use in the spec's application configuration.
+Also check `CLAUDE.md`'s database section for the exact database name, and read
+`LOCAL.md` (in the project root) for host, port, and credentials to use in the
+spec's application configuration.
 
 ### Authentication Detection
 
@@ -435,7 +436,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Authentication**: Auto-determined (see above)
 - **Scheduling**: Auto-determined (see above)
 - **Messaging**: Auto-determined (see above)
-- **Database name/credentials**: From CLAUDE.md Secret section
+- **Database name/credentials**: From LOCAL.md (root-level file with local environment credentials)
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
@@ -522,14 +523,68 @@ Complete `composer.json` structure with all dependencies (core + selected condit
 Complete `package.json` with Vite, Tailwind CSS, Alpine.js, htmx, and build scripts.
 
 #### 3. Application Configuration *(conditional content varies)*
-Full `.env` and `config/` files covering database connection (MongoDB URI or SQL DSN
+Full `config/` files covering database connection (MongoDB URI or SQL DSN
 depending on selection), auth settings (Keycloak/OAuth2 if selected, or Breeze if selected),
-scheduling config (if selected), theme defaults, and logging configuration. Use actual
-database names and credentials from CLAUDE.md as default values. **All environment-sensitive
-values (ports, hostnames, credentials, URIs) MUST be externalized using Laravel's
-`env('VAR', 'default')` helper in config files**, with sensible defaults for local
-development. The `.env` file provides local defaults; production overrides via system
-environment variables or `.env.production`.
+scheduling config (if selected), theme defaults, and logging configuration. **All
+environment-sensitive values (ports, hostnames, credentials, URIs) MUST be externalized
+using Laravel's `env('VAR', 'default')` helper in config files**, with sensible defaults
+for local development. Production overrides via system environment variables or
+`.env.production`.
+
+#### 3b. `.env` File Generation from LOCAL.md
+Generate the `.env` file at the project root by reading `LOCAL.md` from the project root.
+The `.env` file maps LOCAL.md credential and platform values to the environment variable
+names referenced in `config/` files via `env()` calls. The spec must define the complete
+`.env` content with actual values from LOCAL.md.
+
+**Process:**
+1. Read `LOCAL.md` from the project root
+2. Extract relevant values from `# Credential` section (database hosts, ports, usernames,
+   passwords) and `# Platform` section (Node.js path, PHP path, etc.)
+3. Map each value to the corresponding `env('VAR')` name used in Laravel config files
+4. Generate the `.env` file with `KEY=value` pairs
+
+**Example `.env` output (derived from LOCAL.md):**
+```properties
+APP_NAME="HC Support Portal"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=hc_support_my
+DB_USERNAME=root
+DB_PASSWORD=B3st1n3t@2025
+
+# Authentication (Keycloak)
+KEYCLOAK_BASE_URL=http://localhost:8180
+KEYCLOAK_REALM=urp
+KEYCLOAK_CLIENT_ID=hc-support-portal-web
+KEYCLOAK_CLIENT_SECRET=
+
+# Mail (Mailcatcher)
+MAIL_MAILER=smtp
+MAIL_HOST=localhost
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+
+# Messaging (RabbitMQ)
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+```
+
+**Rules:**
+- Only include variables that are actually referenced in `config/` files via `env()` calls
+- Use actual values from LOCAL.md — never use placeholders or `TODO`
+- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+  development (e.g., `localhost`, default ports)
+- The `.env` file is gitignored (already covered in `.gitignore`)
 
 #### 4. Build & Tooling
 Vite configuration (`vite.config.js`), Tailwind CSS setup (using design tokens from
