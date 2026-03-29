@@ -227,6 +227,20 @@ The Dockerfile MUST:
 - **NOT** copy `.env`, `context/`, `e2e/`, or test files into the image
 - Include a `HEALTHCHECK` instruction if a health endpoint is available
 - Include comments explaining each significant instruction
+- Include a `LABEL version="{version}"` instruction using the application version extracted
+  from `pom.xml` (`<version>`), `composer.json` (`version`), or `package.json` (`version`)
+- Include a build argument `ARG APP_VERSION={version}` that can be overridden at build time
+  via `docker build --build-arg APP_VERSION=1.0.3`
+
+The DEPLOYMENT.md **Docker Build** section must document tagging the image with the
+application version:
+```bash
+docker build -t <image-name>:<version> .
+docker tag <image-name>:<version> <image-name>:latest
+```
+
+The Kubernetes Deployment manifest in DEPLOYMENT.md must reference the versioned image tag
+(e.g., `image: <image-name>:1.0.3`), NOT `latest`.
 
 Read `references/dockerfile-spring-boot.md`, `references/dockerfile-laravel.md`, or
 `references/dockerfile-nodejs.md` for the complete Dockerfile template per stack.

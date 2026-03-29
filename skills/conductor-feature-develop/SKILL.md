@@ -351,7 +351,16 @@ subdirectory. Instead:
 
 1. **Project structure**: Create the project skeleton directly in `<source-code-path>/`
 2. **Build & dependency configuration**: composer.json / pom.xml / build.gradle with all dependencies
-3. **Application configuration**: .env, config files, or application.yml as appropriate
+3. **Application version**: Set the application version in the project manifest using the
+   version argument provided during skill invocation. If multiple versions were provided,
+   use the highest one (semver comparison). If no version argument was provided, use `1.0.0`.
+   - **Spring Boot**: Set `<version>` in `pom.xml` (e.g., `<version>1.0.3</version>`) and
+     `APP_VERSION` in `.env`
+   - **Laravel**: Set `version` in `composer.json` and `APP_VERSION` in `.env`
+   - **React / Node.js**: Set `version` in `package.json` and `VITE_APP_VERSION` in
+     `.env.development` (or `APP_VERSION` in `.env` for Node.js backends)
+   - The version in the manifest MUST match the version in the environment variable
+4. **Application configuration**: .env, config files, or application.yml as appropriate
 4. **Security configuration**: Keycloak/OAuth2 or other auth provider setup
 5. **Shared layouts**: Blade / JTE / other template layout files (header, footer, sidebar)
 6. **Shared components**: UI components (Tailwind), JS structure, CSS

@@ -476,6 +476,18 @@ all runtime dependencies (core + selected conditional), all `devDependencies`, a
 Complete `tsconfig.json` targeting ESM. Complete `tsup.config.ts` with shebang injection,
 ESM format, and conditional sourcemap/minify for production. ESLint configuration.
 
+#### 3a. Application Version Configuration
+The `package.json` `version` field MUST be set to the version value derived from the
+version argument provided during skill invocation (e.g., `1.0.3`). If multiple versions
+were provided, use the highest one.
+
+Commander.js uses `package.json` version automatically for `--version` output. The CLI
+entry point (`src/cli.ts`) must call `.version(packageJson.version)` on the Commander
+program instance so that `<tool> --version` prints the correct version.
+
+The version MUST also be included in JSON output when `--json` flag is used (e.g.,
+`{"version": "1.0.3", "data": {...}}`).
+
 #### 3b. `.env` File Generation from LOCAL.md
 Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
 The `.env` file maps LOCAL.md credential and platform values to the environment variable

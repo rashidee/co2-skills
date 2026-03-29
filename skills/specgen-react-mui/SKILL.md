@@ -476,6 +476,22 @@ Complete `package.json` with all dependencies (core + selected conditional), npm
 Vite `vite.config.ts` (with proxy for backend API), TypeScript `tsconfig.json`, ESLint
 config. All environment-sensitive values use `VITE_` prefix in environment files.
 
+#### 3a. Application Version Configuration
+The application MUST include a version value exposed via Vite environment variable with a
+default derived from the version argument provided during skill invocation. If multiple
+versions were provided, use the highest one.
+
+In `.env.development` and `.env.production`:
+```properties
+VITE_APP_VERSION=1.0.3
+```
+
+The application MUST expose this version in the **footer** of the layout. The shared layout
+component (e.g., `src/components/Layout/Footer.tsx`) must read `import.meta.env.VITE_APP_VERSION`
+and render it as: `v{version}` (e.g., `v1.0.3`).
+
+The `package.json` `version` field MUST also be set to the version value (e.g., `1.0.3`).
+
 #### 3b. `.env.development` File Generation from LOCAL.md
 Generate `.env.development` and `.env.production` files at the project root.
 The `.env.development` file is populated by reading `LOCAL.md` from the project root,

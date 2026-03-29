@@ -560,6 +560,24 @@ Spring profiles or profile-specific YAML files — environment differences are h
 entirely through environment variables (e.g., via `.env` file locally or system
 environment variables in deployment).
 
+#### 3a. Application Version Configuration
+The `application.yml` MUST include an `app.version` property set via environment variable
+with a default derived from the version argument provided during skill invocation. If
+multiple versions were provided, use the highest one.
+
+```yaml
+app:
+  version: ${APP_VERSION:1.0.0}
+```
+
+The application MUST expose this version in the **footer** of every page. The shared footer
+layout (`footer.jte` or `footer.html`) must read `app.version` from a Spring `@Value`-injected
+bean or controller model attribute and render it as: `v{version}` (e.g., `v1.0.3`).
+
+The `.env` file must include `APP_VERSION={version}` with the actual version value.
+
+The `pom.xml` `<version>` element MUST also be set to the version value (e.g., `1.0.3`).
+
 #### 3b. `.env` File Generation from LOCAL.md
 Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
 The `.env` file maps LOCAL.md credential and platform values to the environment variable

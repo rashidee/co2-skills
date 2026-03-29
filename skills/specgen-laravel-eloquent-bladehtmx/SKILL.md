@@ -541,6 +541,24 @@ using Laravel's `env('VAR', 'default')` helper in config files**, with sensible 
 for local development. Production overrides via system environment variables or
 `.env.production`.
 
+#### 3a. Application Version Configuration
+The application configuration MUST include a version value set via environment variable
+with a default derived from the version argument provided during skill invocation. If
+multiple versions were provided, use the highest one.
+
+In `config/app.php`:
+```php
+'version' => env('APP_VERSION', '1.0.0'),
+```
+
+The application MUST expose this version in the **footer** of every page. The shared footer
+Blade partial (`resources/views/partials/footer.blade.php`) must render
+`config('app.version')` as: `v{version}` (e.g., `v1.0.3`).
+
+The `.env` file must include `APP_VERSION={version}` with the actual version value.
+
+The `composer.json` `version` field MUST also be set to the version value (e.g., `1.0.3`).
+
 #### 3b. `.env` File Generation from LOCAL.md
 Generate the `.env` file at the project root by reading `LOCAL.md` from the project root.
 The `.env` file maps LOCAL.md credential and platform values to the environment variable

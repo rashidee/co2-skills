@@ -460,6 +460,26 @@ profiles or profile-specific YAML files — environment differences are handled 
 through environment variables (e.g., via `.env` file locally or system environment
 variables in deployment).
 
+#### 3a. Application Version Configuration
+The `application.yml` MUST include an `app.version` property set via environment variable
+with a default derived from the version argument provided during skill invocation. If
+multiple versions were provided, use the highest one.
+
+```yaml
+app:
+  version: ${APP_VERSION:1.0.0}
+```
+
+The REST API MUST expose the application version in:
+1. **A health/info endpoint** (e.g., `GET /api/v1/info` or Spring Actuator `/actuator/info`)
+   returning `{"version": "1.0.3", ...}`.
+2. **Every API response envelope** — if the API uses a standard response wrapper, include
+   a `version` field (e.g., `{"version": "1.0.3", "data": {...}}`).
+
+The `.env` file must include `APP_VERSION={version}` with the actual version value.
+
+The `pom.xml` `<version>` element MUST also be set to the version value (e.g., `1.0.3`).
+
 #### 3b. `.env` File Generation from LOCAL.md
 Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
 The `.env` file maps LOCAL.md credential and platform values to the environment variable
