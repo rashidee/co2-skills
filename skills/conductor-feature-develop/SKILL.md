@@ -264,8 +264,22 @@ files to understand what has already been completed.
      - **Version increment check**: If a `version` argument was provided, check whether
        IMPLEMENTATION_MASTER.md already tracks that version (look for `**Version**: <version>`
        in the header). If the version is NOT tracked yet, this is a **version increment** —
-       update IMPLEMENTATION_MASTER.md to reset affected modules to PENDING status, add the new
-       version to the header, and then proceed to Phase 2 (Implementation) for the affected modules.
+       perform all of the following before proceeding:
+       1. Update IMPLEMENTATION_MASTER.md: reset affected modules to PENDING status, add the
+          new version to the header.
+       2. **Update the application version** in the project manifest and configuration:
+          - **Spring Boot**: Update `<version>` in `pom.xml` and `APP_VERSION` in `.env`
+          - **Laravel**: Update `version` in `composer.json` and `APP_VERSION` in `.env`
+          - **React / Node.js**: Update `version` in `package.json` and `VITE_APP_VERSION`
+            in `.env.development` (or `APP_VERSION` in `.env` for Node.js backends)
+          - **application.yml / config files**: If `app.version` has a hardcoded default in
+            `application.yml` (e.g., `${APP_VERSION:1.0.0}`), update the default to the new
+            version (e.g., `${APP_VERSION:1.0.4}`)
+          - **config/app.php** (Laravel): Update the default in `env('APP_VERSION', '1.0.0')`
+            to the new version
+          The version displayed in the application footer (or API info endpoint) MUST reflect
+          the new version after this update.
+       3. Proceed to Phase 3 (Implementation) for the affected modules.
      - **README check**: If the top-level `**Status**:` in IMPLEMENTATION_MASTER.md is NOT
        yet `COMPLETED`, proceed to Phase 5 (Generate Deployment Artifacts) — all modules are done but
        deployment artifacts and README haven't been generated and tracking hasn't been finalized yet.
