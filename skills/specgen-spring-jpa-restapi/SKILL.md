@@ -439,13 +439,16 @@ plugin configurations (MapStruct annotation processor, Spring Boot Maven plugin)
 and property management.
 
 #### 3. Application Configuration *(conditional content varies)*
-Full `application.yml` covering Spring profiles (`default`, `dev`, `prod`), database
-connection (MongoDB URI or JDBC datasource depending on selection), auth settings
-(Keycloak Resource Server JWT validation if selected, or self-issued JWT if selected),
-scheduling config (if selected), and logging configuration. **All environment-sensitive
-values (ports, hostnames, credentials, URIs) MUST use Spring's `${ENV_VAR:default}`
-syntax** to allow externalization via environment variables while keeping sensible
-defaults for local development.
+A single `application.yml` (no profile-specific files like `application-dev.yml` or
+`application-prod.yml`) covering database connection (MongoDB URI or JDBC datasource
+depending on selection), auth settings (Keycloak Resource Server JWT validation if
+selected, or self-issued JWT if selected), scheduling config (if selected), and logging
+configuration. **All environment-sensitive values (ports, hostnames, credentials, URIs)
+MUST use Spring's `${ENV_VAR:default}` syntax** to allow externalization via environment
+variables while keeping sensible defaults for local development. Do NOT use Spring
+profiles or profile-specific YAML files — environment differences are handled entirely
+through environment variables (e.g., via `.env` file locally or system environment
+variables in deployment).
 
 #### 3b. `.env` File Generation from LOCAL.md
 Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
@@ -739,7 +742,7 @@ separately.
 - Constructor injection everywhere (`@RequiredArgsConstructor` + `private final`)
 - `@Getter @Setter` instead of `@Data` on all entity/document classes
 - Java records for all DTOs
-- YAML configuration with Spring profiles
+- Single `application.yml` with environment variables for all environment-specific values (no profile-specific YAML files)
 - Custom exception hierarchy with global error handling via `@RestControllerAdvice`
 - Structured logging with correlation IDs
 - OpenAPI documentation via SpringDoc
