@@ -3,20 +3,18 @@ name: util-projectsync
 description: >
   Synchronize project folder structure, PRD.md, and BUG.md files based on the canonical application
   and module definitions in CLAUDE.md. Validates dependencies (circular, missing, logical) and
-  deployment environments (coverage, build/deploy consistency) across all applications. Creates
-  missing application folders, scaffolds new PRD.md and BUG.md files from templates, and adds
-  missing module sections to existing files. Inserts [TODO] annotations into CLAUDE.md for
-  validation failures.
+  checks for orphaned services across all applications. Creates missing application folders,
+  scaffolds new PRD.md and BUG.md files from templates, and adds missing module sections to
+  existing files. Inserts [TODO] annotations into CLAUDE.md for validation failures.
   Trigger on keywords: "sync project", "project sync", "sync folders", "sync modules",
   "sync PRD", "sync BUG", "initialize project structure", "scaffold project",
-  "create project folders", "sync application structure", "validate dependencies",
-  "validate deployment".
+  "create project folders", "sync application structure", "validate dependencies".
   Accepts no arguments — reads all configuration from CLAUDE.md.
 ---
 
 # Util Project Sync
 
-Synchronize project folder structure, PRD.md, and BUG.md files to match the canonical structure defined in CLAUDE.md. Validates dependencies and deployment environments before syncing.
+Synchronize project folder structure, PRD.md, and BUG.md files to match the canonical structure defined in CLAUDE.md. Validates dependencies before syncing.
 
 ## Input Resolution
 
@@ -28,7 +26,6 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 |---------|---------|
 | `# Custom Applications` | List of custom applications to create folders for and validate |
 | `# Supporting 3rd Party Applications` | List of 3rd party applications referenced as dependencies |
-| `# Environment` | Deployment environments defined for the project |
 | `# Modules` | Module definitions grouped under `## System Module` and `## Business Module` |
 
 ### Application Detection
@@ -43,13 +40,6 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 2. Each 3rd party application is listed as a `## <Application Name>` heading under the section
 3. If the section contains `**No Supporting 3rd Party Applications**` or similar "none" indicator, treat as having zero 3rd party applications
 
-### Environment Detection
-
-1. Read the `# Environment` section in CLAUDE.md
-2. Environments are listed as bullet items under the section (e.g., `- home_server:`, `- abc_cloud:`)
-3. Extract the environment identifier (the part before the colon) for each environment
-4. If the section does not exist or contains no environments, skip deployment validation and record a warning
-
 ### Module Detection
 
 1. Read the `# Modules` section in CLAUDE.md
@@ -62,14 +52,13 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 ### 1. Parse CLAUDE.md
 
 Read CLAUDE.md from the project root and extract:
-- **Custom Application list**: names and their full content (description, dependencies, build strategy, deployment strategy) from `## <Name>` headings under `# Custom Applications`
+- **Custom Application list**: names and their full content (description, dependencies) from `## <Name>` headings under `# Custom Applications`
 - **3rd Party Application list**: names and their full content from `## <Name>` headings under `# Supporting 3rd Party Applications`
 - **All Application names**: combined list of both custom and 3rd party application names (used as the valid dependency pool)
-- **Environment list**: environment identifiers from `# Environment` section
 - **System Modules**: names from `### <Name>` headings under `## System Module`
 - **Business Modules**: names from `### <Name>` headings under `## Business Module`
 
-### 2. Validate Dependencies and Deployment
+### 2. Validate Dependencies
 
 Run all validation checks across **both** `# Custom Applications` and `# Supporting 3rd Party Applications`. Collect all issues found. After all checks are complete, insert `[TODO]` annotations into CLAUDE.md for each issue.
 
@@ -99,52 +88,13 @@ Check for logical issues:
 - **Self-dependency**: An application listing itself as a dependency
 - **Dependency on application in wrong tier**: A 3rd party application depending on a custom application (3rd party should not depend on custom apps; custom apps depend on 3rd party or other custom apps)
 
-#### 2b. Deployment Environment Validation
-
-**Check 4: All Applications Have Deployment Strategy for All Environments**
-
-For each application (custom and 3rd party), check that its `- Deployment Strategy:` section contains a sub-section for every environment defined in `# Environment`. Each environment should appear as a bullet item like `- <environment_name>:` under the deployment strategy.
-
-Flag applications that:
-- Are missing a deployment strategy for one or more environments
-- Have a deployment strategy for an environment not listed in `# Environment` (unknown environment)
-
-**Check 5: All Applications Have Build and Deploy Strategy Defined**
-
-For each application (custom and 3rd party), verify that both sections exist:
-- `- Build Strategy:` with at least one bullet of content
-- `- Deployment Strategy:` with at least one bullet of content
-
-Flag applications missing either section entirely, or where the section exists but has no content.
-
-**Check 6: Build Strategy and Deployment Strategy Consistency**
-
-Verify that the build strategy is compatible with the deployment strategy:
-
-| Build Strategy Pattern | Expected Deployment Pattern |
-|------------------------|-----------------------------|
-| "Build as Docker image" or "Build as a Docker image" | Deployment must mention "Kubernetes Deployment", "Docker", "container", or similar container-based deployment |
-| "Use official ... Docker image" | Deployment must mention "Kubernetes Deployment", "Docker", "container", or similar container-based deployment |
-
-Flag inconsistencies where:
-- Build strategy produces a Docker image but deployment does not use container-based deployment
-- Build strategy does not produce a Docker image but deployment references Kubernetes/Docker/container deployment
-
-**Check 7: Environments Are Consistent**
-
-Verify that the set of environments referenced across all applications' deployment strategies is consistent:
-- Collect all unique environment names found across all deployment strategies
-- Compare against the environments defined in `# Environment`
-- Flag any application using an environment not defined in `# Environment`
-- Flag if any environment defined in `# Environment` is not used by any application
-
-**Check 8: No Orphaned Services or 3rd Party Applications**
+**Check 4: No Orphaned Services or 3rd Party Applications**
 
 For each application in `# Supporting 3rd Party Applications` and each service in `## External Services`, check whether at least one custom application (from `# Custom Applications`) lists it in its `- Depends on:` section. Match by name, case-insensitively, stripping parenthetical qualifiers.
 
 Flag any 3rd party application or external service that is **not depended on by any custom application**. These are orphaned — they are defined in CLAUDE.md but no custom application uses them, which may indicate a missing dependency declaration or a service that is no longer needed.
 
-#### 2c. Insert TODO Annotations into CLAUDE.md
+#### 2b. Insert TODO Annotations into CLAUDE.md
 
 For each validation issue found, insert a `[TODO]` annotation line **immediately above** the `## <Application Name>` heading of the affected application in CLAUDE.md.
 
@@ -162,12 +112,6 @@ For each validation issue found, insert a `[TODO]` annotation line **immediately
 | Duplicate Dependency | `DUP_DEP` |
 | Self Dependency | `SELF_DEP` |
 | Illogical Dependency | `ILLOGICAL_DEP` |
-| Missing Build Strategy | `MISSING_BUILD` |
-| Missing Deploy Strategy | `MISSING_DEPLOY` |
-| Missing Environment Coverage | `MISSING_ENV` |
-| Unknown Environment | `UNKNOWN_ENV` |
-| Build/Deploy Inconsistency | `BUILD_DEPLOY_MISMATCH` |
-| Unused Environment | `UNUSED_ENV` |
 | Orphaned Service | `ORPHANED_SVC` |
 
 **Examples:**
@@ -175,10 +119,6 @@ For each validation issue found, insert a `[TODO]` annotation line **immediately
 - [TODO] CIRCULAR_DEP: Circular dependency detected: Hub Middleware -> HC Adapter Message Queue -> Hub Single Sign On -> Hub Middleware
 - [TODO] MISSING_DEP: Dependency "Hub Analytics" does not exist in Supporting 3rd Party Applications or Custom Applications
 - [TODO] DUP_DEP: Dependency "Hub Cache" is listed more than once
-- [TODO] MISSING_BUILD: No Build Strategy defined
-- [TODO] MISSING_DEPLOY: No Deployment Strategy defined
-- [TODO] MISSING_ENV: Missing deployment strategy for environment "abc_cloud"
-- [TODO] BUILD_DEPLOY_MISMATCH: Build strategy produces Docker image but deployment for "home_server" does not reference container-based deployment
 - [TODO] ORPHANED_SVC: No custom application depends on this service
 ## Hub Middleware
 ```
@@ -266,7 +206,7 @@ Print a summary of all actions taken, validation results, and warnings:
 ```
 ## Project Sync Summary
 
-### Dependency & Deployment Validation
+### Dependency Validation
 | Check | Status | Issues |
 |-------|--------|--------|
 | Circular Dependencies | PASS/FAIL | 0 or description |
@@ -274,19 +214,13 @@ Print a summary of all actions taken, validation results, and warnings:
 | Duplicate Dependencies | PASS/FAIL | 0 or count |
 | Self Dependencies | PASS/FAIL | 0 or count |
 | Illogical Dependencies | PASS/FAIL | 0 or count |
-| Missing Build Strategy | PASS/FAIL | 0 or count |
-| Missing Deploy Strategy | PASS/FAIL | 0 or count |
-| Missing Environment Coverage | PASS/FAIL | 0 or count |
-| Unknown Environments | PASS/FAIL | 0 or count |
-| Build/Deploy Consistency | PASS/FAIL | 0 or count |
-| Unused Environments | PASS/FAIL | 0 or count |
 | Orphaned Services | PASS/FAIL | 0 or count |
 
 ### Validation TODOs Inserted
 | Application | Section | Issues |
 |-------------|---------|--------|
 | Hub Middleware | Custom Applications | DUP_DEP: "Hub Cache" listed twice |
-| SC Adapter | Custom Applications | MISSING_BUILD, MISSING_DEPLOY |
+| Hub Analytics | Supporting 3rd Party Applications | ORPHANED_SVC: No custom application depends on this service |
 
 ### Application Folders
 | Application | Folder | Status |
@@ -457,7 +391,7 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 - Application folder names must use `snake_case`.
 - Folders are only created for `# Custom Applications`, not for `# Supporting 3rd Party Applications`.
 - PRD.md and BUG.md are only created/synced for `# Custom Applications`.
-- Dependency and deployment validation covers **both** `# Custom Applications` and `# Supporting 3rd Party Applications`.
+- Dependency validation covers **both** `# Custom Applications` and `# Supporting 3rd Party Applications`.
 - When matching existing folders, account for numeric prefixes (e.g., `1_hub_middleware` matches application "Hub Middleware").
 - When adding modules to existing files, maintain the correct order: system modules under `# System Module`, business modules under `# Business Module`.
 - Always include separator lines (`---`) between module sections.
