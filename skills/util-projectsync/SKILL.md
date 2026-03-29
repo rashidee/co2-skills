@@ -4,8 +4,10 @@ description: >
   Synchronize project folder structure, PRD.md, and BUG.md files based on the canonical application
   and module definitions in CLAUDE.md. Validates dependencies (circular, missing, logical) and
   checks for orphaned services across all applications. Creates missing application folders,
-  scaffolds new PRD.md and BUG.md files from templates, and adds missing module sections to
-  existing files. Inserts [TODO] annotations into CLAUDE.md for validation failures.
+  scaffolds new PRD.md and BUG.md files from templates, adds missing module sections to
+  existing files, and generates a Mermaid.js system architecture diagram (ARCHITECTURE.mermaid)
+  showing dependency relationships between custom applications, 3rd party applications, and
+  external services. Inserts [TODO] annotations into CLAUDE.md for validation failures.
   Trigger on keywords: "sync project", "project sync", "sync folders", "sync modules",
   "sync PRD", "sync BUG", "initialize project structure", "scaffold project",
   "create project folders", "sync application structure", "validate dependencies".
@@ -192,7 +194,136 @@ PRD.md and BUG.md files are located inside the application folder. The exact pat
 
 Follow the folder structure defined in CLAUDE.md's `# Folder structure` section to determine the correct path.
 
-### 7. Output Summary
+### 7. Generate System Architecture Diagram
+
+Generate a Mermaid.js diagram showing the dependency relationships between all custom applications, 3rd party supporting applications, and external services. Write the diagram to `ARCHITECTURE.mermaid` in the project root.
+
+#### 7a. Build the Diagram
+
+Using the data already parsed in Step 1 (custom applications, 3rd party applications, external services, and all their `- Depends on:` lists), generate a Mermaid flowchart with the following structure:
+
+**Node types (use subgraphs to group by tier):**
+
+| Tier | Subgraph Label | Node Shape | Nodes |
+|------|---------------|------------|-------|
+| Custom Applications | `Custom Applications` | Rectangle `[name]` | All entries from `# Custom Applications` |
+| Supporting 3rd Party Applications | `Supporting 3rd Party Applications` | Rounded rectangle `(name)` | All entries from `# Supporting 3rd Party Applications` |
+| External Services | `External Services` | Stadium `([name])` | All entries from `## External Services` |
+
+**Edges:**
+- For each application (custom or 3rd party) that has a `- Depends on:` list, draw an arrow from the application to each of its dependencies.
+- Strip parenthetical qualifiers from dependency names when creating edges (e.g., `Hub Support Database (urp_hub_kc)` → edge to `Hub Support Database`).
+- Strip "for"/"to"/"when" clauses — only use the dependency name for the edge target.
+
+**Node IDs:**
+- Convert each application/service name to a camelCase or snake_case identifier for the Mermaid node ID (e.g., `Hub Middleware` → `hubMiddleware`, `SMTP Server` → `smtpServer`).
+- Use the full display name as the node label.
+
+#### 7b. Mermaid Template
+
+```mermaid
+flowchart TD
+
+    subgraph ext["External Services"]
+        {{for each external service}}
+        nodeId([Service Name])
+        {{end}}
+    end
+
+    subgraph thirdparty["Supporting 3rd Party Applications"]
+        {{for each 3rd party application}}
+        nodeId(Application Name)
+        {{end}}
+    end
+
+    subgraph custom["Custom Applications"]
+        {{for each custom application}}
+        nodeId[Application Name]
+        {{end}}
+    end
+
+    %% Dependencies
+    {{for each application with dependencies}}
+    {{for each dependency}}
+    sourceNodeId --> targetNodeId
+    {{end}}
+    {{end}}
+```
+
+#### 7c. Example Output (based on the URP project)
+
+```mermaid
+flowchart TD
+
+    subgraph ext["External Services"]
+        pushNotification([Push Notification Service])
+        aiService([AI Service])
+    end
+
+    subgraph thirdparty["Supporting 3rd Party Applications"]
+        smtpServer(SMTP Server)
+        hubSearchEngine(Hub Search Engine)
+        hubCache(Hub Cache)
+        hubCoreDb(Hub Core Database)
+        hubSupportDb(Hub Support Database)
+        hubSSO(Hub Single Sign On)
+        hcAdapterMQ(HC Adapter Message Queue)
+        hcDb(HC Database)
+        scApiGateway(SC API Gateway)
+        scAdapterMQ(SC Adapter Message Queue)
+        scDb(SC Database)
+    end
+
+    subgraph custom["Custom Applications"]
+        hubMiddleware[Hub Middleware]
+        hubSupportPortal[Hub Support Portal]
+        hcAdapter[HC Adapter]
+        hcSupportPortal[HC Support Portal]
+        hcEmployerPortal[HC Employer Portal]
+        scAdapter[SC Adapter]
+        scSupportPortal[SC Support Portal]
+        scWorkerMobile[SC Worker Mobile]
+        scWorkerBackend[SC Worker Backend]
+        scEmbassyPortal[SC Embassy Portal]
+        scAgentPortal[SC Agent Portal]
+        scMedicalCenterPortal[SC Medical Center Portal]
+        scTrainingCenterPortal[SC Training Center Portal]
+    end
+
+    hubMiddleware --> smtpServer
+    hubMiddleware --> hubSSO
+    hubMiddleware --> hubSearchEngine
+    hubMiddleware --> hubCache
+    hubMiddleware --> hubCoreDb
+    hubMiddleware --> hcAdapterMQ
+    hubMiddleware --> scAdapterMQ
+
+    hubSupportPortal --> smtpServer
+    hubSupportPortal --> hubSSO
+    hubSupportPortal --> hubSearchEngine
+    hubSupportPortal --> hubSupportDb
+    hubSupportPortal --> hubMiddleware
+
+    hcAdapter --> hcDb
+    hcAdapter --> hcAdapterMQ
+
+    scWorkerBackend --> pushNotification
+    scWorkerBackend --> smtpServer
+    scWorkerBackend --> aiService
+    scWorkerBackend --> scDb
+    scWorkerBackend --> scAdapter
+
+    %% ... (remaining edges follow the same pattern)
+```
+
+#### 7d. Write the File
+
+1. Generate the complete Mermaid diagram with **all** nodes and **all** edges — do not abbreviate or use `...` placeholders.
+2. Write the diagram to `ARCHITECTURE.mermaid` in the project root.
+3. If `ARCHITECTURE.mermaid` already exists, **overwrite it completely** — the diagram is always regenerated from the current state of CLAUDE.md.
+4. Also include 3rd-party-to-3rd-party dependencies (e.g., `Hub Single Sign On` → `Hub Support Database`, `HC Adapter Message Queue` → `Hub Single Sign On`).
+
+### 8. Output Summary
 
 Print a summary of all actions taken, validation results, and warnings:
 
@@ -232,6 +363,9 @@ Print a summary of all actions taken, validation results, and warnings:
 |-------------|--------|---------------|----------|
 | hub_middleware | Updated | Payment, Billing | - |
 | hc_adapter | Created | (all modules) | - |
+
+### Architecture Diagram
+- Generated ARCHITECTURE.mermaid with 13 custom apps, 11 third-party apps, 2 external services, 45 dependency edges
 
 ### Warnings
 - [hub_middleware/PRD.md] Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md — manual review recommended
