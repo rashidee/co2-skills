@@ -138,13 +138,17 @@ environment/
   localhost/
     namespace.yaml
     smtp_server.yaml
+    hub_cache_pvc.yaml
     hub_cache.yaml
+    hub_core_database_pvc.yaml
     hub_core_database.yaml
     ...
   home_server/
     namespace.yaml
     smtp_server.yaml
+    hub_cache_pvc.yaml
     hub_cache.yaml
+    hub_core_database_pvc.yaml
     hub_core_database.yaml
     ...
 ```
@@ -155,28 +159,64 @@ For each environment, create `environment/<env>/namespace.yaml`:
 - Namespace name: project code in lowercase (e.g., `urp`)
 - Identical across all environments
 
-#### 3c. Generate Per-Service Manifests
+#### 3c. Generate PVC Manifests (Separate Files)
+
+For each 3rd party application that requires data persistence (databases, message queues, caches),
+generate a **separate** PVC file: `environment/<env>/<service_snake_case>_pvc.yaml`.
+
+**Why separate files:** If the PVC is bundled inside the service manifest, running
+`kubectl delete -f <service>.yaml` followed by `kubectl apply -f <service>.yaml` would delete
+and recreate the PVC, destroying all persisted data. Keeping the PVC in its own file ensures
+that `kubectl delete -f <service>.yaml` only removes the StatefulSet, ConfigMap, Secret, and
+Services — the PVC (and its data) remains untouched.
+
+The PVC file contains only the PersistentVolumeClaim resource:
+
+```yaml
+# ==============================================================================
+# {{Application Name}} ({{Technology}}) — PersistentVolumeClaim
+# ==============================================================================
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{service-name}}-pvc
+  namespace: {{namespace}}
+  labels:
+    app: {{service-name}}
+    project: {{project-code}}
+    environment: {{environment}}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{size — see Section 3d for defaults per technology}}
+```
+
+#### 3d-svc. Generate Per-Service Manifests
 
 For each 3rd party application, generate `environment/<env>/<service_snake_case>.yaml` containing a multi-document YAML (separated by `---`) with:
 
-1. **PersistentVolumeClaim** (if the service requires data persistence — databases, message queues, caches)
-2. **ConfigMap** — non-sensitive configuration (hostnames, ports, database names, vhosts)
-3. **Secret** — sensitive configuration (passwords, admin credentials), base64-encoded. Read actual values from ENVIRONMENT.md for the matching environment.
-4. **StatefulSet** (NOT Deployment) — ensures persistent identity, stable network IDs, and ordered scaling:
+1. **ConfigMap** — non-sensitive configuration (hostnames, ports, database names, vhosts)
+2. **Secret** — sensitive configuration (passwords, admin credentials), base64-encoded. Read actual values from ENVIRONMENT.md for the matching environment.
+3. **StatefulSet** (NOT Deployment) — ensures persistent identity, stable network IDs, and ordered scaling:
    - Use official Docker Hub image with the **exact version** from CLAUDE.md (e.g., `mongo:7.0.6`, `mysql:8.4`, `redis:7.2.1`, `rabbitmq:3.11.9-management`, `quay.io/keycloak/keycloak:26.5.3`)
-   - `volumeMounts` referencing the PVC for data persistence
+   - `volumeMounts` referencing the PVC (defined in the separate `_pvc.yaml` file) for data persistence
    - `env` or `envFrom` referencing ConfigMap and Secret
    - Resource requests/limits (sensible defaults per technology)
    - Readiness and liveness probes (technology-appropriate)
    - `serviceName` matching the headless Service name
-5. **Service** — two services per StatefulSet:
+4. **Service** — two services per StatefulSet:
    - **Headless Service** (`clusterIP: None`) — for StatefulSet stable DNS
    - **NodePort Service** — for remote access from developer machines and CLI tools.
      Use a deterministic NodePort assignment strategy to avoid conflicts:
      - Base port = `30000 + (index * 10)` where index is the service's position in alphabetical order
      - Map each technology's primary port to the NodePort
-6. **Init containers** (if the service depends on another service):
+5. **Init containers** (if the service depends on another service):
    - E.g., Keycloak depends on Hub Support Database — add an init container that waits for MySQL to be ready before starting Keycloak
+
+**Important:** The service manifest must NOT contain the PersistentVolumeClaim. It only references the PVC by `claimName` in the StatefulSet's `volumes` section.
 
 #### 3d. Technology-Specific Manifest Details
 
@@ -241,9 +281,13 @@ For each 3rd party application, generate `environment/<env>/<service_snake_case>
 
 #### 3e. Create or Update Logic
 
-For each manifest file in each environment:
+For each service in each environment, there are up to two files to manage:
+- `<service_snake_case>_pvc.yaml` — PVC file (only for services that require persistence)
+- `<service_snake_case>.yaml` — service manifest (ConfigMap, Secret, StatefulSet, Services)
 
-1. **If the file does not exist** (CREATE mode): Generate and write the full manifest.
+For each file:
+
+1. **If the file does not exist** (CREATE mode): Generate and write the manifest.
 2. **If it already exists** (UPDATE mode):
    - Read the existing manifest
    - Compare against current CLAUDE.md/ENVIRONMENT.md values:
@@ -251,6 +295,7 @@ For each manifest file in each environment:
      - New databases added → update init scripts
      - Credentials changed in ENVIRONMENT.md → update Secret values
      - New dependencies → add init containers
+     - Storage size changed → update PVC (in `_pvc.yaml` only)
    - Preserve any resources marked with `# CUSTOM:` comments
    - Update only the parts that changed
    - Log what was changed
@@ -301,7 +346,9 @@ Print a summary of all actions taken:
 | Environment | Service | File | Status |
 |-------------|---------|------|--------|
 | localhost | SMTP Server | environment/localhost/smtp_server.yaml | Created |
+| localhost | Hub Cache (PVC) | environment/localhost/hub_cache_pvc.yaml | Created |
 | localhost | Hub Cache | environment/localhost/hub_cache.yaml | Created |
+| localhost | Hub Core Database (PVC) | environment/localhost/hub_core_database_pvc.yaml | Created |
 | localhost | Hub Core Database | environment/localhost/hub_core_database.yaml | Created |
 | ... | ... | ... | ... |
 | home_server | SMTP Server | environment/home_server/smtp_server.yaml | Created |
@@ -326,6 +373,7 @@ Print a summary of all actions taken:
 
 - **NEVER remove, modify, or delete existing values** in ENVIRONMENT.md. Only add missing sections, services, and config keys.
 - **StatefulSet over Deployment** — all 3rd party services use StatefulSet to ensure persistent identity, stable network IDs, and data persistence across pod restarts.
+- **PersistentVolumeClaim in separate files** — PVCs MUST be generated in their own `<service>_pvc.yaml` files, never bundled inside the service manifest. This prevents accidental data loss when recreating services with `kubectl delete -f` / `kubectl apply -f`. The service manifest references the PVC by `claimName` only.
 - **PersistentVolumeClaim** is mandatory for any service that stores data (databases, message queues, caches). Ephemeral services (Mailcatcher, Kong DB-less) are exempt.
 - **NodePort for remote access** — every service must have a NodePort Service so developers can connect using local CLI tools from DEVTOOL.md.
 - **Deterministic NodePort assignment** — use alphabetical ordering of service names to assign NodePorts starting from 30000 with interval of 10. This ensures consistent ports across environments and avoids conflicts.
