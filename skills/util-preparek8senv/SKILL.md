@@ -40,7 +40,8 @@ Read CLAUDE.md from the project root and extract:
   - Environment name (e.g., "Localhost", "Home Server")
   - Snake_case identifier for folder name (e.g., `localhost`, `home_server`)
   - Domain name (e.g., `localhost`, `home.server`) — from the `- Domain:` field
-  - Operating system, Kubernetes distribution/version
+  - Deployment Type (e.g., `Manual`, `Kubernetes`) — from the `- Deployment Type:` field
+  - Operating system, Kubernetes distribution/version (for Kubernetes environments)
   - SSH configuration (IP, port) — for remote environments
   - Kube config reference — if mentioned
 - **3rd Party Application list**: Each `## <Application Name>` heading under `# Supporting 3rd Party Applications`. Extract:
@@ -54,6 +55,27 @@ Read CLAUDE.md from the project root and extract:
 - If `# Environment` section is missing or has no environments → stop with error
 - If `# Supporting 3rd Party Applications` section is missing or has no entries → stop with error
 - If `DEVTOOL.md` does not exist → stop with error
+- If no environment has `Deployment Type: Kubernetes` → stop with error: "No Kubernetes environments found in CLAUDE.md. This skill only generates manifests for environments with Deployment Type: Kubernetes."
+
+### 1b. Environment Deployment Type Decision Tree
+
+After parsing all environments, classify each by its `Deployment Type` field:
+
+```
+For each environment in CLAUDE.md:
+  ├── Deployment Type = "Kubernetes"
+  │     → INCLUDE: Generate K8s manifests (Step 3) and sync ENVIRONMENT.md (Step 2)
+  │
+  ├── Deployment Type = any other value (e.g., "Manual", "Docker Compose", etc.)
+  │     → SKIP: Do not generate K8s manifests for this environment
+  │       Log: "Skipping <Environment Name> — Deployment Type: <type> (not Kubernetes)"
+  │
+  └── Deployment Type field is missing
+        → SKIP: Do not generate K8s manifests for this environment
+          Log: "Skipping <Environment Name> — no Deployment Type specified"
+```
+
+Only environments marked `Deployment Type: Kubernetes` proceed to Step 2 (ENVIRONMENT.md sync) and Step 3 (K8s manifest generation). All other environments are skipped entirely and reported in the output summary (Step 4).
 
 ### 2. Sync ENVIRONMENT.md
 
@@ -356,26 +378,24 @@ Print a summary of all actions taken:
 ## K8s Environment Preparation Summary
 
 ### Environments
-| Environment | Folder | Status |
-|-------------|--------|--------|
-| Localhost | environment/localhost | Created |
-| Home Server | environment/home_server | Already exists |
+| Environment | Deployment Type | Folder | Status |
+|-------------|----------------|--------|--------|
+| Localhost | Manual | — | Skipped (not Kubernetes) |
+| Home Server | Kubernetes | environment/home_server | Created |
 
 ### ENVIRONMENT.md
 | Action | Details |
 |--------|---------|
-| Created/Updated | Added 2 environments, 11 services each |
+| Created/Updated | Added 1 Kubernetes environment, 11 services |
 
 ### K8s Manifests Generated
 | Environment | Service | File | Status |
 |-------------|---------|------|--------|
-| localhost | SMTP Server | environment/localhost/smtp_server.yaml | Created |
-| localhost | Hub Cache (PVC) | environment/localhost/hub_cache_pvc.yaml | Created |
-| localhost | Hub Cache | environment/localhost/hub_cache.yaml | Created |
-| localhost | Hub Core Database (PVC) | environment/localhost/hub_core_database_pvc.yaml | Created |
-| localhost | Hub Core Database | environment/localhost/hub_core_database.yaml | Created |
-| ... | ... | ... | ... |
 | home_server | SMTP Server | environment/home_server/smtp_server.yaml | Created |
+| home_server | Hub Cache (PVC) | environment/home_server/hub_cache_pvc.yaml | Created |
+| home_server | Hub Cache | environment/home_server/hub_cache.yaml | Created |
+| home_server | Hub Core Database (PVC) | environment/home_server/hub_core_database_pvc.yaml | Created |
+| home_server | Hub Core Database | environment/home_server/hub_core_database.yaml | Created |
 | ... | ... | ... | ... |
 
 ### NodePort Assignments
