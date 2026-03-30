@@ -284,19 +284,29 @@ Example skill invocation for deployment artifact generation:
   - Application source code (to detect stack via pom.xml, composer.json, or package.json)
 - Output:
   - **Dockerfile** — Production-ready, multi-stage Docker build file in the application folder
-  - **Kubernetes manifests** — Centralized in `deployment/kubernetes/<app>.yaml` containing:
-    - Namespace, ConfigMap, Secret, Deployment, Service, Ingress
+  - **Kubernetes manifests** — Per-environment manifests in `<app_folder>/k8s/<environment>/` containing:
+    - Namespace, ConfigMap, Secret, Deployment, Service, Ingress (separate YAML files)
     - Environment variable mapping from `.env` to Kubernetes ConfigMap/Secret
     - Health check and readiness probe configuration
+    - One folder per environment defined in CLAUDE.md
 
 Example of the deployment artifact output:
 ~~~markdown
 - <application_folder>
   - Dockerfile
-- deployment
-  - kubernetes
-    - <app_1>.yaml
-    - <app_2>.yaml
+  - k8s
+    - local_development_environment
+      - namespace.yaml
+      - configmap.yaml
+      - secret.yaml
+      - deployment.yaml
+      - service.yaml
+    - home_server_environment
+      - namespace.yaml
+      - configmap.yaml
+      - secret.yaml
+      - deployment.yaml
+      - service.yaml
 ~~~
 
 | Skill | Technology Stack |

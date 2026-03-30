@@ -659,14 +659,13 @@ The `depgen-k8s` skill auto-detects the technology stack from the application's
 project files (pom.xml, composer.json, or package.json) and supports Spring Boot, Laravel,
 and Node.js applications. It will generate:
 - `Dockerfile` — production-ready, multi-stage Docker build in the application folder
-- `deployment/kubernetes/<app>.yaml` — Kubernetes manifests in the centralized project-level
-  deployment folder
+- `<source-code-path>/k8s/<environment>/` — Per-environment Kubernetes manifests
 
 #### Step 5.2: Verify Deployment Artifacts
 
 Confirm that both files were generated:
 - `<source-code-path>/Dockerfile` exists
-- `deployment/kubernetes/<app_snake_case>.yaml` exists
+- `<source-code-path>/k8s/` folder exists with at least one environment subfolder
 
 If either file is missing, log a warning in IMPLEMENTATION_MASTER.md and proceed to
 Phase 6 (Generate README.md) — do NOT block completion on deployment artifacts.
@@ -794,11 +793,10 @@ docker build -t <artifact-id>:<version> .
 Deploy to a Kubernetes cluster using the centralized manifests:
 
 ```bash
-kubectl apply -f deployment/kubernetes/<app_snake_case>.yaml
+kubectl apply -f k8s/<environment>/
 ```
 
-See the [deployment/kubernetes/](../../deployment/kubernetes/) folder for all application
-manifests.
+See the [k8s/](k8s/) folder for per-environment Kubernetes manifests.
 ```
 
 **Adapt the template above** to match the actual technology stack from SPECIFICATION.md:
@@ -1043,5 +1041,5 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     `depgen-k8s` skill to generate `Dockerfile` and Kubernetes manifests. Phase 6 generates
     the README with content derived from SPECIFICATION.md — do NOT invent stack details, run
     commands, or architecture descriptions. The README must include a Deployment section
-    with Docker build commands and a link to the centralized `deployment/kubernetes/` folder
+    with Docker build commands and a link to the application's `k8s/` folder
     if deployment artifacts were generated.
