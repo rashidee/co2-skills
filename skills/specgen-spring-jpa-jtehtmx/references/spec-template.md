@@ -178,8 +178,13 @@ Include:
     - Goal: `precompile` (generates AND compiles `.class` files, not just `.java` sources)
     - Phase: `process-classes` (must run after `compile` so application classes are available)
     - `<sourceDirectory>`: `${project.basedir}/src/main/jte`
-    - `<targetDirectory>`: `${project.build.directory}/jte-classes` (inside `target/` so `mvn clean` removes it)
+    - `<targetDirectory>`: `${project.build.directory}/classes` (outputs directly into `target/classes/`
+      so precompiled templates are included in the Spring Boot fat JAR by `spring-boot-maven-plugin`)
     - `<contentType>`: `Html`
+    - **CRITICAL**: Do NOT use `${project.build.directory}/jte-classes` as targetDirectory. The
+      `spring-boot-maven-plugin` repackage goal only includes `target/classes/` in the fat JAR, NOT
+      `target/jte-classes/`. Using `jte-classes` causes precompiled templates to be missing at
+      runtime in the production container, resulting in `TemplateNotFoundException`.
     - **CRITICAL**: Do NOT use `${project.basedir}/jte-classes` as targetDirectory — that path is
       outside `target/` and `mvn clean` will not remove it, causing stale precompiled templates.
 

@@ -66,7 +66,7 @@ The spec must include these in the Maven configuration section (always):
 - Spring Web (starter-web)
 - Spring Modulith (core, events-api)
 - JTE Spring Boot Starter (`gg.jte:jte-spring-boot-starter-3`)
-- JTE precompiler (`gg.jte:jte-maven-plugin` with `precompile` goal at `process-classes` phase, output to `target/jte-classes`)
+- JTE precompiler (`gg.jte:jte-maven-plugin` with `precompile` goal at `process-classes` phase, output to `target/classes` so precompiled templates are included in the Spring Boot fat JAR)
 - Lombok
 - Spring Boot DevTools
 - MapStruct (with annotation processor)
@@ -548,7 +548,7 @@ Complete `pom.xml` structure with all dependencies (core + selected conditional)
 plugin configurations (MapStruct annotation processor, Spring Boot Maven plugin,
 frontend-maven-plugin for Vite build, `maven-clean-plugin` to delete on-demand
 `jte-classes/` folder, `jte-maven-plugin` with `precompile` goal at `process-classes`
-phase outputting to `${project.build.directory}/jte-classes`), and property management.
+phase outputting to `${project.build.directory}/classes`), and property management.
 
 #### 3. Application Configuration *(conditional content varies)*
 A single `application.yml` (no profile-specific files like `application-dev.yml` or

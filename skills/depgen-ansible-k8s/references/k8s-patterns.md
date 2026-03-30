@@ -127,6 +127,15 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      # --- hostAliases (conditional) ---
+      # Include when ConfigMap values reference the environment's Domain (from
+      # CLAUDE.md) and that Domain is NOT a K8s service name or publicly
+      # resolvable DNS name. Maps the custom domain to the environment's IP
+      # so pods can resolve it. Omit when Domain is `localhost`.
+      # hostAliases:
+      #   - ip: "{environment_ip}"
+      #     hostnames:
+      #       - "{environment_domain}"
       containers:
         - name: {app_name}
           image: {registry}/{image_name}:{app_version}

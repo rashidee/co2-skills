@@ -84,7 +84,8 @@ If any are missing, stop and inform the user.
    - Each `## <Environment Name>` heading under `# Environment` is an environment
    - Convert the environment name to snake_case for the folder name (e.g., "Home Server Environment" → `home_server_environment`, "Local Development Environment" → `local_development_environment`)
    - If no environments are defined, stop with error: "No environments found in CLAUDE.md `# Environment` section."
-   - Record the list of environments for Phase 3
+   - For each environment, extract the `Domain` field and `IP` field (from SSH Configuration or direct IP field) if present — these are needed for `hostAliases` generation in Phase 3
+   - Record the list of environments (with Domain/IP) for Phase 3
 
 ### Phase 1: Detect Application Stack
 
@@ -295,6 +296,10 @@ For **each environment**, generate individual YAML files inside
    - Resource requests/limits (sensible defaults: 256Mi-512Mi memory, 250m-500m CPU)
    - Readiness and liveness probes using the detected health endpoint
    - Non-root `securityContext`
+   - `hostAliases` (conditional): If the environment's Domain from CLAUDE.md is referenced
+     in ConfigMap values AND is not `localhost`, add `hostAliases` mapping the Domain to
+     the environment's IP address. This is needed because K8s pod DNS cannot resolve custom
+     domains defined only in the host machine's `/etc/hosts`. See `references/k8s-patterns.md`.
 5. **`service.yaml`** — ClusterIP service exposing the application port
 6. **`ingress.yaml`** (optional) — if the application is a web application or API with
    external access. Only generate if the environment's CLAUDE.md description suggests

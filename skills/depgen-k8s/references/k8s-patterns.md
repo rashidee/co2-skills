@@ -127,6 +127,15 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      # --- hostAliases (conditional) ---
+      # Include when ConfigMap values reference the environment's Domain (from
+      # CLAUDE.md) and that Domain is NOT a K8s service name or publicly
+      # resolvable DNS name. Maps the custom domain to the environment's IP
+      # so pods can resolve it. Omit when Domain is `localhost`.
+      # hostAliases:
+      #   - ip: "{environment_ip}"
+      #     hostnames:
+      #       - "{environment_domain}"
       containers:
         - name: {app_name}
           image: {registry}/{image_name}:{app_version}
@@ -181,6 +190,41 @@ spec:
 | Spring Boot | 250m | 1000m | 512Mi | 1024Mi | 60s | 30s |
 | Laravel | 100m | 500m | 128Mi | 512Mi | 15s | 10s |
 | Node.js | 100m | 500m | 128Mi | 512Mi | 15s | 10s |
+
+### hostAliases — Custom Domain Resolution
+
+When an environment's ConfigMap values reference a custom domain name that is NOT a
+Kubernetes service name (e.g., `home.server` instead of `hub-single-sign-on`), pods
+cannot resolve it because K8s cluster DNS only handles service names and external DNS.
+Add `hostAliases` to the Deployment `spec.template.spec` to map the custom domain to
+its IP address.
+
+**Detection rule**: Compare the environment's `Domain` field from CLAUDE.md against
+the hostnames used in ConfigMap values. If any ConfigMap value contains the
+environment's Domain (and it is not `localhost`), uncomment the `hostAliases` block
+and substitute `{environment_ip}` and `{environment_domain}`.
+
+Example — CLAUDE.md defines:
+```
+## Home Server
+- Domain: `home.server`
+- SSH Configuration:
+  - IP: `192.168.1.126`
+```
+ConfigMap has: `KEYCLOAK_ISSUER_URI: "http://home.server:30040/realms/hub"`
+
+Generated hostAliases:
+```yaml
+      hostAliases:
+        - ip: "192.168.1.126"
+          hostnames:
+            - "home.server"
+```
+
+**Do NOT add hostAliases when**:
+- Domain is `localhost` (loopback is always resolvable)
+- All ConfigMap URLs use K8s service names (e.g., `hub-single-sign-on:8180`)
+- Domain is a publicly resolvable DNS name (e.g., `app.example.com`)
 
 ### Service
 
