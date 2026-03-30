@@ -39,6 +39,7 @@ Read CLAUDE.md from the project root and extract:
 - **Environment list**: Each `## <Environment Name>` heading under `# Environment` is an environment. Extract:
   - Environment name (e.g., "Localhost", "Home Server")
   - Snake_case identifier for folder name (e.g., `localhost`, `home_server`)
+  - Domain name (e.g., `localhost`, `home.server`) — from the `- Domain:` field
   - Operating system, Kubernetes distribution/version
   - SSH configuration (IP, port) — for remote environments
   - Kube config reference — if mentioned
@@ -135,15 +136,10 @@ exact version from CLAUDE.md (default behavior).
 These fields are **per-environment** — one environment may use a custom Dockerfile while another
 uses the official image. The skill must check each environment's service section independently.
 
-**Default values for localhost:**
-- Host: `localhost`
+**Default values for all environments:**
+- Host: use the **Domain** from the environment's `- Domain:` field in CLAUDE.md (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments. If neither is available, use `TODO`.
 - Ports: technology defaults (MongoDB: `27017`, MySQL: `3306`, Redis: `6379`, RabbitMQ AMQP: `5672`, RabbitMQ Admin: `15672`, Keycloak: `8180`, Meilisearch: `7700`, Kong Proxy: `8000`, Kong Admin: `8001`, Mailcatcher SMTP: `1025`, Mailcatcher HTTP: `1080`)
 - Username/Password: from CLAUDE.md rules section (default: `bestrnd` / `B3st1n3t@2025`), or technology defaults (e.g., RabbitMQ: `guest`/`guest`, MongoDB: no auth)
-
-**Default values for remote environments:**
-- Host: use IP from CLAUDE.md SSH configuration, or `TODO`
-- Ports: same technology defaults (NodePort will be used in K8s manifests)
-- Username/Password: from CLAUDE.md rules section, or `TODO`
 
 ### 3. Generate K8s Manifests
 
@@ -350,8 +346,7 @@ connection instructions:
 ---
 ```
 
-For **localhost** environments: use `localhost` as host with NodePort.
-For **remote** environments: use the SSH IP from CLAUDE.md as host with NodePort.
+For **all** environments: use the **Domain** from the environment's `- Domain:` field in CLAUDE.md as host with NodePort (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments.
 
 ### 4. Output Summary
 
