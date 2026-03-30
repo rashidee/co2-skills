@@ -140,23 +140,19 @@ Use `TODO` for any value not yet known.
 
 #### 2e. Custom Docker Image Override
 
-Any service in ENVIRONMENT.md may optionally specify a custom Docker image source using one of
-these two fields (mutually exclusive — if both are present, `Docker File` takes precedence):
+Any service in ENVIRONMENT.md may optionally specify a custom Docker image using the `Docker Image`
+field:
 
-- **`Docker File`**: A relative path (Markdown link) to a Dockerfile in the project repository.
-  Format: `- Docker File: [Dockerfile](path/to/Dockerfile)`
-  The image will be built locally and referenced by a generated name: `{project-code}-{service-kebab-case}:latest`
-  (e.g., `urp-hub-single-sign-on:latest`).
+- **`Docker Image`**: A Docker image reference (registry, name, and tag).
+  Format: `- Docker Image: <image-reference>`
+  Example: `- Docker Image: gilacode/hub_single_sign_on:26.5.4`
+  The image will be used as-is in the K8s manifest with `imagePullPolicy: IfNotPresent`.
 
-- **`Docker Image`**: A fully qualified Docker image reference.
-  Format: `- Docker Image: \`my-registry.io/my-org/my-image:1.0.0\``
-  The image will be used as-is in the K8s manifest.
+When the `Docker Image` field is not present, the skill falls back to the **official Docker Hub
+image** with the exact version from CLAUDE.md (default behavior).
 
-When neither field is present, the skill falls back to the **official Docker Hub image** with the
-exact version from CLAUDE.md (default behavior).
-
-These fields are **per-environment** — one environment may use a custom Dockerfile while another
-uses the official image. The skill must check each environment's service section independently.
+This field is **per-environment** — one environment may use a custom image while another uses the
+official image. The skill must check each environment's service section independently.
 
 **Default values for all environments:**
 - Host: use the **Domain** from the environment's `- Domain:` field in CLAUDE.md (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments. If neither is available, use `TODO`.
@@ -240,15 +236,8 @@ For each 3rd party application, generate `environment/<env>/<service_snake_case>
 2. **Secret** — sensitive configuration (passwords, admin credentials), base64-encoded. Read actual values from ENVIRONMENT.md for the matching environment.
 3. **StatefulSet** (NOT Deployment) — ensures persistent identity, stable network IDs, and ordered scaling:
    - **Image resolution** (checked per-environment in ENVIRONMENT.md — see Section 2e):
-     1. If `Docker File` is specified → use `{project-code}-{service-kebab-case}:latest` as image name.
-        - For Docker Desktop K8s (localhost): set `imagePullPolicy: Never` (image is built locally and already available).
-        - For Microk8s / remote K8s: set `imagePullPolicy: IfNotPresent` (image must be imported beforehand).
-        - Do NOT include `args` or `command` — the Dockerfile's `ENTRYPOINT`/`CMD` handles startup.
-        - Add a comment block at the top of the manifest with the build command:
-          - Localhost: `docker build -t {image-name} {dockerfile-context}/`
-          - Remote: `docker build -t {image-name} {dockerfile-context}/` + `docker save {image-name} | ssh {user}@{host} "microk8s ctr image import -"`
-     2. If `Docker Image` is specified → use the exact image reference as-is. Set `imagePullPolicy: IfNotPresent`.
-     3. Otherwise → use the official Docker Hub image with the exact version from CLAUDE.md (e.g., `mongo:7.0.6`, `mysql:8.4`). Include `args`/`command` as needed by the technology.
+     1. If `Docker Image` is specified → use the exact image reference as-is. Set `imagePullPolicy: IfNotPresent`. Do NOT include `args` or `command` — the custom image's `ENTRYPOINT`/`CMD` handles startup.
+     2. Otherwise → use the official Docker Hub image with the exact version from CLAUDE.md (e.g., `mongo:7.0.6`, `mysql:8.4`). Include `args`/`command` as needed by the technology.
    - `volumeMounts` referencing the PVC (defined in the separate `_pvc.yaml` file) for data persistence
    - `env` or `envFrom` referencing ConfigMap and Secret
    - Resource requests/limits (sensible defaults per technology)
@@ -298,9 +287,9 @@ For each 3rd party application, generate `environment/<env>/<service_snake_case>
 - Probe: `rabbitmq-diagnostics -q ping`
 
 **Keycloak:**
-- Image resolution: check ENVIRONMENT.md for `Docker File` or `Docker Image` first (see Section 2e).
-  - If custom image: use generated/specified image name; do NOT add `args: ["start-dev"]` (Dockerfile handles it). Use HTTP Port from ENVIRONMENT.md (typically `8180` for custom builds) for containerPort, probes, and services. Add `KC_HTTP_PORT` to ConfigMap.
-  - If official image: `quay.io/keycloak/keycloak:{version}` with `args: ["start-dev"]`. Default port `8080`.
+- Image resolution: check ENVIRONMENT.md for `Docker Image` first (see Section 2e).
+  - If custom image (e.g., `gilacode/hub_single_sign_on:26.5.4`): use the specified image name; do NOT add `args: ["start-dev"]` (custom image handles startup). Use HTTP Port from ENVIRONMENT.md (typically `8180` for custom builds) for containerPort, probes, and services. Add `KC_HTTP_PORT` to ConfigMap.
+  - If no custom image: `quay.io/keycloak/keycloak:{version}` with `args: ["start-dev"]`. Default port `8080`.
 - PVC: none (stateless — state is in the database)
 - Env: `KC_DB`, `KC_DB_URL`, `KC_DB_USERNAME`, `KC_DB_PASSWORD`, `KC_HEALTH_ENABLED`, `KC_HTTP_ENABLED`, `KC_HOSTNAME_STRICT`, `KC_HTTP_PORT`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD` (from Secret/ConfigMap)
 - Init container: wait for MySQL (Hub Support Database) to be ready
@@ -422,7 +411,7 @@ Print a summary of all actions taken:
 - **NodePort for remote access** — every service must have a NodePort Service so developers can connect using local CLI tools from DEVTOOL.md.
 - **Deterministic NodePort assignment** — use alphabetical ordering of service names to assign NodePorts starting from 30000 with interval of 10. This ensures consistent ports across environments and avoids conflicts.
 - **Init containers for dependencies** — if a 3rd party app depends on another (e.g., Keycloak → MySQL), add an init container that waits for the dependency to be ready.
-- **Image resolution precedence** — for each service in each environment, check ENVIRONMENT.md for `Docker File` or `Docker Image` fields first (see Section 2e). Only fall back to official Docker Hub images when neither is specified. For custom Dockerfile builds, use `{project-code}-{service-kebab-case}:latest` as the image name. For official images, pin exact versions from CLAUDE.md (never use `latest`).
+- **Image resolution precedence** — for each service in each environment, check ENVIRONMENT.md for the `Docker Image` field first (see Section 2e). If present, use the exact image reference with `imagePullPolicy: IfNotPresent` and do not add `args`/`command`. If absent, fall back to the official Docker Hub image with the exact version from CLAUDE.md (never use `latest`).
 - **Namespace isolation** — all manifests use the project namespace (project code lowercase). The namespace manifest is generated once per environment.
 - **Credential rules from CLAUDE.md** — when generating default credentials for new services, follow the `# Rules` section in CLAUDE.md for standard username/password format.
 - **Idempotent execution** — safe to re-run. Existing manifests are updated only where values changed. Manual customizations marked with `# CUSTOM:` are preserved.
