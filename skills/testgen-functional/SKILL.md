@@ -73,8 +73,8 @@ The application name is matched against root-level application folders:
 
 ### Version and Module Filtering
 
-- Only include user stories, NFRs, constraints,
-  and references from sections whose version tag is **less than or equal to** the target version
+- Only include user stories, NFRs, constraints, references, test instructions, and bug fixes
+  from sections whose version tag is **less than or equal to** the target version
 - If a module is provided (e.g., `module:Location Information`), only generate the test spec
   for that specific module. TEST_PLAN.md is still generated but scoped to that module.
 - If no module is provided, process all modules (default behavior)
@@ -125,15 +125,27 @@ Read the file and extract:
 7. **References per module**: Lines matching `- [REFxx####] ...`
    Extract: tag, description, linked file path (if any).
 
-8. **Unique roles**: Collect all distinct roles from user stories.
+8. **Test instructions per module**: Content under `### Test` sections. These contain
+   human-specified test setup instructions, test data requirements, and test user
+   configurations that MUST be incorporated into the test plan and specs. Unlike other
+   sections, Test items may not have tagged IDs — they can be free-form bullet points
+   describing test prerequisites, user accounts, or specific testing conditions.
+   Extract: version tag, full text of each bullet point.
 
-9. **Version tag per item**: Each `### User Story`, `### Non Functional Requirement`,
-   and `### Constraint` section contains version blocks formatted as `[v1.0.x]`. Items
-   listed under a version tag belong to that version. Track the version for every
-   extracted user story, NFR, constraint, and reference. Carry this version through to
-   the Source Artifacts table, test scenario Source fields, and Traceability Matrix.
+9. **Bug fixes per module**: Content under `### Bug` sections. These document previously
+   fixed bugs from prior development cycles. Each bug entry describes what was broken and
+   how it was fixed. Extract: version tag, bug tag (e.g., `[BUG-024]`), description.
 
-10. **Deprecated item tracking**: Items marked with strikethrough in a newer version may
+10. **Unique roles**: Collect all distinct roles from user stories.
+
+11. **Version tag per item**: Each `### User Story`, `### Non Functional Requirement`,
+   `### Constraint`, `### Test`, and `### Bug` section contains version blocks formatted
+   as `[v1.0.x]`. Items listed under a version tag belong to that version. Track the
+   version for every extracted user story, NFR, constraint, reference, test instruction,
+   and bug fix. Carry this version through to the Source Artifacts table, test scenario
+   Source fields, and Traceability Matrix.
+
+12. **Deprecated item tracking**: Items marked with strikethrough in a newer version may
     have been replaced by a new item. When an item is removed in version X and replaced by
     item Y, track this replacement. Include a "Removed / Replaced" subsection in the
     Source Artifacts of the TEST_SPEC.md, following the same format used in SPEC.md:
@@ -146,7 +158,7 @@ brackets, e.g., `[v1.0.1]`. Items may also be marked with strikethrough (`~~`).
 
 **Strikethrough exclusion** (always applied, regardless of version parameter):
 - Any line wrapped in `~~strikethrough~~` markup MUST be excluded from processing
-- This includes user stories, NFRs, constraints, and references
+- This includes user stories, NFRs, constraints, references, test instructions, and bug fixes
 - Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` → **SKIP**
 - Partially strikethrough lines (where only part is struck) should still be excluded
   if the tag identifier is within the strikethrough
@@ -381,9 +393,16 @@ connection parameters filled in from CLAUDE.md}
 
 ## 3. Test Users
 
-| User | Role | Purpose | Seeding Method |
-|------|------|---------|----------------|
-| {username} | {role from user stories} | {what this user tests} | Keycloak CLI |
+{Populate this table from TWO sources:
+1. `### Test` sections in PRD.md — human-specified test users with exact credentials
+   and roles. These take precedence and MUST be used as-is (e.g., the Authentication
+   module's `### Test` section may specify exact usernames, passwords, and roles).
+2. Auto-derived from user story roles — for any role NOT already covered by a
+   `### Test` section, generate a test user entry.}
+
+| User | Role | Purpose | Seeding Method | Source |
+|------|------|---------|----------------|--------|
+| {username} | {role} | {what this user tests} | {Keycloak CLI / DB seed} | {PRD.md `### Test` or Auto-derived} |
 
 ---
 
@@ -485,6 +504,7 @@ _(No seeding required — data is a side effect of upstream operations.)_ ← us
 | History / Audit | {n} | View change history of {entity} |
 | Raw Message | {n} | View raw inbound message payload |
 | Pagination | {n} | Paginate {entity} list, change page size |
+| Regression | {n} | Verify previously fixed bugs still hold |
 | **Total** | **{total}** | |
 
 _{Omit rows for types with 0 scenarios.}_
@@ -570,6 +590,8 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 | User Story    | {USHM tag} | {v1.0.x from PRD.md} |
 | NFR           | {NFRHM tag} | {v1.0.x} |
 | Constraint    | {CONSHM tag} | {v1.0.x} |
+| Test          | {Test instruction summary} | {v1.0.x} |
+| Bug Fix       | {BUG tag} | {v1.0.x} |
 
 | Artifact | Path | Status |
 |----------|------|--------|
@@ -586,6 +608,34 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 | ID | Type | Removed In | Replaced By | Reason |
 |---|---|---|---|---|
 | {old ID} | {User Story/NFR/Constraint} | {version removed} | {new ID or "—"} | {reason} |
+
+### Test Instructions (from PRD.md)
+
+{If the module has a `### Test` section in PRD.md, list all test instructions here.
+These are human-specified requirements for test setup that MUST be followed exactly.
+They take precedence over auto-generated test setup.}
+
+| Version | Instruction |
+|---------|-------------|
+| {v1.0.x} | {Full text of the test instruction from PRD.md} |
+
+{Example: The Authentication module's `### Test` section specifies exact test user
+credentials and roles. These MUST be used in the L1 Auth seeding script instead of
+auto-generated user data.}
+
+_(No test instructions for this module.)_ ← use when the `### Test` section is empty or absent
+
+### Bug Fix Regression Coverage
+
+{If the module has a `### Bug` section in PRD.md, list each bug fix and its corresponding
+regression test requirement. Each bug fix MUST have at least one test scenario that verifies
+the fix still holds — preventing the same bug from reappearing.}
+
+| Bug Tag | Version | Description | Regression Scenario |
+|---------|---------|-------------|-------------------|
+| {BUG-XXX} | {v1.0.x} | {Bug fix description from PRD.md} | {REG-prefix-NNN: scenario ID in Section 4} |
+
+_(No bug fixes recorded for this module.)_ ← use when the `### Bug` section is empty or absent
 
 ---
 
@@ -917,6 +967,29 @@ Assert existence after upstream tests complete.
   - Page navigation buttons work correctly
   - Page size selector changes the number of visible rows
 
+### 4k. Regression Tests
+
+{Derived from `### Bug` sections in PRD.md. For each bug fix recorded in the module,
+generate a regression test scenario that verifies the fix still holds. This prevents
+previously fixed bugs from reappearing during redevelopment.}
+
+#### REG-{prefix}-001: Verify fix for {BUG-XXX}
+
+- **Source**: {BUG-XXX} [v1.0.x] from `### Bug` section
+- **Bug Description**: {description of what was broken and how it was fixed}
+- **Role**: {role — infer from the bug context or use the most common module role}
+- **Preconditions**: {relevant seeded data exists}
+- **Steps**:
+  1. {Steps that would have triggered the original bug}
+  2. {Navigate to the affected screen/feature}
+  3. {Perform the action that was broken}
+- **Expected**:
+  - {The corrected behavior as described in the bug fix}
+  - {The bug does NOT reappear — the fix is still in effect}
+
+{Repeat for each bug fix in the module's `### Bug` section.
+If no `### Bug` section exists for this module, omit Section 4k entirely.}
+
 ---
 
 ## 5. Data Cleanup
@@ -972,19 +1045,20 @@ rabbitmqadmin purge queue name={queue_name}
 
 ## 6. Traceability Matrix
 
-| Test Scenario ID | User Story | Version | NFR(s) | Constraint(s) | Test Type |
-|-----------------|------------|---------|--------|---------------|-----------|
-| NAV-{prefix}-001 | — | — | — | — | Navigation |
-| SRCH-{prefix}-001 | {tag} | v1.0.x | — | — | Search |
-| VIEW-{prefix}-001 | {tag} | v1.0.x | — | — | View |
-| CRUD-{prefix}-001 | {tag} | v1.0.x | — | — | Create |
-| CRUD-{prefix}-002 | {tag} | v1.0.x | — | — | Edit |
-| CRUD-{prefix}-003 | {tag} | v1.0.x | — | — | Delete |
-| VAL-{prefix}-001 | — | v1.0.x | — | {tag} | Validation |
-| TOG-{prefix}-001 | {tag} | v1.0.x | — | — | Toggle |
-| HIST-{prefix}-001 | {tag} | v1.0.x | — | — | History |
-| RAW-{prefix}-001 | {tag} | v1.0.x | — | — | Raw Message |
-| PAGE-{prefix}-001 | — | — | — | — | Pagination |
+| Test Scenario ID | User Story | Bug Fix | Version | NFR(s) | Constraint(s) | Test Type |
+|-----------------|------------|---------|---------|--------|---------------|-----------|
+| NAV-{prefix}-001 | — | — | — | — | — | Navigation |
+| SRCH-{prefix}-001 | {tag} | — | v1.0.x | — | — | Search |
+| VIEW-{prefix}-001 | {tag} | — | v1.0.x | — | — | View |
+| CRUD-{prefix}-001 | {tag} | — | v1.0.x | — | — | Create |
+| CRUD-{prefix}-002 | {tag} | — | v1.0.x | — | — | Edit |
+| CRUD-{prefix}-003 | {tag} | — | v1.0.x | — | — | Delete |
+| VAL-{prefix}-001 | — | — | v1.0.x | — | {tag} | Validation |
+| TOG-{prefix}-001 | {tag} | — | v1.0.x | — | — | Toggle |
+| HIST-{prefix}-001 | {tag} | — | v1.0.x | — | — | History |
+| RAW-{prefix}-001 | {tag} | — | v1.0.x | — | — | Raw Message |
+| PAGE-{prefix}-001 | — | — | — | — | — | Pagination |
+| REG-{prefix}-001 | — | {BUG-XXX} | v1.0.x | — | — | Regression |
 ```
 
 ---
@@ -1075,7 +1149,13 @@ After all test specification files are successfully generated, append an entry t
 ### Parsing Rules
 - **Strikethrough items MUST always be excluded**: Lines wrapped in `~~` are deprecated/removed.
 - **Version filtering**: When a target version is provided, only include items from sections
-  with version tags <= target version.
+  with version tags <= target version. This applies to all section types: User Story, NFR,
+  Constraint, Reference, Test, and Bug.
+- **Test instructions from PRD.md are authoritative**: When a `### Test` section specifies
+  exact test users, credentials, or setup procedures, use them as-is. Do not override with
+  auto-generated values.
+- **Bug fixes MUST have regression coverage**: Every bug fix in a `### Bug` section must
+  produce at least one REG-* test scenario in the module's TEST_SPEC.md.
 - **Version + module are independent axes**: Both may be combined freely. A story must
   satisfy BOTH filters to be included.
 
