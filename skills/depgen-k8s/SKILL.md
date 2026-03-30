@@ -1,13 +1,12 @@
 ---
 name: depgen-k8s
 description: >
-  Generate a Dockerfile for an application and append Kubernetes manifests to a centralized
-  deployment folder. Supports Spring Boot (Java), Laravel (PHP), and Node.js application
-  stacks. Auto-detects the stack from project files (pom.xml, composer.json, package.json),
-  reads CLAUDE.md dependencies, SPECIFICATION.md tech stack, and the application's
-  externalized environment variables. Generates a Dockerfile in the application folder and
-  creates/appends Kubernetes manifests (Namespace, ConfigMap, Secret, Deployment, Service,
-  Ingress) in the project-level deployment/kubernetes/ folder.
+  Generate a Dockerfile and per-environment Kubernetes manifests for an application. Supports
+  Spring Boot (Java), Laravel (PHP), and Node.js application stacks. Auto-detects the stack
+  from project files (pom.xml, composer.json, package.json), reads CLAUDE.md dependencies,
+  SPECIFICATION.md tech stack, and the application's externalized environment variables.
+  Generates a Dockerfile in the application root folder and Kubernetes manifest YAML files
+  in `<app_folder>/k8s/<environment>/` for each environment defined in CLAUDE.md.
   Standardized input: application name (mandatory).
   Use this skill whenever the user asks to create deployment artifacts, Dockerfiles,
   Kubernetes manifests, or containerize an application. Also trigger when the user says
@@ -20,11 +19,12 @@ description: >
 This skill generates deployment artifacts for a custom application:
 
 1. **Dockerfile** — A production-ready, multi-stage container build file placed in the
-   application folder.
-2. **Kubernetes manifests** — Centralized in the project-level `deployment/kubernetes/`
-   folder (same level as CLAUDE.md). Each application gets its own manifest file. All custom
-   applications share this centralized folder so the entire project can be deployed from one
-   location.
+   application root folder.
+2. **Kubernetes manifests** — Per-environment manifest files stored in the application's
+   own `k8s/<environment>/` folder. One manifest set is generated for **each environment**
+   defined in CLAUDE.md's `# Environment` section. Each environment may have different
+   ConfigMap/Secret values (hostnames, credentials, resource limits) while sharing the same
+   Deployment, Service, and Ingress structure.
 
 **Note:** Only custom applications (from `# Custom Applications` in CLAUDE.md) are processed.
 3rd party supporting applications and external services are NOT containerized by this skill.
@@ -59,7 +59,7 @@ The application name is matched against root-level application folders:
 | SPECIFICATION.md | `<app_folder>/context/specification/SPECIFICATION.md` |
 | Source code | `<app_folder>/` (pom.xml, composer.json, package.json, etc.) |
 | Application config | Stack-dependent (see detection) |
-| K8s manifests output | Project root `deployment/kubernetes/` |
+| K8s manifests output | `<app_folder>/k8s/<environment>/` (one folder per environment from CLAUDE.md) |
 
 ## Pre-Requisites
 
@@ -80,6 +80,11 @@ If any are missing, stop and inform the user.
 3. Verify source code exists (at least one of: `pom.xml`, `composer.json`, `package.json`)
 4. Verify `<app_folder>/context/specification/SPECIFICATION.md` exists
 5. Read `CLAUDE.md` (already in context) for project-level information
+6. **Detect environments** from CLAUDE.md's `# Environment` section:
+   - Each `## <Environment Name>` heading under `# Environment` is an environment
+   - Convert the environment name to snake_case for the folder name (e.g., "Home Server Environment" → `home_server_environment`, "Local Development Environment" → `local_development_environment`)
+   - If no environments are defined, stop with error: "No environments found in CLAUDE.md `# Environment` section."
+   - Record the list of environments for Phase 3
 
 ### Phase 1: Detect Application Stack
 
@@ -241,71 +246,111 @@ Read `references/dockerfile-spring-boot.md`, `references/dockerfile-laravel.md`,
 
 ### Phase 3: Generate or Update Kubernetes Manifests
 
-Kubernetes manifests are stored in a **centralized project-level folder** at
-`deployment/kubernetes/` (same level as CLAUDE.md). Each custom application gets its own
-manifest file named `<app_snake_case>.yaml` (e.g., `hub_middleware.yaml`).
+Kubernetes manifests are stored **per-environment** inside the application folder at
+`<app_folder>/k8s/<environment>/`. One set of manifests is generated for **each environment**
+detected in Phase 0 from CLAUDE.md's `# Environment` section.
 
 #### 3a. Ensure Folder Structure
 
-1. Check if `deployment/` folder exists at the project root. If not, create it.
-2. Check if `deployment/kubernetes/` exists. If not, create it.
+For each environment detected in Phase 0:
+1. Check if `<app_folder>/k8s/` exists. If not, create it.
+2. Check if `<app_folder>/k8s/<environment>/` exists. If not, create it.
 
-#### 3b. Generate Application Manifest
+Example folder structure (for an app with two environments):
+```
+hub_middleware/
+  Dockerfile
+  k8s/
+    local_development_environment/
+      namespace.yaml
+      configmap.yaml
+      secret.yaml
+      deployment.yaml
+      service.yaml
+      ingress.yaml          (optional)
+    home_server_environment/
+      namespace.yaml
+      configmap.yaml
+      secret.yaml
+      deployment.yaml
+      service.yaml
+      ingress.yaml          (optional)
+```
 
-Each application manifest file (`deployment/kubernetes/<app_snake_case>.yaml`) contains
-**all** Kubernetes resources for that application in a single multi-document YAML file
-(separated by `---`):
+#### 3b. Generate Per-Environment Manifests
 
-1. **Namespace** — shared across all applications in the project (use project code from
-   CLAUDE.md in lowercase, e.g., `urp`)
-2. **ConfigMap** — non-sensitive environment variables (from Step 4 classification)
-3. **Secret** — sensitive environment variables (from Step 4 classification), base64-encoded
-4. **Deployment** — container spec with:
+For **each environment**, generate individual YAML files inside
+`<app_folder>/k8s/<environment>/`:
+
+1. **`namespace.yaml`** — Namespace resource (use project code from CLAUDE.md in lowercase,
+   e.g., `urp`). Shared across all applications — identical content for every environment.
+2. **`configmap.yaml`** — Non-sensitive environment variables (from Step 4 classification).
+   Values may differ per environment — use defaults from `.env` for local development;
+   use `TODO` placeholders for other environments where values are not known.
+3. **`secret.yaml`** — Sensitive environment variables (from Step 4 classification),
+   base64-encoded. Values use `TODO` placeholders for all non-local environments.
+4. **`deployment.yaml`** — Container spec with:
    - Versioned image tag (e.g., `image: hub-middleware:1.0.3`), NOT `latest`
    - `envFrom` referencing ConfigMap and Secret
    - Resource requests/limits (sensible defaults: 256Mi-512Mi memory, 250m-500m CPU)
    - Readiness and liveness probes using the detected health endpoint
    - Non-root `securityContext`
-5. **Service** — ClusterIP service exposing the application port
-6. **Ingress** (optional) — if the application is a web application or API with external access
+5. **`service.yaml`** — ClusterIP service exposing the application port
+6. **`ingress.yaml`** (optional) — if the application is a web application or API with
+   external access. Only generate if the environment's CLAUDE.md description suggests
+   external access (e.g., mentions domain, IP, or ingress).
 
 Read `references/k8s-patterns.md` for the complete manifest templates per resource type.
 
-#### 3c. Create or Update Logic
+#### 3c. Environment-Specific Values
 
-1. **If `deployment/kubernetes/<app_snake_case>.yaml` does not exist** (CREATE mode):
-   - Generate the full manifest file with all resources
-   - Write to `deployment/kubernetes/<app_snake_case>.yaml`
+When generating manifests for each environment:
+
+- **ConfigMap and Secret values**: Read `SECRET.md` from the project root. If SECRET.md
+  contains environment-specific credentials (organized by environment), use the matching
+  values for each environment's manifests. If values are not found, use `TODO` as placeholder.
+- **Resource limits**: Use sensible defaults. If the CLAUDE.md environment description
+  mentions resource constraints, adjust accordingly.
+- **Ingress hostnames**: Derive from the environment description in CLAUDE.md if available
+  (e.g., IP address, domain name). Use `TODO` if not specified.
+- **Deployment, Service, Namespace**: Structure is identical across environments — only
+  ConfigMap/Secret values and Ingress hostnames differ.
+
+#### 3d. Create or Update Logic
+
+For each environment folder (`<app_folder>/k8s/<environment>/`):
+
+1. **If a manifest file does not exist** (CREATE mode):
+   - Generate the file from the detected values and templates
+   - Write to `<app_folder>/k8s/<environment>/<resource>.yaml`
 
 2. **If it already exists** (UPDATE mode):
    - Read the existing manifest
    - Compare detected values against what the manifest currently has:
-     - New or removed environment variables → update ConfigMap and Secret
-     - Image version changed → update Deployment image tag
-     - Port changed → update Service and Deployment container port
-     - Health endpoint changed → update probes
+     - New or removed environment variables → update configmap.yaml and secret.yaml
+     - Image version changed → update deployment.yaml image tag
+     - Port changed → update service.yaml and deployment.yaml container port
+     - Health endpoint changed → update probes in deployment.yaml
      - New dependencies → add init containers or environment variables
-   - Preserve any resources or annotations marked with `# CUSTOM:` comments
+   - Preserve any lines or resources marked with `# CUSTOM:` comments
    - Update only the parts that changed
    - Log what was changed
 
-#### 3d. Namespace Consistency
+#### 3e. Namespace Consistency
 
-All application manifests in `deployment/kubernetes/` share the same namespace (derived
-from the project code in CLAUDE.md). When generating a new manifest, use the same namespace
-as existing manifests in the folder. If no manifests exist yet, derive the namespace from
-CLAUDE.md's `# Project Detail` → Project Code (lowercase).
+All manifests across all environments use the same namespace (derived from the project
+code in CLAUDE.md's `# Project Detail` → Project Code in lowercase, e.g., `urp`).
 
-#### 3e. Docker Build Reference
+#### 3f. Docker Build Reference
 
-Include a comment block at the top of each manifest file documenting how to build and
-tag the Docker image:
+Include a comment block at the top of `deployment.yaml` in each environment folder:
 
 ```yaml
 # Application: <Application Name>
+# Environment: <Environment Name>
 # Build: docker build -t <image-name>:<version> <app_folder>/
 # Tag:   docker tag <image-name>:<version> <image-name>:latest
-# Apply: kubectl apply -f deployment/kubernetes/<app_snake_case>.yaml
+# Apply: kubectl apply -f <app_folder>/k8s/<environment>/
 ---
 ```
 
@@ -337,9 +382,10 @@ These constraints are non-negotiable:
 7. **No `.env` in containers** — The `.env` file is for local development only. Container
    environments receive configuration via K8s ConfigMap + Secret injection.
 
-8. **Centralized K8s manifests** — All Kubernetes manifests live in `deployment/kubernetes/`
-   at the project root. One YAML file per custom application. This enables deploying the
-   entire project from a single folder.
+8. **Per-environment K8s manifests** — Kubernetes manifests live in
+   `<app_folder>/k8s/<environment>/` with separate YAML files per resource type. One folder
+   per environment from CLAUDE.md. This enables environment-specific configuration while
+   keeping the same application structure.
 
 9. **Idempotent — supports both create and update** — If Dockerfile or manifest already
    exists, read it first, detect what changed, and update only the affected parts. Preserve
