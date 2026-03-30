@@ -53,7 +53,7 @@ The application name is matched against root-level application folders:
 | File | Resolved Path |
 |------|---------------|
 | CLAUDE.md | Project root `CLAUDE.md` |
-| LOCAL.md | Project root `LOCAL.md` |
+| SECRET.md | Project root `SECRET.md` |
 | SPECIFICATION.md | `<app_folder>/context/specification/SPECIFICATION.md` |
 | Source code | `<app_folder>/` (pom.xml, composer.json, package.json, etc.) |
 | Application config | Stack-dependent (see detection) |

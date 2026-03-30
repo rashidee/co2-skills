@@ -488,20 +488,20 @@ program instance so that `<tool> --version` prints the correct version.
 The version MUST also be included in JSON output when `--json` flag is used (e.g.,
 `{"version": "1.0.3", "data": {...}}`).
 
-#### 3b. `.env` File Generation from LOCAL.md
-Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
-The `.env` file maps LOCAL.md credential and platform values to the environment variable
+#### 3b. `.env` File Generation from SECRET.md
+Generate a `.env` file at the project root by reading `SECRET.md` from the project root.
+The `.env` file maps SECRET.md credential and platform values to the environment variable
 names used by the CLI application. The spec must define the complete `.env` content with
-actual values from LOCAL.md.
+actual values from SECRET.md.
 
 **Process:**
-1. Read `LOCAL.md` from the project root
+1. Read `SECRET.md` from the project root
 2. Extract relevant values from `# Credential` section (API hosts, ports, tokens) and
    `# Platform` section (Node.js path, etc.)
 3. Map each value to the corresponding environment variable name used by the CLI
 4. Generate the `.env` file with `KEY=value` pairs
 
-**Example `.env` output (derived from LOCAL.md):**
+**Example `.env` output (derived from SECRET.md):**
 ```properties
 # API
 API_BASE_URL=http://localhost:8080/api/v1
@@ -513,8 +513,8 @@ NODE_HOME=C:\nvm4w\nodejs
 
 **Rules:**
 - Only include variables that are actually used by the application (via `process.env`)
-- Use actual values from LOCAL.md — never use placeholders or `TODO`
-- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from SECRET.md — never use placeholders or `TODO`
+- If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file must be loaded using `dotenv` (add as a dependency if not already present)
 - The `.env` file is gitignored

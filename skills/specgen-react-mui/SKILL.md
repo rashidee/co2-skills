@@ -492,21 +492,21 @@ and render it as: `v{version}` (e.g., `v1.0.3`).
 
 The `package.json` `version` field MUST also be set to the version value (e.g., `1.0.3`).
 
-#### 3b. `.env.development` File Generation from LOCAL.md
+#### 3b. `.env.development` File Generation from SECRET.md
 Generate `.env.development` and `.env.production` files at the project root.
-The `.env.development` file is populated by reading `LOCAL.md` from the project root,
+The `.env.development` file is populated by reading `SECRET.md` from the project root,
 mapping credential and platform values to `VITE_`-prefixed environment variable names.
 The `.env.production` file uses placeholder values for production deployment.
 
 **Process:**
-1. Read `LOCAL.md` from the project root
+1. Read `SECRET.md` from the project root
 2. Extract relevant values from `# Credential` section (backend API host/port,
    Keycloak host/realm/client) and `# Platform` section (Node.js path)
 3. Map each value to the corresponding `VITE_` environment variable name
 4. Generate `.env.development` with actual local values
 5. Generate `.env.production` with production placeholder values
 
-**Example `.env.development` output (derived from LOCAL.md):**
+**Example `.env.development` output (derived from SECRET.md):**
 ```properties
 # Backend API
 VITE_API_BASE_URL=http://localhost:8080/api/v1
@@ -519,8 +519,8 @@ VITE_KEYCLOAK_CLIENT_ID=sc-worker-mobile-spa
 
 **Rules:**
 - Only include variables that are actually used in the application code via `import.meta.env`
-- Use actual values from LOCAL.md — never use placeholders or `TODO`
-- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from SECRET.md — never use placeholders or `TODO`
+- If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - Both `.env.development` and `.env.production` are gitignored
 

@@ -363,7 +363,7 @@ Examine the "Depends on" list in CLAUDE.md for the target application:
 | No database dependency listed | Database = none |
 
 Also check `CLAUDE.md`'s database section for the exact database name, and read
-`LOCAL.md` (in the project root) for host, port, and credentials to use in the
+`SECRET.md` (in the project root) for host, port, and credentials to use in the
 spec's application configuration.
 
 ### Authentication Detection
@@ -461,7 +461,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Authentication**: Auto-determined (see above)
 - **Scheduling**: Auto-determined (see above)
 - **Messaging**: Auto-determined (see above)
-- **Database name/credentials**: From LOCAL.md (root-level file with local environment credentials)
+- **Database name/credentials**: From SECRET.md (root-level file with local environment credentials)
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
@@ -580,20 +580,20 @@ The `.env` file must include `APP_VERSION={version}` with the actual version val
 
 The `pom.xml` `<version>` element MUST also be set to the version value (e.g., `1.0.3`).
 
-#### 3b. `.env` File Generation from LOCAL.md
-Generate a `.env` file at the project root by reading `LOCAL.md` from the project root.
-The `.env` file maps LOCAL.md credential and platform values to the environment variable
+#### 3b. `.env` File Generation from SECRET.md
+Generate a `.env` file at the project root by reading `SECRET.md` from the project root.
+The `.env` file maps SECRET.md credential and platform values to the environment variable
 names referenced in `application.yml`. The spec must define the complete `.env` content
-with actual values from LOCAL.md.
+with actual values from SECRET.md.
 
 **Process:**
-1. Read `LOCAL.md` from the project root
+1. Read `SECRET.md` from the project root
 2. Extract relevant values from `# Credential` section (database hosts, ports, usernames,
    passwords) and `# Platform` section (JDK path, Maven path, Node.js path, etc.)
 3. Map each value to the corresponding `${ENV_VAR}` name used in `application.yml`
 4. Generate the `.env` file with `KEY=value` pairs
 
-**Example `.env` output (derived from LOCAL.md):**
+**Example `.env` output (derived from SECRET.md):**
 ```properties
 # Database
 DB_HOST=localhost
@@ -623,8 +623,8 @@ MAVEN_HOME=C:\Users\rashidee.rashid.BESTINET\apache-maven-3.9.12
 
 **Rules:**
 - Only include variables that are actually referenced in `application.yml`
-- Use actual values from LOCAL.md — never use placeholders or `TODO`
-- If LOCAL.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from SECRET.md — never use placeholders or `TODO`
+- If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file is gitignored (already covered in `.gitignore`)
 
