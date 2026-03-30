@@ -236,7 +236,7 @@ and updated throughout the workflow. Location: `<app_folder>/context/develop/UPG
    - **If YES**: Read it and determine the current state:
      - If Phase A is `IN_PROGRESS` or `NEW` → resume Phase A (go to Phase 2)
      - If Phase A is `COMPLETED` or `SKIPPED` and Phase B is `IN_PROGRESS` or `NEW` → resume Phase B (go to Phase 3)
-     - If BOTH phases are `COMPLETED` or `SKIPPED` → output completion promise
+     - If BOTH phases are `COMPLETED` or `SKIPPED` → go to Phase 4 (deployment artifacts), then Phase 5 (completion)
    - **If NO**: Proceed to Phase 1 (fresh start)
 
 ### Phase 1: Initialization
@@ -311,7 +311,34 @@ This phase delegates entirely to `conductor-feature-develop`. The delegation wor
      - Ralph Loop will re-feed the prompt, and Phase 0 will resume Phase B
 4. **Log** progress in the Upgrade Log table
 
-### Phase 4: Completion
+### Phase 4: Generate Deployment Artifacts
+
+After BOTH phases are complete (Phase A: `COMPLETED` or `SKIPPED`, Phase B: `COMPLETED`),
+regenerate deployment artifacts to ensure they reflect the final state of both bug fixes
+and new features.
+
+#### Step 4.1: Invoke depgen-k8s
+
+Invoke the deployment artifact generator:
+```
+Skill(skill: "depgen-k8s", args: "<application>")
+```
+
+The `depgen-k8s` skill auto-detects the technology stack from the application's project files
+(pom.xml, composer.json, or package.json) and will regenerate:
+- `Dockerfile` — production-ready, multi-stage Docker build in the application folder
+- `<source-code-path>/k8s/<environment>/` — Per-environment Kubernetes manifests
+
+#### Step 4.2: Verify Deployment Artifacts
+
+Confirm that both files were generated:
+- `<source-code-path>/Dockerfile` exists
+- `<source-code-path>/k8s/` folder exists with at least one environment subfolder
+
+If either file is missing, log a warning in UPGRADE_MASTER.md and proceed to Phase 5
+(Completion) — do NOT block completion on deployment artifacts.
+
+### Phase 5: Completion
 
 1. **Verify both phases**:
    - Phase A: `COMPLETED` or `SKIPPED`
