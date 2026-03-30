@@ -57,6 +57,7 @@
     - util-ustagger: Tags untagged User Stories, NFRs, Constraints and References in PRD.md with unique 9-character ID codes. (Prerequisite: PRD.md)
     - util-usanalyzer: Analyzes PRD.md for quality issues such as incomplete stories, bad references, contradictions and duplicates. (Prerequisite: PRD.md)
     - util-projectsync: Validates dependencies and deployment environments, then syncs project folder structure, PRD.md, and BUG.md files based on applications and modules defined in CLAUDE.md. (Prerequisite: CLAUDE.md)
+    - util-preparek8senv: Generates K8s StatefulSet manifests for all 3rd party supporting applications across all environments. Creates/updates ENVIRONMENT.md with per-environment configs. Output in environment/<env>/ folders. (Prerequisite: CLAUDE.md, DEVTOOL.md)
     - modelgen-relational: Extracts relational (SQL) entity models from user stories using Domain-Driven Design principles. (Prerequisite: PRD.md)
     - modelgen-nosql: Extracts NoSQL document models (MongoDB, Couchbase, DynamoDB, Firestore, CosmosDB) from user stories. (Prerequisite: PRD.md)
     - mockgen-tailwind: Generates HTML mockup screens served via Node.js + Express + HTMX. (Prerequisite: PRD.md, modelgen-relational or modelgen-nosql)

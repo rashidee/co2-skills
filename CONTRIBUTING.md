@@ -42,6 +42,7 @@ co2-skills/
 │   ├── util-ustagger/
 │   ├── util-usanalyzer/
 │   ├── util-projectsync/
+│   ├── util-preparek8senv/
 │   ├── util-modulesync/
 │   ├── modelgen-relational/
 │   ├── modelgen-nosql/
@@ -77,7 +78,7 @@ Every skill belongs to one of the following families. If your contribution does 
 
 | Prefix | CO2 Phase | Purpose | Example Invocation |
 |---|---|---|---|
-| `util-` | PRD Clean-Up | Validate, tag, and synchronize context files | `/util-ustagger app1/context/PRD.md` |
+| `util-` | Setup & Validation | Validate, tag, sync context files, and prepare infrastructure | `/util-projectsync`, `/util-preparek8senv` |
 | `modelgen-` | Artifact Generation | Generate domain data models from PRD.md | `/modelgen-relational <app_name>` |
 | `mockgen-` | Artifact Generation | Generate HTML UI mockup screens | `/mockgen-tailwind <app_name>` |
 | `specgen-` | Artifact Generation | Generate stack-specific technical specifications | `/specgen-spring-jpa-jtehtmx <app_name>` |
