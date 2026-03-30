@@ -275,7 +275,7 @@ _The skill goal is to generate deployment artifacts (Dockerfile and deployment s
 
 Example skill invocation for deployment artifact generation:
 ~~~bash
-/depgen-ansible-k8s <app_name> ## For generating Dockerfile and DEPLOYMENT.md with Ansible + Kubernetes deployment specification
+/depgen-k8s <app_name> ## For generating Dockerfile and Kubernetes manifests
 ~~~
 
 - Input:
@@ -283,10 +283,9 @@ Example skill invocation for deployment artifact generation:
   - CLAUDE.md (to understand dependencies and 3rd party applications)
   - Application source code (to detect stack via pom.xml, composer.json, or package.json)
 - Output:
-  - **Dockerfile** — Production-ready, multi-stage Docker build file at the application root
-  - **DEPLOYMENT.md** — Comprehensive deployment specification containing:
-    - Kubernetes manifests (Deployment, Service, ConfigMap, Secret, Ingress)
-    - Ansible playbook specifications for automated deployment
+  - **Dockerfile** — Production-ready, multi-stage Docker build file in the application folder
+  - **Kubernetes manifests** — Centralized in `deployment/kubernetes/<app>.yaml` containing:
+    - Namespace, ConfigMap, Secret, Deployment, Service, Ingress
     - Environment variable mapping from `.env` to Kubernetes ConfigMap/Secret
     - Health check and readiness probe configuration
 
@@ -294,12 +293,15 @@ Example of the deployment artifact output:
 ~~~markdown
 - <application_folder>
   - Dockerfile
-  - DEPLOYMENT.md
+- deployment
+  - kubernetes
+    - <app_1>.yaml
+    - <app_2>.yaml
 ~~~
 
 | Skill | Technology Stack |
 |-------|-----------------|
-| `depgen-ansible-k8s` | Ansible + Kubernetes (Spring Boot, Laravel, Node.js) |
+| `depgen-k8s` | Kubernetes (Spring Boot, Laravel, Node.js) |
 
 # Bug Fixing Workflow
 
@@ -451,7 +453,7 @@ We currently support:
 
 | Skill | Deployment Stack |
 |-------|-----------------|
-| `depgen-ansible-k8s` | Ansible + Kubernetes (Spring Boot, Laravel, Node.js) |
+| `depgen-k8s` | Kubernetes (Spring Boot, Laravel, Node.js) |
 
 We are looking for contributors to create new `depgen-*` skills for other deployment strategies, such as:
 
@@ -461,7 +463,7 @@ We are looking for contributors to create new `depgen-*` skills for other deploy
 - **Serverless**: AWS Lambda + API Gateway, Vercel, Netlify
 - **Infrastructure-as-Code**: Terraform, Pulumi, CDK
 
-Each `depgen-*` skill takes the same inputs (SPECIFICATION.md, CLAUDE.md, application source code) and produces a `Dockerfile` and a deployment specification document tailored to the target deployment strategy.
+Each `depgen-*` skill takes the same inputs (SPECIFICATION.md, CLAUDE.md, application source code) and produces a `Dockerfile` and deployment manifests tailored to the target deployment strategy.
 
 ## Other Contribution Areas
 

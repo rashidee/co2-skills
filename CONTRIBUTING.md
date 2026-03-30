@@ -51,7 +51,7 @@ co2-skills/
 │   ├── specgen-laravel-eloquent-bladehtmx/
 │   ├── testgen-functional/
 │   ├── conductor-feature-prepare/
-│   ├── depgen-ansible-k8s/
+│   ├── depgen-k8s/
 │   ├── conductor-feature-develop/
 │   ├── conductor-defect/
 │   └── conductor-upgrade-version/
@@ -82,7 +82,7 @@ Every skill belongs to one of the following families. If your contribution does 
 | `mockgen-` | Artifact Generation | Generate HTML UI mockup screens | `/mockgen-tailwind <app_name>` |
 | `specgen-` | Artifact Generation | Generate stack-specific technical specifications | `/specgen-spring-jpa-jtehtmx <app_name>` |
 | `testgen-` | Artifact Generation | Generate Playwright E2E test plans and specs | `/testgen-functional <app_name>` |
-| `depgen-` | Deployment | Generate Dockerfile and deployment specifications | `/depgen-ansible-k8s <app_name>` |
+| `depgen-` | Deployment | Generate Dockerfile and deployment specifications | `/depgen-k8s <app_name>` |
 | `conductor-` | Orchestration | Orchestrate multi-skill phase pipelines | `/conductor-feature-develop <app_name>` |
 
 ---
