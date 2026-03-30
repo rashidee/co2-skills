@@ -236,6 +236,21 @@ Before starting any work, check `CHANGELOG.md` in the project root:
    - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
 4. If no version argument was provided, skip this check.
 
+### Redo/Redevelop Guard
+
+If the requested version already has a `conductor-feature-develop` entry in CHANGELOG.md for
+the same application, this means the version was previously developed. Before proceeding, check
+whether the previous artifacts and code still exist:
+
+1. Scan CHANGELOG.md for rows matching the requested version, application, AND skill name
+   `conductor-feature-develop`.
+2. If a matching entry is found:
+   - Check if `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` still exists, OR
+   - Check if source code files exist in `<app_folder>/` (e.g., `pom.xml`, `composer.json`,
+     `package.json`, or `src/` directory)
+   - If **either** exists: **STOP immediately**. Print: `"Version {version} for {application} was already developed (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing IMPLEMENTATION_MASTER.md and source code, then re-run this skill."` Do NOT proceed.
+   - If **neither** exists (artifacts and code have been cleaned up): proceed normally — this is a legitimate redo/redevelop scenario.
+
 ## Workflow
 
 ### Phase 0: Resume Check (Runs Every Ralph Loop Iteration)
@@ -432,6 +447,7 @@ Create `<app_folder>/context/develop/<module-slug>/IMPLEMENTATION_MODULE.md`:
 | Resource | Path |
 |----------|------|
 | User Stories | <IDs from PRD.md> |
+| Bug Fixes | <IDs from PRD.md `### Bug` section, if any> |
 | Model | `model/<module-slug>/model.md` |
 | Specification | `specification/<module-slug>/SPEC.md` |
 | Test Spec | `test/<module-slug>/TEST_SPEC.md` |
@@ -501,7 +517,16 @@ Read ALL module-specific resources:
 - `test/<module-slug>/TEST_SPEC.md` — test scenarios, seeding scripts, assertions
 - `mockup/<role>/content/<module_screen>.html` — UI mockup for visual reference
 - Relevant entries from `PRD.md` — user stories for this module
+- `### Bug` section from `PRD.md` for this module (if present) — previously fixed bugs
 - Relevant message files from `reference/message/` if applicable
+
+**Bug Regression Awareness (Redo/Redevelop Scenario):**
+If the module has a `### Bug` section in PRD.md, this means the application was previously
+developed and users reported bugs that were fixed. During redevelopment, these bug fixes MUST
+be incorporated into the implementation to prevent the same bugs from reappearing:
+- Read each bug entry (e.g., `[BUG-024] Fixed Message ID link...`) to understand what was broken and how it was fixed
+- Treat each bug fix as an implicit requirement — the implementation must produce behavior consistent with the fix description
+- If a bug fix contradicts or supplements a user story or NFR, the bug fix takes precedence (it reflects the latest validated behavior)
 
 Update IMPLEMENTATION_MODULE.md: mark step 1 complete with findings summary.
 

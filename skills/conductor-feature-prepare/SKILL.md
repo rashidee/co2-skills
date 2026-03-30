@@ -134,6 +134,22 @@ The application name is matched against root-level application folders:
 project details, infrastructure paths, credentials, and configuration. You do NOT need to read
 it manually — the information is already available in your context.
 
+## Redo/Redevelop Guard
+
+If the requested version already has a `conductor-feature-prepare` entry in CHANGELOG.md for
+the same application, this means the context artifacts were previously generated. Before
+proceeding, check whether the previous artifacts still exist:
+
+1. Read `CHANGELOG.md` from the project root. If it does not exist, skip this check.
+2. Scan for rows matching the requested version, application, AND skill name
+   `conductor-feature-prepare`.
+3. If a matching entry is found:
+   - Check if context artifacts still exist in `<app_folder>/context/` (model/, mockup/,
+     specification/, test/ folders with `.md` or `.html` files inside)
+   - If artifacts **exist**: **STOP immediately**. Print: `"Version {version} for {application} already has context artifacts (recorded in CHANGELOG.md) and they still exist. To redo, first delete the existing context artifact folders (model/, mockup/, specification/, test/), then re-run this skill."` Do NOT proceed.
+   - If artifacts **do not exist** (folders are empty or deleted): proceed normally — this is a legitimate redo scenario.
+4. If no matching entry is found, proceed normally.
+
 ## Workflow
 
 ### Phase 0: Resume Check (Runs Every Ralph Loop Iteration)
@@ -181,6 +197,25 @@ stories, Phase 1 operates in **update mode**:
 - The sub-skills are responsible for reading the `[v<version>]` sections in PRD.md and
   updating their output files accordingly (appending new fields, modifying existing diagrams,
   updating specs and test scenarios).
+
+#### Bug Regression Awareness (Redo/Redevelop Scenario)
+
+PRD.md modules may contain a `### Bug` section listing previously fixed bugs (e.g.,
+`[BUG-024] Fixed Message ID link...`). These entries represent validated fixes from prior
+development cycles. When generating or updating artifacts, sub-skills MUST treat bug fix
+entries as supplementary requirements:
+
+- **modelgen-***: If a bug fix involved model changes (new fields, changed relationships),
+  the model output must reflect the corrected structure.
+- **mockgen-tailwind**: If a bug fix involved UI changes (layout, navigation, styling),
+  the mockup must reflect the corrected design.
+- **specgen-***: If a bug fix involved logic changes (event listeners, processing flow,
+  validation), the specification must include the corrected behavior.
+- **testgen-functional**: Bug fix descriptions should inform test scenarios to ensure
+  regression coverage — each bug fix should have at least one corresponding test assertion.
+
+This ensures that when an application is redeveloped from scratch, previously reported bugs
+do not reappear in the new implementation.
 
 #### Step 1.1: Resolve Application Folder
 

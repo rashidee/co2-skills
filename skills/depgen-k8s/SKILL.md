@@ -22,9 +22,9 @@ This skill generates deployment artifacts for a custom application:
    application root folder.
 2. **Kubernetes manifests** — Per-environment manifest files stored in the application's
    own `k8s/<environment>/` folder. One manifest set is generated for **each environment**
-   defined in CLAUDE.md's `# Environment` section. Each environment may have different
-   ConfigMap/Secret values (hostnames, credentials, resource limits) while sharing the same
-   Deployment, Service, and Ingress structure.
+   with `Deployment Type: Kubernetes` in CLAUDE.md's `# Environment` section. Each environment
+   may have different ConfigMap/Secret values (hostnames, credentials, resource limits) while
+   sharing the same Deployment, Service, and Ingress structure.
 
 **Note:** Only custom applications (from `# Custom Applications` in CLAUDE.md) are processed.
 3rd party supporting applications and external services are NOT containerized by this skill.
@@ -82,10 +82,31 @@ If any are missing, stop and inform the user.
 5. Read `CLAUDE.md` (already in context) for project-level information
 6. **Detect environments** from CLAUDE.md's `# Environment` section:
    - Each `## <Environment Name>` heading under `# Environment` is an environment
-   - Convert the environment name to snake_case for the folder name (e.g., "Home Server Environment" → `home_server_environment`, "Local Development Environment" → `local_development_environment`)
+   - For each environment, extract:
+     - Environment name and snake_case folder identifier (e.g., "Home Server" → `home_server`)
+     - `Domain` field (e.g., `localhost`, `home.server`)
+     - `Deployment Type` field (e.g., `Manual`, `Kubernetes`)
+     - `IP` field (from SSH Configuration or direct IP field) if present — needed for `hostAliases` generation in Phase 3
    - If no environments are defined, stop with error: "No environments found in CLAUDE.md `# Environment` section."
-   - For each environment, extract the `Domain` field and `IP` field (from SSH Configuration or direct IP field) if present — these are needed for `hostAliases` generation in Phase 3
-   - Record the list of environments (with Domain/IP) for Phase 3
+
+7. **Filter environments by Deployment Type** — apply the decision tree:
+
+   ```
+   For each environment in CLAUDE.md:
+     ├── Deployment Type = "Kubernetes"
+     │     → INCLUDE: Generate K8s manifests for this environment (Phase 3)
+     │
+     ├── Deployment Type = any other value (e.g., "Manual", "Docker Compose", etc.)
+     │     → SKIP: Do not generate K8s manifests for this environment
+     │       Log: "Skipping <Environment Name> — Deployment Type: <type> (not Kubernetes)"
+     │
+     └── Deployment Type field is missing
+           → SKIP: Do not generate K8s manifests for this environment
+             Log: "Skipping <Environment Name> — no Deployment Type specified"
+   ```
+
+   - If no environment has `Deployment Type: Kubernetes`, stop with error: "No Kubernetes environments found in CLAUDE.md. This skill only generates K8s manifests for environments with Deployment Type: Kubernetes."
+   - Record only the Kubernetes environments (with Domain/IP) for Phase 3
 
 ### Phase 1: Detect Application Stack
 
@@ -248,28 +269,21 @@ Read `references/dockerfile-spring-boot.md`, `references/dockerfile-laravel.md`,
 ### Phase 3: Generate or Update Kubernetes Manifests
 
 Kubernetes manifests are stored **per-environment** inside the application folder at
-`<app_folder>/k8s/<environment>/`. One set of manifests is generated for **each environment**
-detected in Phase 0 from CLAUDE.md's `# Environment` section.
+`<app_folder>/k8s/<environment>/`. One set of manifests is generated for **each Kubernetes
+environment** filtered in Phase 0 (only environments with `Deployment Type: Kubernetes`).
 
 #### 3a. Ensure Folder Structure
 
-For each environment detected in Phase 0:
+For each Kubernetes environment filtered in Phase 0:
 1. Check if `<app_folder>/k8s/` exists. If not, create it.
 2. Check if `<app_folder>/k8s/<environment>/` exists. If not, create it.
 
-Example folder structure (for an app with two environments):
+Example folder structure (where only "Home Server" has `Deployment Type: Kubernetes`):
 ```
 hub_middleware/
   Dockerfile
   k8s/
-    local_development_environment/
-      namespace.yaml
-      configmap.yaml
-      secret.yaml
-      deployment.yaml
-      service.yaml
-      ingress.yaml          (optional)
-    home_server_environment/
+    home_server/
       namespace.yaml
       configmap.yaml
       secret.yaml
@@ -280,7 +294,7 @@ hub_middleware/
 
 #### 3b. Generate Per-Environment Manifests
 
-For **each environment**, generate individual YAML files inside
+For **each Kubernetes environment** (filtered in Phase 0), generate individual YAML files inside
 `<app_folder>/k8s/<environment>/`:
 
 1. **`namespace.yaml`** — Namespace resource (use project code from CLAUDE.md in lowercase,
@@ -389,8 +403,8 @@ These constraints are non-negotiable:
 
 8. **Per-environment K8s manifests** — Kubernetes manifests live in
    `<app_folder>/k8s/<environment>/` with separate YAML files per resource type. One folder
-   per environment from CLAUDE.md. This enables environment-specific configuration while
-   keeping the same application structure.
+   per Kubernetes environment from CLAUDE.md (only environments with `Deployment Type: Kubernetes`).
+   This enables environment-specific configuration while keeping the same application structure.
 
 9. **Idempotent — supports both create and update** — If Dockerfile or manifest already
    exists, read it first, detect what changed, and update only the affected parts. Preserve

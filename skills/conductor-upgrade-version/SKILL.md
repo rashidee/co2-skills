@@ -187,6 +187,17 @@ Before the upgrade can proceed, verify the following exist:
   - `<app_folder>/context/test/` — Test specifications
 - If context artifacts are missing, **stop and inform the user** to run `conductor-feature-prepare` first
 
+### Bug Regression Awareness (Redo/Redevelop Scenario)
+- PRD.md modules may contain `### Bug` sections listing previously fixed bugs from prior
+  development cycles. Both Phase A (conductor-defect) and Phase B (conductor-feature-develop)
+  must take these into account:
+  - **Phase A (conductor-defect)**: Bug fixes recorded in PRD.md `### Bug` sections are
+    already-resolved issues from past versions — they do not need re-fixing but inform context.
+  - **Phase B (conductor-feature-develop)**: When implementing modules, the `### Bug` section
+    entries are treated as supplementary requirements to prevent the same bugs from reappearing
+    during redevelopment. conductor-feature-develop reads these entries alongside user stories,
+    NFRs, and constraints for each module.
+
 ## UPGRADE_MASTER.md — Central Tracking File
 
 The UPGRADE_MASTER.md file tracks the overall upgrade progress. It is created during Phase 1
@@ -226,6 +237,24 @@ and updated throughout the workflow. Location: `<app_folder>/context/develop/UPG
 | Timestamp | Phase | Event | Details |
 |-----------|-------|-------|---------|
 ```
+
+## Redo/Redevelop Guard
+
+If the requested version already has a `conductor-upgrade-version` entry in CHANGELOG.md for
+the same application, this means the version was previously upgraded. Before proceeding, check
+whether the previous artifacts and code still exist:
+
+1. Read `CHANGELOG.md` from the project root. If it does not exist, skip this check.
+2. Scan for rows matching the requested version, application, AND skill name
+   `conductor-upgrade-version` OR `conductor-feature-develop`.
+3. If a matching entry is found:
+   - Check if `<app_folder>/context/develop/UPGRADE_MASTER.md` or
+     `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` still exists, OR
+   - Check if source code files exist in `<app_folder>/` (e.g., `pom.xml`, `composer.json`,
+     `package.json`, or `src/` directory)
+   - If **either** exists: **STOP immediately**. Print: `"Version {version} for {application} was already upgraded (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing tracking files (UPGRADE_MASTER.md, IMPLEMENTATION_MASTER.md) and source code, then re-run this skill."` Do NOT proceed.
+   - If **neither** exists (artifacts and code have been cleaned up): proceed normally — this is a legitimate redo/redevelop scenario.
+4. If no matching entry is found, proceed normally.
 
 ## Processing Workflow
 
