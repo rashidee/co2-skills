@@ -315,10 +315,48 @@ The mockup screens directly map to:
 - Navigation items per role
 - MUI theme color tokens (extract from mockup CSS/styles)
 
+## PRD.md Extended Sections
+
+Before determining optional components, check PRD.md for the following extended sections:
+
+### Architecture Principle Extraction
+
+If PRD.md contains an `# Architecture Principle` section, extract patterns that affect frontend decisions:
+
+| Pattern to Extract | How It Influences the Specification |
+|---|---|
+| "Stateless REST API" | Confirms Axios + TanStack Query pattern for API calls |
+| "Event-driven" / "WebSocket" / "real-time" | Include Socket.io client integration and real-time notification component |
+| "API gateway" | Configure base URL to point to gateway rather than individual services |
+| Backend framework mention | Validate API response format assumptions |
+
+If the section is absent, proceed with existing CLAUDE.md-only detection.
+
+### Design System Extraction
+
+If PRD.md contains a `# Design System` section with a file reference:
+1. Resolve and read the referenced file
+2. Map design tokens to MUI `createTheme()` configuration: palette, typography variants, component style overrides
+3. Include a complete MUI theme configuration in SPECIFICATION.md derived from the design system tokens
+
+If the section is absent, use default MUI theme (existing behavior).
+
+### High Level Process Flow Extraction
+
+If PRD.md contains a `# High Level Process Flow` section:
+1. Process flows with user-visible states inform which status values appear in MUI DataGrid filter dropdowns
+2. Process flows with real-time updates inform WebSocket subscription patterns
+3. Multi-step user flows inform React Router nested route design
+
+If the section is absent, derive UI flow from user stories only (existing behavior).
+
+---
+
 ## Determining Optional Components
 
 Instead of asking the user, the skill determines optional components by analyzing the
-dependencies listed in `CLAUDE.md` and cross-referencing with PRD.md NFRs and constraints.
+dependencies listed in `CLAUDE.md`, the `# Architecture Principle` section in PRD.md (if present),
+and cross-referencing with PRD.md NFRs and constraints.
 
 ### Backend API Detection
 

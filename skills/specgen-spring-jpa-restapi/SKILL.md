@@ -287,15 +287,54 @@ The module model directly maps to:
   model.md files may also include version annotations on fields and indexes. The skill
   must carry these version tags into the generated specification.
 
+## PRD.md Extended Sections
+
+Before determining optional components, check PRD.md for the following extended sections and extract their content for use throughout specification generation:
+
+### Architecture Principle Extraction
+
+If PRD.md contains an `# Architecture Principle` section, read it and extract architectural patterns as a structured context object. These patterns serve as **primary signals** for optional component determination and specification content:
+
+| Pattern to Extract | How It Influences the Specification |
+|---|---|
+| Framework mention (e.g., "Spring Boot") | Validates technology stack choice |
+| "Stateless" | Confirms stateless REST API — no HTTP session, JWT validation only; include in Security section |
+| "Event-driven" | Enhances event publishing/subscribing sections with event catalog and explicit listener patterns |
+| "Message driven" / "message queue" | Validates RabbitMQ integration; include message flow per module |
+| "Document based database" / "MongoDB" | Primary signal for Database = MongoDB |
+| "At-least-once delivery" | Add Idempotency section with idempotency key header pattern and deduplication |
+| "Container based deployment" | Confirms `${ENV_VAR}` syntax for configuration |
+| "API gateway" | Adjust base URL configuration for gateway routing |
+| "Scale out" / "horizontally scalable" | Note horizontal scaling considerations in deployment section |
+
+If the section is absent, proceed with existing CLAUDE.md-only detection.
+
+### High Level Process Flow Extraction
+
+If PRD.md contains a `# High Level Process Flow` section:
+1. Parse all named process flows and their ordered steps
+2. Each process flow is an **authoritative source** for messaging pipeline sections in per-module SPEC.md:
+   - Each step maps to a service method, event listener, or message handler
+   - Error paths generate exception handlers and dead-letter queue configurations
+   - ACK/NACK patterns become outbound message publisher specs with defined schemas
+3. Include a "Process Flow Implementation" subsection in each affected module's SPEC.md mapping flow steps to service methods
+4. Generate an event catalog in SPECIFICATION.md listing all domain events from process flows
+
+If the section is absent, derive messaging patterns from NFRs only (existing behavior).
+
+---
+
 ## Determining Optional Components
 
 Instead of asking the user, the skill determines optional components by analyzing the
-dependencies listed in `CLAUDE.md` and cross-referencing with PRD.md NFRs and
-constraints.
+dependencies listed in `CLAUDE.md`, the `# Architecture Principle` section in PRD.md (if present),
+and cross-referencing with PRD.md NFRs and constraints.
 
 ### Database Detection
 
-Examine the "Depends on" list in CLAUDE.md for the target application:
+**First check PRD.md `# Architecture Principle`**: If it explicitly mentions a database type (e.g., "document based database", "MongoDB", "relational database", "MySQL"), use that as the primary signal.
+
+**Fallback to CLAUDE.md**: Examine the "Depends on" list in CLAUDE.md for the target application:
 
 | Dependency Pattern | Database Selection |
 |---|---|

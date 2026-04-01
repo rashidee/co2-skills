@@ -240,10 +240,14 @@ artifacts (module models, specs, tests) can reference for traceability.
 
 #### Step 1.3: Infer Database Type
 
-1. Read application details from CLAUDE.md (already in context)
-2. Identify the database used by the application from the application's dependency list:
-   - If the application depends on MySQL, PostgreSQL, or another relational database → **relational**
-   - If the application depends on MongoDB or another NoSQL database → **nosql**
+1. **Check PRD.md `# Architecture Principle` section first** (primary signal):
+   - If Architecture Principle explicitly mentions "document based database", "document-oriented", "NoSQL", "MongoDB", or similar → **nosql**
+   - If Architecture Principle explicitly mentions "relational database", "SQL", "PostgreSQL", "MySQL", or similar → **relational**
+2. **Fallback to CLAUDE.md** (if Architecture Principle is absent or does not mention database type):
+   - Read application details from CLAUDE.md (already in context)
+   - Identify the database from the application's dependency list:
+     - If the application depends on MySQL, PostgreSQL, or another relational database → **relational**
+     - If the application depends on MongoDB or another NoSQL database → **nosql**
 3. Record the inferred database type for the next step
 
 #### Step 1.4: Generate Module Model
@@ -258,10 +262,15 @@ artifacts (module models, specs, tests) can reference for traceability.
 
 #### Step 1.5: Infer Design System
 
-1. Read application details from CLAUDE.md (already in context)
-2. Identify the design system / CSS framework used by the application:
-   - Look for mentions of Tailwind CSS, Bootstrap, Material UI, etc.
-   - If no design system is explicitly identified → default to **Tailwind CSS**
+1. **Check PRD.md `# Design System` section first** (primary signal):
+   - If the section exists and references a `DESIGN_SYSTEM.md` file (e.g., `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`), resolve the file path relative to PRD.md
+   - Record the resolved design system file path for downstream skills (mockgen, specgen)
+   - The referenced file contains design tokens (colors, typography, components) that sub-skills will use
+2. **Fallback to CLAUDE.md** (if Design System section is absent or has no reference):
+   - Read application details from CLAUDE.md (already in context)
+   - Identify the design system / CSS framework:
+     - Look for mentions of Tailwind CSS, Bootstrap, Material UI, etc.
+     - If no design system is explicitly identified → default to **Tailwind CSS**
 3. Record the inferred design system for the next step
 
 #### Step 1.6: Generate HTML Mockups
@@ -277,12 +286,18 @@ artifacts (module models, specs, tests) can reference for traceability.
 
 #### Step 1.7: Infer Technology Stack
 
-1. Read application details from CLAUDE.md (already in context)
-2. Identify the technology stack used by the application:
-   - Framework (Laravel, Spring Boot, etc.)
-   - ORM (Eloquent, JPA/Hibernate, etc.)
-   - View engine (Blade, JTE, etc.)
-   - Frontend enhancement (HTMX, Alpine.js, etc.)
+1. **Check PRD.md `# Architecture Principle` section first** (primary signal):
+   - If Architecture Principle explicitly mentions a framework (e.g., "Spring Boot", "Laravel"), use it
+   - If it mentions a view engine (e.g., "JTE", "Blade"), use it
+   - If it mentions frontend tooling (e.g., "HTMX", "Alpine.js", "Vite"), use it
+   - If it mentions architectural style (e.g., "monolithic", "REST API"), use it to disambiguate specgen variant
+2. **Fallback to CLAUDE.md** (if Architecture Principle is absent or incomplete):
+   - Read application details from CLAUDE.md (already in context)
+   - Identify the technology stack:
+     - Framework (Laravel, Spring Boot, etc.)
+     - ORM (Eloquent, JPA/Hibernate, etc.)
+     - View engine (Blade, JTE, etc.)
+     - Frontend enhancement (HTMX, Alpine.js, etc.)
 3. Record the inferred technology stack for the next step
 
 #### Step 1.8: Generate Technical Specification

@@ -346,6 +346,29 @@ Source types: `EXPLICIT`, `OPERATION_INFERENCE`, `NFR`, `CONVENTION`, `REFERENCE
 
 Map NFRs to document model impact using the **NFR Adaptation** table in the NoSQL design guide.
 
+#### Phase 6a: Architecture Principle Integration
+
+If PRD.md contains an `# Architecture Principle` section, read it and apply to model decisions:
+
+- **Document DB confirmation**: If architecture explicitly confirms "document based database" or "MongoDB", gain higher confidence in embed-vs-reference decisions — favor embedding more aggressively for frequently co-read data.
+- **Consistency model**: If architecture mentions "eventual consistency", flag denormalization assumptions with lower severity in the Assumptions table. Rationale entries in the Document Design Decisions table (Section 4) should reference the architecture principle (e.g., "DENORMALIZE: architecture allows eventual consistency — stale reads acceptable").
+- **Event-driven**: If architecture mentions "event-driven" or "domain events", generate event collection schemas alongside data collections. Add event payload document types and event store collection if applicable.
+- **CQRS hints**: If architecture mentions "CQRS" or "command query separation", consider separate read/write collection patterns and note them in the Collection Catalog.
+- **Monolithic**: If "monolithic" with "modular architecture", model cross-module references as soft references (ObjectId fields without formal FK enforcement) and note this in Cross-Module Dependencies.
+
+If the `# Architecture Principle` section is absent, skip this sub-phase and proceed with existing behavior.
+
+#### Phase 6b: Process Flow Integration
+
+If PRD.md contains a `# High Level Process Flow` section, read it and apply to model decisions:
+
+- **Entity lifecycle states**: If a process flow describes status transitions (e.g., "Received → Validated → Enriched → Active"), cross-reference with enum extraction from Phase 2. Ensure all states from flows appear in the corresponding collection's status enum. Add any missing states.
+- **Access patterns from flows**: Process flow steps that describe queries (e.g., "system queries job demands by corridor and status") directly inform the Access Pattern Analysis (Phase 3) and index recommendations (Section 9). Record each flow-derived access pattern.
+- **Intermediate collections**: If a flow describes staging or temporary data (e.g., "incoming message stored before validation"), verify that corresponding staging collections exist. If not, create them.
+- **Domain events from flows**: Each "publishes", "sends", or "triggers" step should be checked against the Domain Events table (Section 10). Add any flow-derived events not already captured.
+
+If the `# High Level Process Flow` section is absent, skip this sub-phase.
+
 ### Phase 7: Output Generation
 
 Produce three deliverables per domain (see Output Specification below).

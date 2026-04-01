@@ -214,6 +214,32 @@ developer's machine. Hardcoding or guessing these values will cause commands to 
 command that involves JDK, Maven, database access, or any external service MUST use the values
 from CLAUDE.md.
 
+## PRD.md Extended Sections
+
+During implementation, check PRD.md for the following extended sections and use them as high-level context:
+
+### Architecture Principle
+
+If PRD.md contains an `# Architecture Principle` section, read it and use as implementation constraints:
+- **Stateless**: Ensure no module implementation stores data in HTTP session — user context must come from JWT tokens or external identity providers
+- **Event-driven**: Ensure inter-module communication uses event publishing (e.g., Spring ApplicationEvent, Laravel Event) rather than direct service injection across module boundaries
+- **Message driven**: When implementing message consumers/publishers, follow the patterns described in the architecture (e.g., dedicated queues per country, independent queue configurations)
+- **Monolithic with modular architecture**: Modules can share the same database but should not directly access each other's repositories — use events or service interfaces
+
+If absent, rely on SPECIFICATION.md for architectural guidance (existing behavior).
+
+### High Level Process Flow
+
+If PRD.md contains a `# High Level Process Flow` section, use it as the **implementation blueprint** for message-driven modules:
+1. Implement flow steps in order: (1) message consumer, (2) validation logic, (3) data persistence, (4) ACK/NACK publishing
+2. Each flow step maps to a specific method in the service layer
+3. Treat flow steps as mini-specifications within each module's implementation
+4. After implementing all steps of a flow, verify the complete end-to-end flow works before moving to the next module
+
+If absent, implement from SPECIFICATION.md messaging sections only (existing behavior).
+
+---
+
 ## Pre-Requisite: Context Artifacts Must Exist
 
 Before starting implementation, verify that all required context artifacts exist:

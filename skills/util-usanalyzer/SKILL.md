@@ -110,6 +110,35 @@ Using the role registry from step 2:
 - Flag any role used in user stories that doesn't match the canonical list
 - Flag inconsistent capitalization of the same role (e.g., "a user" vs "a User")
 
+#### 4.6 Design System Reference Validation
+
+If a `# Design System` section exists in PRD.md:
+- Extract the referenced file path (e.g., from `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`)
+- Resolve the path relative to PRD.md's location
+- Verify the referenced file actually exists at the resolved path
+- If the file does not exist, flag as `BAD_REF`
+
+#### 4.7 Architecture Principle Consistency
+
+If an `# Architecture Principle` section exists in PRD.md:
+- Extract declared architectural patterns (e.g., "stateless", "event-driven", "document based database", "message driven", "monolithic")
+- Cross-reference with NFRs and Constraints across all modules:
+  - If architecture declares "stateless" but an NFR implies server-side session storage, flag as `CONTRADICTION`
+  - If architecture declares "document based database" but constraints reference SQL joins or foreign key enforcement, flag as `CONTRADICTION`
+  - If architecture declares "event-driven" inter-module communication but an NFR describes synchronous direct calls between modules, flag as `CONTRADICTION`
+  - If architecture declares "message driven" processing but an NFR or constraint implies synchronous external API polling, flag as `CONTRADICTION`
+- Only flag clear, unambiguous contradictions — patterns that directly oppose the stated architectural principle
+
+#### 4.8 Process Flow Consistency
+
+If a `# High Level Process Flow` section exists in PRD.md:
+- Parse all process flows and their steps. Each flow is a named subsection (e.g., `## Recruitment Agent Sync`, `## Job Demand`) with ordered steps as bullet items
+- For each step that references a module or entity by name, verify:
+  - **Flow-Module Consistency**: The referenced module exists as a `## <Module>` section under `# System Module` or `# Business Module`. If not, flag as `CROSS_MODULE`
+  - **Flow-NFR Coverage**: Each step describing message publishing, queue consumption, or asynchronous processing should have a corresponding NFR in the relevant module that describes that behavior. If a step describes "publishes ACK message" but no module NFR mentions ACK publishing, flag as `CROSS_MODULE`
+  - **Flow Completeness**: If a flow describes an error or failure path (e.g., "on validation failure") but no NFR or constraint in the relevant module handles that error condition, flag as `CROSS_MODULE`
+- Do not flag flows whose steps are fully covered by existing NFRs
+
 ### 5. Insert TODO Annotations
 
 For each issue found, insert a `[TODO]` annotation in the PRD.md file:
@@ -132,6 +161,7 @@ For each issue found, insert a `[TODO]` annotation in the PRD.md file:
 | Cross-Module Inconsistency | `CROSS_MODULE` |
 | Contradictory Requirement | `CONTRADICTION` |
 | Duplicate Role | `DUP_ROLE` |
+| Architecture Violation | `ARCH_VIOLATION` |
 
 **Examples:**
 ```markdown
@@ -156,6 +186,7 @@ After inserting all TODOs, print a summary table:
 | Cross-Module          | X     | ...                               |
 | Contradiction         | X     | ...                               |
 | Duplicate Role        | X     | ...                               |
+| Arch Violation        | X     | ...                               |
 | **Total**             | **X** |                                   |
 
 ### Details by Module

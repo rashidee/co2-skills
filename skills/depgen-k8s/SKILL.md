@@ -61,6 +61,35 @@ The application name is matched against root-level application folders:
 | Application config | Stack-dependent (see detection) |
 | K8s manifests output | `<app_folder>/k8s/<environment>/` (one folder per environment from CLAUDE.md) |
 
+## PRD.md Extended Sections
+
+Before generating deployment artifacts, check PRD.md for the following extended sections:
+
+### Architecture Principle
+
+If PRD.md contains an `# Architecture Principle` section, extract patterns that affect deployment:
+
+| Pattern | Deployment Impact |
+|---|---|
+| "Stateless" | Deployment uses `RollingUpdate` strategy without sticky sessions; no PVC needed for session storage |
+| "Container based deployment" | Validates this skill's applicability |
+| "Scale out" / "horizontally scalable" | Generate HorizontalPodAutoscaler (HPA) manifest targeting CPU 70% |
+| Specific resource constraints (e.g., "max 256Mi per pod") | Use as default resource limits in K8s manifests |
+| "Message driven" / "message queue" | Readiness probe should verify message queue connectivity |
+
+If absent, use defaults from SPECIFICATION.md and CLAUDE.md (existing behavior).
+
+### High Level Process Flow
+
+If PRD.md contains a `# High Level Process Flow` section:
+- Process flows reveal inter-system dependencies (message queues, external service endpoints)
+- Validate that the environment variable list and ConfigMap/Secret values include all dependencies mentioned in process flows
+- If a flow references an external system not in the `Depends on` list, log a warning
+
+If absent, derive dependencies from CLAUDE.md only (existing behavior).
+
+---
+
 ## Pre-Requisites
 
 Before running this skill, the following must exist:

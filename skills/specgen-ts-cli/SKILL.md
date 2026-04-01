@@ -272,6 +272,33 @@ The command model directly maps to:
 - Service interface method signatures
 - `--help` text content
 
+## PRD.md Extended Sections
+
+Before determining optional components, check PRD.md for the following extended sections:
+
+### Architecture Principle Extraction
+
+If PRD.md contains an `# Architecture Principle` section, extract patterns that affect CLI decisions:
+
+| Pattern to Extract | How It Influences the Specification |
+|---|---|
+| "Container based deployment" | Include Dockerfile section; favor environment variables over config files |
+| "Event-driven" | CLI may need webhook listeners or polling patterns |
+| Async patterns (polling, batch, daemon) | Inform command handler async strategies |
+
+If the section is absent, proceed with existing detection.
+
+### High Level Process Flow Extraction
+
+If PRD.md contains a `# High Level Process Flow` section:
+1. Process flows describing CLI-initiated operations inform command action handler sequences
+2. Each flow step can emit a spinner/progress update
+3. Error handling chains follow the flow's error paths
+
+If the section is absent, derive command flow from user stories only (existing behavior).
+
+---
+
 ## Determining Optional Components
 
 Instead of asking the user, the skill determines optional components by analyzing the

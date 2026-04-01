@@ -361,6 +361,27 @@ Scan NFRs and map each to model impact using the NFR-to-Model Impact Map (Append
 of the methodology reference). Define a base entity specification if audit fields, soft
 delete, or optimistic locking are implied.
 
+#### Phase 5a: Architecture Principle Integration
+
+If PRD.md contains an `# Architecture Principle` section, read it and apply to model decisions:
+
+- **Monolithic vs. Microservice**: If "monolithic" (e.g., "monolithic web application", "modular architecture"), model cross-module references as soft references (ID columns without FK constraints) and note this convention in the Cross-Module Dependencies section. If "microservice", enforce strict bounded context isolation — no cross-module references at all.
+- **Event-driven**: If architecture mentions "event-driven" or "domain events", elevate domain event identification in Phase 2. Generate more domain event entities and event payload types in Section 7 (Domain Events). Each inter-module data flow should have a corresponding domain event.
+- **Stateless**: If architecture mentions "stateless", confirm that no session-related entities are modeled — user context comes from JWT tokens or external identity providers.
+- **Database type confirmation**: Use the architecture section to confirm the relational database choice. If the architecture mentions a specific database engine (e.g., PostgreSQL, MySQL), record it in assumptions for DDL dialect considerations.
+
+If the `# Architecture Principle` section is absent, skip this sub-phase and proceed with existing behavior.
+
+#### Phase 5b: Process Flow State Extraction
+
+If PRD.md contains a `# High Level Process Flow` section, read it and extract state-related information:
+
+- **Entity lifecycle states**: If a process flow describes status transitions for an entity (e.g., "Received → Validated → Enriched → Active"), cross-reference with enum extraction from Phase 2. Ensure all states mentioned in process flows appear in the corresponding entity's status enum definition. Add any missing states.
+- **Intermediate entities**: If a flow describes intermediate or staging data (e.g., "incoming message stored before validation"), verify that corresponding staging/intermediate entities exist in the model. If not, create them.
+- **Domain events from flows**: Each step in a process flow that describes "publishes", "sends", or "triggers" should be checked against the Domain Events table (Section 7). Add any flow-derived events not already captured from user stories.
+
+If the `# High Level Process Flow` section is absent, skip this sub-phase.
+
 ### Phase 6: Bounded Context Finalization
 
 Since modules are provided explicitly by the user, confirm each module as a bounded context.

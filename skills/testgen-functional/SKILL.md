@@ -212,6 +212,48 @@ CLAUDE.md is automatically loaded into context. Extract the following from it:
 
 ---
 
+### Step 2a: Extract PRD.md Extended Sections
+
+After extracting project information, check PRD.md for the following extended sections:
+
+#### Design System
+
+If PRD.md contains a `# Design System` section with a file reference:
+1. Resolve and read the referenced `DESIGN_SYSTEM.md` file
+2. Extract component patterns and expected visual appearances (e.g., badge styles, button patterns)
+3. Use these to generate visual consistency assertions in TEST_SPEC.md (e.g., "Assert status badge has class containing 'bg-green' for Active status", "Assert buttons use rounded-lg class")
+
+If absent, skip visual consistency assertions.
+
+#### Architecture Principle
+
+If PRD.md contains an `# Architecture Principle` section, extract patterns that affect test strategy:
+
+| Pattern | Test Impact |
+|---|---|
+| "Event-driven" | L3 transactional data may have async propagation delay — tests MUST include wait/retry patterns (e.g., `await expect.poll(() => ...).toPass({ timeout: 10000 })`) for eventual consistency assertions |
+| "Message driven" | Confirms L3 classification heuristics — modules receiving data via message queues are L3 |
+| "Stateless" | Tests should handle token refresh/expiry scenarios; include JWT expiry test case |
+| ACK/NACK patterns | Generate assertion steps verifying messages published to correct queues with expected correlation IDs |
+| "At-least-once delivery" | Include idempotency test — send same message twice, verify no duplicate records |
+
+If absent, proceed with existing layer classification heuristics.
+
+#### High Level Process Flow
+
+If PRD.md contains a `# High Level Process Flow` section:
+1. Parse all named process flows with their ordered steps
+2. Each process flow becomes an **end-to-end test scenario** (or test suite) in TEST_SPEC.md:
+   - Happy path: each step → a test step with specific assertions
+   - Error paths (if described): each generates a separate error scenario
+   - ACK/NACK patterns generate queue assertion steps (verify messages in outbound queues)
+3. Process flows are the **primary source for L3 (Transactional Data) test scenarios**
+4. Process flows reveal cross-module dependencies that must be included in the test execution order
+
+If absent, derive L3 scenarios from NFRs mentioning "message queue" or "incoming message" only (existing behavior).
+
+---
+
 ### Step 3: Load Module Models
 
 For each module, look for `<app_folder>/context/model/{module-kebab}/model.md`

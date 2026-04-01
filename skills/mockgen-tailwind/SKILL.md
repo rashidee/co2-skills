@@ -242,24 +242,43 @@ For each module extracted in Step 1:
 
 ---
 
-### Step 2: Load External Design System
+### Step 2: Load Design System
 
-Load the design system from the application's `<app_folder>/context/design/` folder. This folder contains
-pre-defined design tokens (colors, typography, spacing) and Tailwind component guidelines
-maintained externally by the UI/UX team.
+Load the design system using a two-tier resolution strategy:
 
-Read all files in `{app_name}/context/design/` (where `{app_name}` is the resolved application
-folder name from Step 1). Apply the design tokens and guidelines found there to all generated
-mockup screens.
+#### 2a: PRD.md Design System Reference (Primary Source)
+
+Check if PRD.md contains a `# Design System` section. If it does:
+1. Extract the referenced file path (e.g., from `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`)
+2. Resolve the path relative to PRD.md's location
+3. If the referenced file exists, read it and extract:
+   - Color palettes (primary, secondary, accent, neutral — hex values)
+   - Typography (font families, font sizes, weight scale)
+   - Spacing scale (if overriding Tailwind defaults)
+   - Component patterns (button styles, card styles, form input styles, table styles, badge/chip styles, modal patterns)
+   - Layout grid rules
+4. Apply extracted tokens to the Tailwind CDN `<script>` config block in `shell.html` (custom colors, fonts), all generated partials (consistent color classes), and component rendering
+
+#### 2b: Context Design Folder (Fallback)
+
+If PRD.md does not have a `# Design System` section, or the referenced file does not exist, fall back to the application's `<app_folder>/context/design/` folder. This folder contains pre-defined design tokens and Tailwind component guidelines maintained externally by the UI/UX team.
+
+Read all files in `{app_name}/context/design/` (where `{app_name}` is the resolved application folder name from Step 1). Apply the design tokens and guidelines found there to all generated mockup screens.
 
 **Expected files** (any or all may be present):
 - `design-system.md` — Colors, typography, spacing, and visual style definitions
 - `components.md` — Reusable component patterns and Tailwind class conventions
 - `guidelines.md` — Layout rules, accessibility standards, and stack-specific guidelines
 
-**Fallback**: If the `{app_name}/context/design/` folder does not exist or is empty, use
-sensible defaults: a neutral color palette, Inter/system font stack, and standard Tailwind
-utility classes for spacing and layout.
+#### 2c: Default Fallback
+
+If neither the PRD reference nor the `{app_name}/context/design/` folder provides design tokens, use sensible defaults: a neutral color palette, Inter/system font stack, and standard Tailwind utility classes for spacing and layout.
+
+#### 2d: Process Flow Status States
+
+If PRD.md contains a `# High Level Process Flow` section, scan it for entity status lifecycle descriptions (e.g., "Received → Validated → Enriched → Active"). For each status lifecycle found:
+- Ensure list screens for the corresponding module include a status column with colored badges for each state
+- Use design system color tokens for badge colors (e.g., success color for active/completed states, warning for pending, danger for failed/rejected)
 
 ### Step 3: Plan Screen Files
 

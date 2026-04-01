@@ -171,6 +171,17 @@ Playwright test, npm start, etc.), use the following from CLAUDE.md (already in 
 **WHY**: CLAUDE.md contains the actual system paths, credentials, and configuration for the
 developer's machine. Every shell command MUST use the values from CLAUDE.md.
 
+## PRD.md Extended Sections
+
+### High Level Process Flow Awareness
+
+If PRD.md contains a `# High Level Process Flow` section, be aware that process flow changes between versions may affect both bug fixing and feature development:
+- **Phase A (Bug Fixing)**: Process flows provide step-by-step debugging context for message-driven bugs. conductor-defect uses them to trace which flow step is failing.
+- **Phase B (Feature Development)**: Process flows serve as implementation blueprints for message-driven modules. conductor-feature-develop uses them to implement flow steps in the correct order.
+- If process flows have changed between the previous version and the target version (new steps, modified steps), both phases should be aware of these changes.
+
+---
+
 ## Pre-Requisites
 
 Before the upgrade can proceed, verify the following exist:

@@ -298,6 +298,32 @@ Before starting any work, check `CHANGELOG.md` in the project root:
    - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
 4. If no version argument was provided (version filter = "All"), skip this check.
 
+## PRD.md Extended Sections
+
+When fixing bugs, check PRD.md for the following extended sections and use them as diagnostic context:
+
+### Design System
+
+If PRD.md contains a `# Design System` section referencing a `DESIGN_SYSTEM.md` file:
+- When fixing UI bugs (wrong color, incorrect styling, layout issues), consult the design system to determine the **correct** appearance before applying a fix
+- The design system is the authoritative source for visual expectations
+
+### Architecture Principle
+
+If PRD.md contains an `# Architecture Principle` section:
+- Use architectural patterns for root cause analysis context
+- If a bug reports "data inconsistency between modules" and architecture declares "event-driven", focus on fixing event handling (retry, idempotency) rather than adding direct cross-module DB queries
+- If architecture declares "stateless" and a bug relates to session state, the fix should ensure no server-side session storage
+
+### High Level Process Flow
+
+If PRD.md contains a `# High Level Process Flow` section:
+- **Trace the bug against the process flow** to identify which step is failing
+- This provides systematic root cause analysis: Was the message received? Validated? Stored? Was the ACK step reached? Which step failed?
+- The process flow serves as a step-by-step debugging guide for message-driven bugs
+
+---
+
 ## Workflow
 
 ### Phase 0: Resume Check (Runs Every Ralph Loop Iteration)
