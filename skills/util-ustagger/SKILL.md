@@ -3,8 +3,9 @@ name: util-ustagger
 description: >
   Tag new items in PRD.md files with unique ID codes and validate no duplicate tags exist.
   Applies to PRD.md documents structured with module sections containing User Stories, Non
-  Functional Requirements, Constraints, and References. Each top-level bullet item gets a unique
-  9-character code with category prefix, application initials, and running number (interval of 3).
+  Functional Requirements, Constraints, References, and Test instructions. Each top-level
+  bullet item gets a unique 9-character code with category prefix, application initials,
+  and running number (interval of 3).
   Trigger on keywords: "tag user story", "tag user stories", "fix user story tag", "fix user story tags",
   "add IDs to requirements", "tag items in PRD.md", "number the requirements",
   "add requirement codes", "validate tags", "check duplicate tags", "verify tagging completeness".
@@ -15,6 +16,7 @@ description: >
 # Util US Tagger
 
 Tag untagged items in PRD.md files with unique 9-character ID codes and validate no duplicates.
+Covers User Stories, Non Functional Requirements, Constraints, References, and Test instructions.
 
 ## Version Gate
 
@@ -73,6 +75,7 @@ All codes are exactly **9 characters**. The prefix is category abbreviation + ap
 | Non Functional Req     | `NFR` + initials        | `NFRHM` (5)    | 4 digits     |
 | Constraint             | `CONS` + initials       | `CONSHM` (6)   | 3 digits     |
 | Reference              | `REF` + initials        | `REFHM` (5)    | 4 digits     |
+| Test                   | `TST` + initials        | `TSTHM` (5)    | 4 digits     |
 
 ### 3. Scan Existing Tags
 
@@ -80,11 +83,11 @@ Before tagging, scan the entire document for already-tagged items matching the p
 
 ### 4. Tag Untagged Items
 
-For each section (User Story / Functional Requirements, Non Functional Requirement, Constraint, Reference):
+For each section (User Story / Functional Requirements, Non Functional Requirement, Constraint, Reference, Test):
 
 - Tag only **top-level bullet items** (lines starting with `- ` at the section's base indentation)
 - **Skip sub-bullets** (indented lines starting with `  - `)
-- **Skip already-tagged items** (lines containing `[USHM`, `[NFRHM`, `[CONSHM`, `[REFHM` etc.)
+- **Skip already-tagged items** (lines containing `[USHM`, `[NFRHM`, `[CONSHM`, `[REFHM`, `[TSTHM` etc.)
 - Running numbers use **interval of 3**: 3, 6, 9, 12, 15, ...
 - Insert tag as `[CODE] ` immediately after the bullet dash: `- [USHM00003] As a...`
 
@@ -93,11 +96,12 @@ Section header recognition (case-insensitive matching):
 - NFRs: `### Non Functional Requirement`, `## Non Functional Requirement`
 - Constraints: `### Constraint`, `## Constraint`
 - References: `### Reference`, `## Reference`
+- Tests: `### Test`
 
 ### 5. Validate No Duplicates
 
 After tagging, scan the entire document and collect all tag codes. Report:
-- Total count per category (US, NFR, CONS, REF)
+- Total count per category (US, NFR, CONS, REF, TST)
 - Any duplicate codes found (this is an error that must be fixed)
 - Confirmation message if no duplicates
 
@@ -112,6 +116,7 @@ Print a summary table:
 | NFR         | NFRHM    | 39    | NFRHM0003 - NFRHM0117   |
 | Constraint  | CONSHM   | 13    | CONSHM003 - CONSHM039   |
 | Reference   | REFHM    | 6     | REFHM0003 - REFHM0018   |
+| Test        | TSTHM    | 4     | TSTHM0003 - TSTHM0012   |
 | Duplicates  | -        | 0     | None                     |
 ```
 
@@ -132,7 +137,7 @@ After all tags are successfully applied, append an entry to `CHANGELOG.md` in th
 2. Search for a `## {version}` heading matching the current version.
 3. If the section **exists**: append a new row to its table.
 4. If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
-5. Row format: `| {YYYY-MM-DD} | {application_name} | util-ustagger | All | Tagged user stories, NFRs, constraints and references |`
+5. Row format: `| {YYYY-MM-DD} | {application_name} | util-ustagger | All | Tagged user stories, NFRs, constraints, references and tests |`
 6. **Never modify or delete existing rows.**
 
 ## Important Rules

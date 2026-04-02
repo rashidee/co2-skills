@@ -125,12 +125,15 @@ Read the file and extract:
 7. **References per module**: Lines matching `- [REFxx####] ...`
    Extract: tag, description, linked file path (if any).
 
-8. **Test instructions per module**: Content under `### Test` sections. These contain
-   human-specified test setup instructions, test data requirements, and test user
-   configurations that MUST be incorporated into the test plan and specs. Unlike other
-   sections, Test items may not have tagged IDs — they can be free-form bullet points
-   describing test prerequisites, user accounts, or specific testing conditions.
-   Extract: version tag, full text of each bullet point.
+8. **Test instructions per module**: Lines matching `- [TSTxx####] ...` under `### Test`
+   sections. These contain human-specified test setup instructions, test data requirements,
+   test edge cases, and test user configurations that MUST be incorporated into the test
+   plan and specs as **additional context** on top of the standard analysis of User Stories,
+   NFRs, Constraints, Module Models, HTML Mockups, and Technical Specs.
+   Extract: tag (e.g., `[TSTHM0003]`), version tag, full text of each bullet point
+   (including sub-bullets which provide detailed test parameters).
+   Test instructions serve as human-guided test scenario hints and edge cases that the
+   test spec generator should use to enrich and complement the auto-derived test scenarios.
 
 9. **Bug fixes per module**: Content under `### Bug` sections. These document previously
    fixed bugs from prior development cycles. Each bug entry describes what was broken and
@@ -547,6 +550,7 @@ _(No seeding required — data is a side effect of upstream operations.)_ ← us
 | Raw Message | {n} | View raw inbound message payload |
 | Pagination | {n} | Paginate {entity} list, change page size |
 | Regression | {n} | Verify previously fixed bugs still hold |
+| Test Instruction | {n} | Human-guided scenarios from `### Test` section |
 | **Total** | **{total}** | |
 
 _{Omit rows for types with 0 scenarios.}_
@@ -632,7 +636,7 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 | User Story    | {USHM tag} | {v1.0.x from PRD.md} |
 | NFR           | {NFRHM tag} | {v1.0.x} |
 | Constraint    | {CONSHM tag} | {v1.0.x} |
-| Test          | {Test instruction summary} | {v1.0.x} |
+| Test          | {TSTHM tag} | {v1.0.x} |
 | Bug Fix       | {BUG tag} | {v1.0.x} |
 
 | Artifact | Path | Status |
@@ -653,19 +657,30 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 
 ### Test Instructions (from PRD.md)
 
-{If the module has a `### Test` section in PRD.md, list all test instructions here.
-These are human-specified requirements for test setup that MUST be followed exactly.
-They take precedence over auto-generated test setup.}
+{If the module has a `### Test` section in PRD.md, list all tagged test instructions here.
+These are human-specified test scenario hints, test edge cases, test data requirements,
+and test setup instructions that serve as **additional context** on top of the standard
+auto-derived test scenarios from User Stories, NFRs, Constraints, Module Models, HTML
+Mockups, and Technical Specs. They MUST be incorporated into the test scenarios in
+Section 4.
 
-| Version | Instruction |
-|---------|-------------|
-| {v1.0.x} | {Full text of the test instruction from PRD.md} |
+Test instructions guide the test spec generator on specific scenarios or edge cases that
+a human tester has identified as important. They do NOT replace the auto-derived scenarios
+but complement them — ensuring critical test paths are not missed.
 
-{Example: The Authentication module's `### Test` section specifies exact test user
-credentials and roles. These MUST be used in the L1 Auth seeding script instead of
-auto-generated user data.}
+When a test instruction specifies exact test data (e.g., usernames, passwords, field values),
+use those values as-is in the relevant seeding scripts and test scenarios.}
 
-_(No test instructions for this module.)_ ← use when the `### Test` section is empty or absent
+| Tag | Version | Instruction |
+|-----|---------|-------------|
+| {TSTHM tag} | {v1.0.x} | {Full text of the test instruction from PRD.md} |
+
+{Example: `[TSTHM0003]` specifies exact test user credentials and roles for the Auth
+module — these MUST be used in the L1 Auth seeding script instead of auto-generated
+user data. `[TSTHA0006]` describes specific validation edge cases for the Employer
+module — these should generate additional VAL- test scenarios in Section 4.}
+
+_(No test instructions for this module.)_ ← use when the `### Test` section is empty or has no tagged items
 
 ### Bug Fix Regression Coverage
 
@@ -1032,6 +1047,35 @@ previously fixed bugs from reappearing during redevelopment.}
 {Repeat for each bug fix in the module's `### Bug` section.
 If no `### Bug` section exists for this module, omit Section 4k entirely.}
 
+### 4l. Test Instruction Scenarios
+
+{Derived from tagged `### Test` items in PRD.md. These are human-guided test scenarios
+and edge cases that complement the auto-derived scenarios above. Each tagged test
+instruction (`[TSTxx####]`) should produce one or more test scenarios that cover the
+specific test paths, edge cases, or setup requirements described by the human tester.
+
+Test instruction scenarios may overlap with auto-derived scenarios (e.g., a test
+instruction about validation edge cases may produce scenarios similar to Section 4e).
+When overlap occurs, merge the human-guided details INTO the existing auto-derived
+scenario rather than creating a duplicate. Add the TST tag as an additional Source
+reference. Only create a NEW scenario in this section when the test instruction describes
+a test path not already covered by any auto-derived scenario.}
+
+#### TSTI-{prefix}-001: {Test instruction description}
+
+- **Source**: {TST tag} [v1.0.x] from `### Test` section
+- **Instruction**: {Full text of the tagged test instruction}
+- **Role**: {role — infer from instruction context}
+- **Preconditions**: {relevant seeded data or setup}
+- **Steps**:
+  1. {Steps derived from the human test instruction}
+  2. {Include specific values/data mentioned in the instruction}
+- **Expected**:
+  - {Expected behavior described or implied by the instruction}
+
+{Repeat for each tagged test instruction in the module's `### Test` section.
+If no tagged items exist in `### Test`, omit Section 4l entirely.}
+
 ---
 
 ## 5. Data Cleanup
@@ -1087,20 +1131,21 @@ rabbitmqadmin purge queue name={queue_name}
 
 ## 6. Traceability Matrix
 
-| Test Scenario ID | User Story | Bug Fix | Version | NFR(s) | Constraint(s) | Test Type |
-|-----------------|------------|---------|---------|--------|---------------|-----------|
-| NAV-{prefix}-001 | — | — | — | — | — | Navigation |
-| SRCH-{prefix}-001 | {tag} | — | v1.0.x | — | — | Search |
-| VIEW-{prefix}-001 | {tag} | — | v1.0.x | — | — | View |
-| CRUD-{prefix}-001 | {tag} | — | v1.0.x | — | — | Create |
-| CRUD-{prefix}-002 | {tag} | — | v1.0.x | — | — | Edit |
-| CRUD-{prefix}-003 | {tag} | — | v1.0.x | — | — | Delete |
-| VAL-{prefix}-001 | — | — | v1.0.x | — | {tag} | Validation |
-| TOG-{prefix}-001 | {tag} | — | v1.0.x | — | — | Toggle |
-| HIST-{prefix}-001 | {tag} | — | v1.0.x | — | — | History |
-| RAW-{prefix}-001 | {tag} | — | v1.0.x | — | — | Raw Message |
-| PAGE-{prefix}-001 | — | — | — | — | — | Pagination |
-| REG-{prefix}-001 | — | {BUG-XXX} | v1.0.x | — | — | Regression |
+| Test Scenario ID | User Story | Bug Fix | Test Instruction | Version | NFR(s) | Constraint(s) | Test Type |
+|-----------------|------------|---------|-----------------|---------|--------|---------------|-----------|
+| NAV-{prefix}-001 | — | — | — | — | — | — | Navigation |
+| SRCH-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Search |
+| VIEW-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | View |
+| CRUD-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Create |
+| CRUD-{prefix}-002 | {tag} | — | — | v1.0.x | — | — | Edit |
+| CRUD-{prefix}-003 | {tag} | — | — | v1.0.x | — | — | Delete |
+| VAL-{prefix}-001 | — | — | {TST tag or —} | v1.0.x | — | {tag} | Validation |
+| TOG-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Toggle |
+| HIST-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | History |
+| RAW-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Raw Message |
+| PAGE-{prefix}-001 | — | — | — | — | — | — | Pagination |
+| REG-{prefix}-001 | — | {BUG-XXX} | — | v1.0.x | — | — | Regression |
+| TSTI-{prefix}-001 | — | — | {TST tag} | v1.0.x | — | — | Test Instruction |
 ```
 
 ---
@@ -1195,7 +1240,13 @@ After all test specification files are successfully generated, append an entry t
   Constraint, Reference, Test, and Bug.
 - **Test instructions from PRD.md are authoritative**: When a `### Test` section specifies
   exact test users, credentials, or setup procedures, use them as-is. Do not override with
-  auto-generated values.
+  auto-generated values. Tagged test instructions (`[TSTxx####]`) provide human-guided
+  test scenarios and edge cases that MUST be incorporated into the test spec — either by
+  merging into existing auto-derived scenarios or by creating new TSTI-* scenarios.
+- **Test instructions are additive, not exclusive**: Test instructions complement the
+  standard auto-derived scenarios from User Stories, NFRs, Constraints, Models, Mockups,
+  and Specs. They do NOT replace or limit the auto-derived scenarios. Think of them as
+  "the human tester also wants to make sure these specific things are tested."
 - **Bug fixes MUST have regression coverage**: Every bug fix in a `### Bug` section must
   produce at least one REG-* test scenario in the module's TEST_SPEC.md.
 - **Version + module are independent axes**: Both may be combined freely. A story must
