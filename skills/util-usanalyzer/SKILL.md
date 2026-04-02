@@ -2,8 +2,12 @@
 name: util-usanalyzer
 description: >
   Analyze PRD.md files for quality issues: incomplete sentences, non-existent references,
-  cross-module inconsistencies, contradictory requirements, and duplicate roles. Adds inline
-  [TODO] annotations directly into the PRD.md file for each issue found.
+  cross-module inconsistencies, contradictory requirements, duplicate roles, design system
+  validation, architecture principle violations, and process flow coverage gaps. Validates
+  bi-directional coverage between User Stories/NFRs and High Level Process Flows — detects
+  modules not covered by any process flow and process flow steps not covered by any User
+  Story or NFR. Adds inline [TODO] annotations directly into the PRD.md file for each
+  issue found.
   Trigger on keywords: "analyze user story", "analyze user stories", "check user story quality",
   "validate user stories", "find user story issues", "audit user stories", "review user stories",
   "check requirements quality", "find inconsistencies", "find contradictions".
@@ -48,9 +52,18 @@ Example invocations:
 ### 1. Read and Parse PRD.md
 
 Read the entire PRD.md file and parse its structure:
-- Identify all module sections (delimited by `## <Module Name>` headers)
-- Within each module, identify subsections: `### User Story`, `### Non Functional Requirement`, `### Constraint`, `### Reference`, `### Bug`
+- Identify all module sections (delimited by `## <Module Name>` headers under `# System Module` or `# Business Module`)
+- Within each module, identify subsections: `### User Story`, `### Non Functional Requirement`, `### Constraint`, `### Reference`, `### Test`, `### Bug`
 - Record line numbers for every item for precise TODO annotations
+- Parse the following top-level extended sections if they exist:
+  - `# Design System` — extract referenced file paths and any inline declarations
+  - `# Architecture Principle` — extract all declared architectural patterns and principles
+  - `# High Level Process Flow` — extract all process flow entries (inline or external file references). For external references (e.g., `- Flow Name: Refer to [file.md](path/to/file.md) for the high level process flow`):
+    - Extract the flow name (text before the colon)
+    - Extract the referenced file path from the markdown link
+    - Resolve the path relative to PRD.md's location
+    - Read the external file and parse its `# Process/System Flow` section (ordered steps) and `# Statuses` section (per-application status tables)
+    - If the external file does not exist, flag the reference line as `BAD_REF` and skip further analysis of that flow
 
 ### 2. Collect All Roles
 
@@ -117,27 +130,105 @@ If a `# Design System` section exists in PRD.md:
 - Resolve the path relative to PRD.md's location
 - Verify the referenced file actually exists at the resolved path
 - If the file does not exist, flag as `BAD_REF`
+- If the design system file exists, read it and extract declared UI component patterns, layout conventions, and interaction patterns. Then:
+  - Cross-reference User Stories that describe UI behavior (e.g., "view dashboard", "search for", "view details") with the design system's declared patterns
+  - If a User Story describes a UI interaction or component that directly contradicts a design system declaration (e.g., user story says "popup modal" but design system prohibits modals in favor of inline expansion), flag as `CONTRADICTION`
+  - Only flag clear contradictions — do not flag User Stories that simply omit UI detail, as implementation choices belong in the specification phase
 
 #### 4.7 Architecture Principle Consistency
 
 If an `# Architecture Principle` section exists in PRD.md:
-- Extract declared architectural patterns (e.g., "stateless", "event-driven", "document based database", "message driven", "monolithic")
-- Cross-reference with NFRs and Constraints across all modules:
-  - If architecture declares "stateless" but an NFR implies server-side session storage, flag as `CONTRADICTION`
-  - If architecture declares "document based database" but constraints reference SQL joins or foreign key enforcement, flag as `CONTRADICTION`
-  - If architecture declares "event-driven" inter-module communication but an NFR describes synchronous direct calls between modules, flag as `CONTRADICTION`
-  - If architecture declares "message driven" processing but an NFR or constraint implies synchronous external API polling, flag as `CONTRADICTION`
+- Extract declared architectural patterns (e.g., "stateless", "event-driven", "document based database", "message driven", "monolithic", "container based", "file storage using GridFS")
+- Cross-reference with User Stories, NFRs, and Constraints across all modules:
+  - If architecture declares "stateless" but a User Story or NFR implies server-side session storage, flag as `ARCH_VIOLATION`
+  - If architecture declares "document based database" but a User Story, NFR or constraint references SQL joins, foreign key enforcement, or relational schema concepts, flag as `ARCH_VIOLATION`
+  - If architecture declares "event-driven" inter-module communication but a User Story or NFR describes synchronous direct calls between modules, flag as `ARCH_VIOLATION`
+  - If architecture declares "message driven" processing but a User Story, NFR or constraint implies synchronous external API polling for message processing, flag as `ARCH_VIOLATION`
+  - If architecture declares a specific file storage mechanism (e.g., "GridFS in MongoDB") but an NFR or constraint describes a different file storage approach (e.g., local filesystem, S3), flag as `ARCH_VIOLATION`
+  - If architecture declares "monolithic" design but a User Story or NFR describes deploying separate microservices, flag as `ARCH_VIOLATION`
+  - If architecture declares a specific framework/technology (e.g., "Spring Boot", "JTE template engine") but an NFR or constraint references an incompatible technology, flag as `ARCH_VIOLATION`
+- Also check Test sections: if test instructions reference infrastructure or tooling that contradicts architecture principles (e.g., test setup assumes a relational DB when architecture declares document-based), flag as `ARCH_VIOLATION`
 - Only flag clear, unambiguous contradictions — patterns that directly oppose the stated architectural principle
 
-#### 4.8 Process Flow Consistency
+#### 4.8 Process Flow Coverage and Consistency
 
 If a `# High Level Process Flow` section exists in PRD.md:
-- Parse all process flows and their steps. Each flow is a named subsection (e.g., `## Recruitment Agent Sync`, `## Job Demand`) with ordered steps as bullet items
-- For each step that references a module or entity by name, verify:
-  - **Flow-Module Consistency**: The referenced module exists as a `## <Module>` section under `# System Module` or `# Business Module`. If not, flag as `CROSS_MODULE`
-  - **Flow-NFR Coverage**: Each step describing message publishing, queue consumption, or asynchronous processing should have a corresponding NFR in the relevant module that describes that behavior. If a step describes "publishes ACK message" but no module NFR mentions ACK publishing, flag as `CROSS_MODULE`
-  - **Flow Completeness**: If a flow describes an error or failure path (e.g., "on validation failure") but no NFR or constraint in the relevant module handles that error condition, flag as `CROSS_MODULE`
-- Do not flag flows whose steps are fully covered by existing NFRs
+
+##### 4.8.1 Parse and Resolve Process Flows
+
+- Each process flow entry in the `# High Level Process Flow` section may be:
+  - **Inline**: A named subsection (e.g., `## Recruitment Agent Sync`) with ordered steps as bullet items directly in PRD.md
+  - **External reference**: A bullet item referencing an external file (e.g., `- Recruitment Agent Sync: Refer to [ra_sync.md](path/ra_sync.md) for the high level process flow`)
+- For external references:
+  - Extract the flow name (text before the colon)
+  - Extract the referenced file path from the markdown link
+  - Resolve the path relative to PRD.md's location
+  - Read the external file and parse its `# Process/System Flow` section (ordered numbered steps) and `# Statuses` section (per-application status tables)
+  - If the file does not exist, flag as `BAD_REF` and skip further analysis of that flow
+- For each successfully parsed flow, build a flow registry containing:
+  - Flow name (e.g., "Recruitment Agent Sync", "Job Demand", "Candidate Registration")
+  - All numbered steps with their descriptions
+  - Application-relevant steps (steps that mention the current application name — inferred from the root folder name, e.g., "Hub Middleware")
+  - Application-specific statuses from the status table (if defined)
+
+##### 4.8.2 Flow → Module Coverage (Forward Check)
+
+For each process flow that has application-relevant steps:
+- **Module existence**: Match the flow name to a module under `# System Module` or `# Business Module`. If no module with a matching name exists, flag the flow entry line in the `# High Level Process Flow` section as `FLOW_COVERAGE` with description: "Process flow '<flow name>' has steps for this application but no corresponding module exists in PRD"
+- **Step-to-NFR coverage**: For each application-relevant step in the flow, verify the corresponding module has an NFR that describes the behavior:
+  - **Message consumption**: If a step describes consuming/listening to messages from a queue, the module must have an NFR describing message queue consumption (e.g., "listen to incoming messages from ... via message queue"). If missing, flag the module's first NFR line as `FLOW_COVERAGE` with description: "Process flow '<flow name>' step <N> describes message consumption but no NFR in module '<module>' covers this behavior"
+  - **Message publishing/forwarding**: If a step describes publishing messages to a queue (forwarding to another system), the module must have an NFR describing message publishing. If missing, flag as `FLOW_COVERAGE`
+  - **Acknowledgement publishing**: If a step describes publishing acknowledgement messages, the module must have an NFR describing acknowledgement behavior. If missing, flag as `FLOW_COVERAGE`
+  - **Data recording**: If a step describes recording/storing messages in the database, the module must have an NFR describing data storage/recording. If missing, flag as `FLOW_COVERAGE`
+  - **Error/failure paths**: If the flow describes error or failure paths (e.g., "response with error if validation failed"), the module must have an NFR or constraint handling that error condition. If missing, flag as `FLOW_COVERAGE`
+- **Cross-entity extraction**: If a flow step implies the application extracts or creates entities managed by other modules (e.g., Job Demand processing that extracts Employer and Recruitment Agent data), verify there is an NFR in either the flow's primary module or the target module describing this extraction. If missing, flag as `FLOW_COVERAGE`
+
+##### 4.8.3 Module → Flow Coverage (Reverse Check)
+
+For each module under `# System Module` or `# Business Module`, scan its NFRs for any of the following message-processing behaviors:
+- Listening to / consuming messages from a message queue
+- Publishing messages to a message queue
+- Publishing acknowledgement messages to a message queue
+- Processing incoming messages from external systems via message queue
+
+If any NFR describes such behavior, verify that:
+- There is a corresponding process flow in the `# High Level Process Flow` section whose name matches or covers this module
+- OR the module's message-processing NFR explicitly references another module's process flow (e.g., an NFR says "updated from Job Demand messages" — this is covered by the Job Demand flow)
+
+If no process flow covers the module's message-processing behavior (directly or via cross-reference), flag the first message-processing NFR in the module as `FLOW_COVERAGE` with description: "Module '<module name>' has message-processing NFRs (e.g., <NFR_ID>) but is not covered by any High Level Process Flow"
+
+**Exceptions — do NOT flag these modules:**
+- Modules whose NFRs only describe internal asynchronous processing (e.g., event listeners triggered within the application, scheduled tasks, internal Spring events) without external message queue interaction
+- Modules whose NFRs explicitly state they receive data as a side effect of another module's message processing (e.g., "Employer information will be extracted from the incoming Job Demand message") — these are indirectly covered by the parent flow
+
+##### 4.8.4 User Story ↔ Process Flow Alignment
+
+For each module that is covered by a process flow (either directly or indirectly):
+- **Data availability check**: If a User Story describes viewing, searching, or managing data (e.g., "search for Employer"), verify that the data referenced in the User Story is delivered to the application by at least one process flow. If a User Story references an entity or data type that no process flow delivers, flag the User Story as `FLOW_COVERAGE` with description: "User story <US_ID> references '<entity/data>' but no process flow delivers this data to the application"
+- **Contradiction check**: If a User Story implies manual creation or modification of data that a process flow says is only received via message queue (read-only from the application's perspective), and no constraint explicitly permits manual override, flag as `CONTRADICTION`
+- **Completeness check**: If a process flow delivers data to the application (e.g., Candidate Registration messages) but the corresponding module has NO User Stories for viewing or managing that data, flag the module's `### User Story` section as `FLOW_COVERAGE` with description: "Process flow '<flow name>' delivers data to this application but module '<module>' has no User Stories for viewing or managing this data"
+
+**Exception**: Modules that are purely system/infrastructure modules (e.g., Authentication, Audit Trail) or modules that only store data as a side effect of another module's processing and have their own explicit User Stories are not required to have a 1:1 User Story for every piece of flow-delivered data.
+
+##### 4.8.5 NFR ↔ Process Flow Status Coverage
+
+For each process flow that defines application-specific statuses in its status table:
+- Each status should correspond to a behavior described by an NFR in the relevant module
+- If a status is defined in the flow's status table for the application but no NFR in the corresponding module describes the behavior that triggers that status (e.g., status `PROCESSED` implies message processing, status `SC_ACKNOWLEDGED` implies publishing acknowledgement), flag the module's first NFR as `FLOW_COVERAGE` with description: "Process flow '<flow name>' defines status '<STATUS_CODE>' for this application but no NFR in module '<module>' describes the behavior triggering this status"
+- Conversely, if an NFR describes a status-producing behavior (e.g., "publish acknowledgement message") but the process flow's status table does not include a matching status for the application, flag the NFR as `FLOW_COVERAGE` with description: "NFR <NFR_ID> describes behavior that should produce a status but process flow '<flow name>' does not define a corresponding application status"
+
+##### 4.8.6 Test Section ↔ Process Flow Alignment
+
+For modules covered by a process flow:
+- If the `### Test` section defines test data or test configuration, verify it is consistent with what the process flow describes
+- If test instructions reference message structures, queue names, or external system interactions, they should be consistent with the process flow's description. If a test references a message type or system interaction not present in any process flow, flag as `FLOW_COVERAGE`
+- Do not flag empty Test sections — test completeness is not the concern of this check
+
+##### 4.8.7 Reference Section ↔ Process Flow Alignment
+
+For modules covered by a process flow:
+- If the `### Reference` section references message structure documents (e.g., `[Job Demand Message](path/to/MESSAGE_JOB_DEMAND.md)`), verify the referenced message type aligns with what the process flow says the application receives
+- If a Reference points to a message structure for a recruitment step that has no process flow defined, flag as `FLOW_COVERAGE` with description: "Reference <REF_ID> points to message structure for '<message type>' but no process flow is defined for this recruitment step"
 
 ### 5. Insert TODO Annotations
 
@@ -162,6 +253,7 @@ For each issue found, insert a `[TODO]` annotation in the PRD.md file:
 | Contradictory Requirement | `CONTRADICTION` |
 | Duplicate Role | `DUP_ROLE` |
 | Architecture Violation | `ARCH_VIOLATION` |
+| Process Flow Coverage Gap | `FLOW_COVERAGE` |
 
 **Examples:**
 ```markdown
@@ -187,6 +279,7 @@ After inserting all TODOs, print a summary table:
 | Contradiction         | X     | ...                               |
 | Duplicate Role        | X     | ...                               |
 | Arch Violation        | X     | ...                               |
+| Flow Coverage         | X     | ...                               |
 | **Total**             | **X** |                                   |
 
 ### Details by Module
