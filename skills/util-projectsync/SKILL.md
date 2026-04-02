@@ -158,8 +158,17 @@ Create a new `PRD.md` inside the application folder using the template below:
 
 #### 4b. PRD.md Already Exists
 
-1. Parse the existing PRD.md to find all module headings (`## <Module Name>`) under both `# System Module` and `# Business Module`
-2. Compare against the module list from CLAUDE.md:
+1. **Check for top-level extended sections.** Verify that the following three top-level sections exist in PRD.md. These sections sit between `# Standards` and `# System Module`:
+   - `# Design System`
+   - `# Architecture Principle`
+   - `# High Level Process Flow`
+
+   For each section that is **missing**, insert it at the correct position (after `# Standards` and before `# System Module`, in the order listed above) using the placeholder content from the PRD.md template. Record the addition for the summary output.
+
+   For each section that **already exists**, do nothing — never modify existing content.
+
+2. Parse the existing PRD.md to find all module headings (`## <Module Name>`) under both `# System Module` and `# Business Module`
+3. Compare against the module list from CLAUDE.md:
    - **Module exists in both CLAUDE.md and PRD.md**: Do nothing
    - **Module exists in CLAUDE.md but NOT in PRD.md**: Append the missing module section at the end of its parent section (`# System Module` or `# Business Module`) using the template structure with empty versioned subsections `[v1.0.0]`
    - **Module exists in PRD.md but NOT in CLAUDE.md**: Do nothing to the file. Record a warning for the summary output
@@ -222,10 +231,10 @@ Print a summary of all actions taken, validation results, and warnings:
 | HC Adapter | hc_adapter | Already exists |
 
 ### PRD.md Sync
-| Application | Status | Modules Added | Warnings |
-|-------------|--------|---------------|----------|
-| hub_middleware | Updated | Payment, Billing | Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md |
-| hc_adapter | Created | (all modules) | - |
+| Application | Status | Sections Added | Modules Added | Warnings |
+|-------------|--------|----------------|---------------|----------|
+| hub_middleware | Updated | Design System, Architecture Principle | Payment, Billing | Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md |
+| hc_adapter | Created | (all sections) | (all modules) | - |
 
 ### BUG.md Sync
 | Application | Status | Modules Added | Warnings |
@@ -261,6 +270,21 @@ When creating a new PRD.md or adding module sections, use this structure:
 
 ## Coding
 - No coding standard for now
+
+---
+
+# Design System
+- No design system defined yet. Refer to a design system specification file if available (e.g., `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`).
+
+---
+
+# Architecture Principle
+- No architecture principles defined yet.
+
+---
+
+# High Level Process Flow
+- No high level process flows defined yet.
 
 ---
 
