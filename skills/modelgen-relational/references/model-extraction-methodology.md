@@ -153,7 +153,7 @@ For each attribute, the agent MUST capture:
 | Field           | Description                                                                            |
 |-----------------|----------------------------------------------------------------------------------------|
 | `name`          | camelCase field name                                                                   |
-| `type`          | Data type (String, UUID, Instant, Boolean, Long, custom Enum, or Value Object)         |
+| `type`          | Data type (String, UUID, Instant, Boolean, Long, custom Enum, or Value Object). UUID primary keys MUST specify DB-generated constraint. |
 | `nullable`      | Whether the field can be null                                                          |
 | `defaultValue`  | Default value if applicable                                                            |
 | `constraints`   | Validation constraints (not null, unique, max length, pattern, etc.)                   |
@@ -167,7 +167,7 @@ When a user story implies operations but does not explicitly name attributes, ap
 
 | Story Pattern                            | Implied Attributes                                                                      |
 |------------------------------------------|-----------------------------------------------------------------------------------------|
-| "create X"                               | `id` (UUID), `createdAt` (Instant), `createdBy` (String)                                |
+| "create X"                               | `id` (UUID, DB-generated), `createdAt` (Instant), `createdBy` (String)                   |
 | "update X"                               | `updatedAt` (Instant), `updatedBy` (String), `version` (Long)                           |
 | "delete X"                               | `deletedAt` (Instant), `deletedBy` (String), `deleted` (Boolean) — for soft delete      |
 | "deactivate / reactivate X"             | `status` (Enum), `statusChangedAt` (Instant), `statusChangedBy` (String)                 |
@@ -256,7 +256,7 @@ If audit fields, soft delete, or optimistic locking are implied by NFRs or user 
 
 | Field         | Type     | Purpose                                |
 |---------------|----------|----------------------------------------|
-| `id`          | UUID     | Primary key                            |
+| `id`          | UUID     | Primary key (MUST be DB-generated — see note below) |
 | `version`     | Long     | Optimistic locking                     |
 | `createdAt`   | Instant  | Record creation timestamp              |
 | `createdBy`   | String   | Actor who created the record           |
@@ -265,6 +265,8 @@ If audit fields, soft delete, or optimistic locking are implied by NFRs or user 
 | `deleted`     | Boolean  | Soft delete flag (if applicable)       |
 | `deletedAt`   | Instant  | Soft delete timestamp (if applicable)  |
 | `deletedBy`   | String   | Actor who deleted (if applicable)      |
+
+> **UUID Generation Rule:** The `id` primary key on every entity MUST use database-level UUID generation (e.g., `gen_random_uuid()` in PostgreSQL, `UUID()` in MySQL, `NEWSEQUENTIALID()` in SQL Server). Application-generated UUIDs are NOT permitted. Database-generated UUIDs avoid performance overhead from network round-trips, ensure consistent generation across application instances, and allow the database to use optimized sequential UUID variants for better B-tree index performance.
 
 ---
 

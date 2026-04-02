@@ -618,8 +618,8 @@ DTO mapping via MapStruct. All list endpoints paginated. Use actual collection n
 
 **If Database = PostgreSQL/MySQL:** JPA repositories per module with Spring Data
 JpaRepository. JPA entities with `@Entity`/`@Table` annotations extending `BaseEntity`.
-`BaseEntity` uses `@GeneratedValue(strategy = GenerationType.UUID)` with
-`@Column(name = "id", columnDefinition = "CHAR(36)")`. Flyway migration scripts.
+`BaseEntity` uses `@UuidGenerator(style = UuidGenerator.Style.TIME)` with
+`@Column(columnDefinition = "CHAR(36)")` and `private String id`. Flyway migration scripts.
 DTO mapping via MapStruct. All list endpoints paginated. Use actual table names.
 **MySQL UUID rule:** All UUID primary keys and foreign keys use `CHAR(36)` in DDL.
 

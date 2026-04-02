@@ -1739,7 +1739,7 @@ Flyway migration scripts for schema management.
 DTO mapping via MapStruct. Pagination helpers. All list endpoints paginated.
 Include `BaseEntity` with audit fields and `@MappedSuperclass`.
 
-Include `BaseEntity` definition using `@GeneratedValue(strategy = GenerationType.UUID)` with `@Column(name = "id", columnDefinition = "CHAR(36)", nullable = false, updatable = false)`.
+Include `BaseEntity` definition using `@UuidGenerator(style = UuidGenerator.Style.TIME)` with `@Column(columnDefinition = "CHAR(36)")` and `private String id`.
 All UUID/foreign-key columns in entities MUST use `columnDefinition = "CHAR(36)"` (not `length = 36`) to match the database `CHAR(36)` type and pass Hibernate schema validation.
 
 Include a sample Flyway migration script:
