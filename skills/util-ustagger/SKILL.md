@@ -1,5 +1,7 @@
 ---
 name: util-ustagger
+model: claude-sonnet-4-6
+effort: medium
 description: >
   Tag new items in PRD.md files with unique ID codes and validate no duplicate tags exist.
   Applies to PRD.md documents structured with module sections containing User Stories, Non

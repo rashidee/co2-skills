@@ -1,5 +1,7 @@
 ---
 name: testgen-functional
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate Playwright E2E test plan and specification documents from project artifacts
   (user stories, module models, mockups, specifications). Produces a TEST_PLAN.md root

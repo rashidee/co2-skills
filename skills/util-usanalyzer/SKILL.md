@@ -1,5 +1,7 @@
 ---
 name: util-usanalyzer
+model: claude-sonnet-4-6
+effort: medium
 description: >
   Analyze PRD.md files for quality issues: incomplete sentences, non-existent references,
   cross-module inconsistencies, contradictory requirements, duplicate roles, design system

@@ -1,5 +1,7 @@
 ---
 name: modelgen-nosql
+model: claude-sonnet-4-6
+effort: high
 description: >
   Extract NoSQL document models from Agile user stories using Domain-Driven Design (DDD) principles.
   Produces Mermaid class diagrams showing document structure (embedded vs referenced), JSON schema

@@ -1,5 +1,7 @@
 ---
 name: specgen-ts-cli
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a detailed specification document for building a distributable Node.js CLI
   application written in TypeScript. Uses Commander.js for command parsing, tsup for

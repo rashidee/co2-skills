@@ -1,5 +1,7 @@
 ---
 name: depgen-k8s
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a Dockerfile and per-environment Kubernetes manifests for an application. Supports
   Spring Boot (Java), Laravel (PHP), and Node.js application stacks. Auto-detects the stack

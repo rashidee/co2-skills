@@ -1,5 +1,7 @@
 ---
 name: specgen-laravel-eloquent-bladehtmx
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a detailed specification document for building a monolith Laravel 12 web
   application with server-rendered views (Blade), Tailwind CSS, Alpine.js, htmx, and

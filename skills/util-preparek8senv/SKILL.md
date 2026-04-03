@@ -1,5 +1,7 @@
 ---
 name: util-preparek8senv
+model: claude-sonnet-4-6
+effort: medium
 description: >
   Prepare Kubernetes environment infrastructure by generating K8s manifests for all 3rd party
   supporting applications across all environments defined in CLAUDE.md. Creates/updates

@@ -1,5 +1,7 @@
 ---
 name: specgen-spring-jpa-jtehtmx
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a detailed specification document for building a monolith Spring Boot 3 web
   application with server-rendered views (JTE), Tailwind CSS, Alpine.js, htmx, and

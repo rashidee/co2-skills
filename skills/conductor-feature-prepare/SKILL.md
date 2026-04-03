@@ -1,5 +1,7 @@
 ---
 name: conductor-feature-prepare
+model: claude-opus-4-6
+effort: max
 description: >
   Context artifacts preparation orchestrator — generates all context artifacts (module models,
   HTML mockups, technical specifications, test specifications) by invoking the appropriate

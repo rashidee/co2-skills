@@ -1,5 +1,7 @@
 ---
 name: specgen-react-mui
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a detailed specification document for building a React SPA (Single Page
   Application) using React 19, TypeScript 5, Vite 6, Material UI (MUI) v6, React Router v7,

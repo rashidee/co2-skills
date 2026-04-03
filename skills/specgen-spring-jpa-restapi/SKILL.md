@@ -1,5 +1,7 @@
 ---
 name: specgen-spring-jpa-restapi
+model: claude-sonnet-4-6
+effort: high
 description: >
   Generate a detailed specification document for building a Spring Boot 3 REST API
   application with Spring Modulith packaging. Database (MongoDB, PostgreSQL, MySQL, or none),

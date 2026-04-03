@@ -1,5 +1,7 @@
 ---
 name: util-projectsync
+model: claude-sonnet-4-6
+effort: medium
 description: >
   Synchronize project folder structure, PRD.md, and BUG.md files based on the canonical application
   and module definitions in CLAUDE.md. Validates dependencies (circular, missing, logical) and

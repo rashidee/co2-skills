@@ -1,5 +1,7 @@
 ---
 name: conductor-defect
+model: claude-opus-4-6
+effort: max
 description: >
   Fix bugs reported by humans from a BUG.md file. Takes an application name (mandatory),
   version (optional), and module (optional), resolves the context folder automatically from
