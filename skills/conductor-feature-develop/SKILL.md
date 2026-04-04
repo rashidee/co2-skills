@@ -6,14 +6,17 @@ description: >
   Application development orchestrator — orchestrates full-stack code implementation
   module-by-module (code + Playwright E2E tests), tracking progress in IMPLEMENTATION_MASTER.md
   and per-module IMPLEMENTATION_MODULE.md. Takes an application name (mandatory), with optional
-  source code path, version and module filters. Requires context artifacts (module models, HTML
-  mockups, technical specifications, test specifications) to already exist — use
-  "conductor-feature-prepare" first if they don't. Use this skill when the user asks to
-  "implement the application", "start development", "build the app module by module",
-  "orchestrate implementation", "develop from specs", "implement from test specs", or any
-  request to systematically develop a full application from existing specs. Also trigger when
-  user says "resume implementation" to continue from where a previous session left off using
-  IMPLEMENTATION_MASTER.md and IMPLEMENTATION_MODULE.md progress files.
+  source code path, version and module filters. Version supports single version, comma-separated
+  list, "all", or omit for all versions. When multiple versions are resolved, they are processed
+  SEQUENTIALLY in ascending semver order — all modules for version N are fully implemented before
+  version N+1 begins. Requires context artifacts (module models, HTML mockups, technical
+  specifications, test specifications) to already exist — use "conductor-feature-prepare" first
+  if they don't. Use this skill when the user asks to "implement the application", "start
+  development", "build the app module by module", "orchestrate implementation", "develop from
+  specs", "implement from test specs", or any request to systematically develop a full application
+  from existing specs. Also trigger when user says "resume implementation" to continue from where
+  a previous session left off using IMPLEMENTATION_MASTER.md and IMPLEMENTATION_MODULE.md
+  progress files.
 ---
 
 # Feature Conductor — Develop
@@ -123,7 +126,7 @@ The skill expects these arguments:
 |----------|----------|---------|-------------|
 | `<application>` | Yes | `mainapp` | Application name to locate the context folder |
 | `source:<path>` | No | `source:mainapp` | Path where source code resides. Defaults to `<app_folder>` (same as the resolved application folder) |
-| `version:<version>` | No | `version:v2` | If provided, filter user stories and artifacts for this version only. If omitted, process all versions |
+| `version:<version>` | No | `version:v2` or `version:v1,v2` or `version:all` | Filter user stories and artifacts by version. Supports single version, comma-separated list, `all`, or omit for all versions. Multiple versions are processed sequentially in ascending semver order |
 | `module:<module>` | No | `module:user` | If provided, process only this module. If omitted, process all modules |
 
 ### Input Resolution
@@ -145,6 +148,42 @@ The application name is matched against root-level application folders:
 | Test Specs | `<app_folder>/context/test/` |
 | References | `<app_folder>/context/reference/` |
 | Development Output | `<app_folder>/context/develop/` |
+
+### Version Resolution
+
+The `version:` argument supports four forms:
+
+| Form | Example | Behavior |
+|------|---------|----------|
+| Single version | `version:v2` | Process only v2 |
+| Comma-separated list | `version:v1,v2,v3` | Process each version sequentially in ascending semver order |
+| Explicit all | `version:all` | Discover all versions from PRD.md, process sequentially in ascending semver order |
+| Omitted | _(no version arg)_ | Same as `version:all` |
+
+#### Version Discovery
+
+When `version:all` or omitted:
+1. Scan PRD.md for all `[vX.Y.Z]` version tags across all module sections
+2. Collect unique versions
+3. Sort in ascending semantic version order (v1.0.0 < v1.0.1 < v1.1.0 < v2.0.0)
+4. This becomes the ordered version list for sequential processing
+
+#### Sequential Version Processing Rule
+
+**Versions are ALWAYS processed one at a time, in ascending semver order.** All modules for
+version N must be fully implemented (status `COMPLETED`) before version N+1 begins. This ensures:
+- The application is scaffolded and fully functional at version N before N+1 changes are layered on
+- Feature implementations build incrementally on prior version work
+- E2E tests validate each version's functionality before the next version modifies the codebase
+
+#### How It Works with Multiple Versions
+
+1. **First version** (e.g., v1.0.0): Full implementation — scaffolding (Phase 2) + all modules (Phase 3)
+2. **Each subsequent version** (e.g., v1.0.1, v1.0.2): Version increment — reset affected modules
+   to PENDING, update the application version, then re-implement only modules with changes for
+   that version. The existing "Version Increment" logic in Phase 0 handles this naturally.
+3. **Deployment artifacts + README** (Phase 5 + Phase 6): Generated ONCE after the LAST version
+   in the list is fully implemented
 
 ### Application Folder Structure (Expected)
 
@@ -259,25 +298,37 @@ Before starting any work, check `CHANGELOG.md` in the project root:
 
 1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
 2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
-3. Compare the requested version against the highest version:
-   - If requested version **>=** highest version: proceed normally.
-   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
-4. If no version argument was provided, skip this check.
+3. Apply the gate based on the version argument form:
+   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **`version:all` or omitted**: Skip this check — when processing all discovered versions, historical versions are expected.
 
 ### Redo/Redevelop Guard
 
-If the requested version already has a `conductor-feature-develop` entry in CHANGELOG.md for
-the same application, this means the version was previously developed. Before proceeding, check
-whether the previous artifacts and code still exist:
+This guard prevents accidental re-execution of already-completed work while allowing
+incremental processing of new versions. It uses a **partition and filter** approach.
 
-1. Scan CHANGELOG.md for rows matching the requested version, application, AND skill name
-   `conductor-feature-develop`.
-2. If a matching entry is found:
-   - Check if `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` still exists, OR
-   - Check if source code files exist in `<app_folder>/` (e.g., `pom.xml`, `composer.json`,
-     `package.json`, or `src/` directory)
-   - If **either** exists: **STOP immediately**. Print: `"Version {version} for {application} was already developed (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing IMPLEMENTATION_MASTER.md and source code, then re-run this skill."` Do NOT proceed.
-   - If **neither** exists (artifacts and code have been cleaned up): proceed normally — this is a legitimate redo/redevelop scenario.
+1. Resolve the version list (see Version Resolution).
+2. **Partition** the resolved versions into two groups:
+   - `completed_versions` — versions that have a matching `conductor-feature-develop` entry
+     in CHANGELOG.md for this application
+   - `new_versions` — versions with NO matching entry
+3. **Decision**:
+
+   | `new_versions` | `completed_versions` | Artifacts/code exist? | Action |
+   |---------------|---------------------|----------------------|--------|
+   | Not empty | Any (including empty) | Yes (expected — prior versions built them) | **Proceed with `new_versions` only** — filter out completed versions. Existing code is the base for version increment. |
+   | Not empty | Any | No | **Proceed with all resolved versions** — no prior code, start from scratch. |
+   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} were already developed (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing IMPLEMENTATION_MASTER.md and source code, then re-run this skill."` |
+   | Empty | Not empty | No | **Proceed with all resolved versions** — code was cleaned up, this is a legitimate redo. |
+
+   **Artifacts/code exist check**: `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md`
+   exists, OR source code files exist in `<app_folder>/` (e.g., `pom.xml`, `composer.json`,
+   `package.json`, or `src/` directory).
+
+4. **Update the resolved version list** to contain only the versions that will be processed
+   (either `new_versions` or all versions for redo). This filtered list is what the Version
+   Processing Order table and the sequential version loop will use.
 
 ## Workflow
 
@@ -304,12 +355,17 @@ files to understand what has already been completed.
 4. If it exists, read it and determine the current state:
    - Scan the Module Implementation Status table for the FIRST module with status != COMPLETED
    - If ALL modules are COMPLETED:
-     - **Version increment check**: If a `version` argument was provided, check whether
-       IMPLEMENTATION_MASTER.md already tracks that version (look for `**Version**: <version>`
-       in the header). If the version is NOT tracked yet, this is a **version increment** —
-       perform all of the following before proceeding:
-       1. Update IMPLEMENTATION_MASTER.md: reset affected modules to PENDING status, add the
-          new version to the header.
+     - **Sequential version loop check**: Resolve the version list (see Version Resolution).
+       Read the **Version Processing Order** table in IMPLEMENTATION_MASTER.md (if it exists)
+       to determine which versions have been completed.
+       - Find the FIRST version in the resolved list that is NOT yet tracked or NOT `COMPLETED`
+         in the Version Processing Order table.
+       - If such a version exists, this is the **next version to process** — perform the
+         version increment steps below and proceed to Phase 3.
+       - If ALL versions in the resolved list are `COMPLETED`, proceed to the README check below.
+     - **Version increment** — For each new version to process:
+       1. Update IMPLEMENTATION_MASTER.md: add the new version to the Version Processing Order
+          table, reset affected modules to PENDING status.
        2. **Update the application version** in the project manifest and configuration:
           - **Spring Boot**: Update `<version>` in `pom.xml` and `APP_VERSION` in `.env`
           - **Laravel**: Update `version` in `composer.json` and `APP_VERSION` in `.env`
@@ -326,7 +382,7 @@ files to understand what has already been completed.
      - **README check**: If the top-level `**Status**:` in IMPLEMENTATION_MASTER.md is NOT
        yet `COMPLETED`, proceed to Phase 5 (Generate Deployment Artifacts) — all modules are done but
        deployment artifacts and README haven't been generated and tracking hasn't been finalized yet.
-     - If no version argument (or version already tracked) AND top-level status is already
+     - If ALL versions are completed AND top-level status is already
        `COMPLETED` → output `<promise>ALL MODULES IMPLEMENTED</promise>` and stop
    - Otherwise, read its `IMPLEMENTATION_MODULE.md` for detailed progress
    - Resume from the last incomplete step in the checklist
@@ -350,7 +406,21 @@ Create `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` with this structu
 **Started**: <date>
 **Source Code**: <source-code-path>
 **Context**: <app_folder>/context
+**Resolved Versions**: <comma-separated sorted version list, e.g., "v1.0.0, v1.0.1, v1.0.2">
 **Status**: IN PROGRESS
+
+---
+
+## Version Processing Order
+
+| # | Version | Module Count | Status | Started | Completed |
+|---|---------|-------------|--------|---------|-----------|
+| 1 | v1.0.0 | 12 | NEW | - | - |
+| 2 | v1.0.1 | 3 | NEW | - | - |
+| 3 | v1.0.2 | 1 | NEW | - | - |
+
+> **Processing Rule**: All modules for version N must reach COMPLETED before version N+1 begins.
+> **First version**: full scaffolding + all modules. **Subsequent versions**: version increment — only modules with changes.
 
 ---
 
@@ -362,11 +432,14 @@ Create `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` with this structu
 
 ## Module Implementation Status
 
-| # | Module | Layer | Status | Started | Completed | Notes |
-|---|--------|-------|--------|---------|-----------|-------|
-| 1 | User | L1 | PENDING | - | - | |
-| 2 | Location Information | L2 | PENDING | - | - | |
+| # | Module | Layer | Version | Status | Started | Completed | Notes |
+|---|--------|-------|---------|--------|---------|-----------|-------|
+| 1 | User | L1 | v1.0.0 | PENDING | - | - | |
+| 2 | Location Information | L2 | v1.0.0 | PENDING | - | - | |
 ...
+
+> The **Version** column tracks which version is currently being implemented for that module.
+> When a version increment occurs, affected modules are reset to PENDING with the new version.
 
 ---
 
@@ -389,6 +462,14 @@ Create `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md` with this structu
 ...
 ```
 
+**IMPORTANT — Single version shortcut**: When only a single version is resolved, the Version
+Processing Order table has a single row. The behavior is identical to the original single-version
+flow — no extra complexity.
+
+**IMPORTANT — Module Count per version**: For the FIRST version, Module Count = total modules
+(full implementation). For subsequent versions, Module Count = only modules that have new/changed
+user stories for that version.
+
 ### Phase 2: Pre-Implementation (Scaffolding)
 
 Read the SPECIFICATION.md shared infrastructure sections and scaffold the project.
@@ -409,14 +490,17 @@ subdirectory. Instead:
 1. **Project structure**: Create the project skeleton directly in `<source-code-path>/`
 2. **Build & dependency configuration**: composer.json / pom.xml / build.gradle with all dependencies
 3. **Application version**: Set the application version in the project manifest using the
-   version argument provided during skill invocation. If multiple versions were provided,
-   use the highest one (semver comparison). If no version argument was provided, use `1.0.0`.
-   - **Spring Boot**: Set `<version>` in `pom.xml` (e.g., `<version>1.0.3</version>`) and
+   FIRST version in the resolved version list (the version currently being implemented).
+   If no version argument was provided (all versions), use the first discovered version.
+   If no versions exist at all, use `1.0.0`.
+   - **Spring Boot**: Set `<version>` in `pom.xml` (e.g., `<version>1.0.0</version>`) and
      `APP_VERSION` in `.env`
    - **Laravel**: Set `version` in `composer.json` and `APP_VERSION` in `.env`
    - **React / Node.js**: Set `version` in `package.json` and `VITE_APP_VERSION` in
      `.env.development` (or `APP_VERSION` in `.env` for Node.js backends)
    - The version in the manifest MUST match the version in the environment variable
+   - For multi-version processing, this version will be updated during each version increment
+     in the Phase 0 resume check
 4. **Application configuration**: .env, config files, or application.yml as appropriate
 4. **Security configuration**: Keycloak/OAuth2 or other auth provider setup
 5. **Shared layouts**: Blade / JTE / other template layout files (header, footer, sidebar)
@@ -686,14 +770,20 @@ After each module completes:
    - Update module row: Status = COMPLETED, Completed = date
    - Add notes about any issues encountered
 
-3. **Check if ALL modules are now COMPLETED**:
+3. **Check module and version completion**:
    - Scan the Module Implementation Status table in IMPLEMENTATION_MASTER.md
-   - If ALL modules have Status = COMPLETED:
-     - **Proceed to Phase 5 (Generate Deployment Artifacts)** before outputting the completion promise
-   - If there are still PENDING modules:
+   - If there are still PENDING modules for the **current version**:
      - **IMMEDIATELY proceed to the next module** in execution order — do NOT stop
      - Continue implementing until context limits force a natural stop
      - The Ralph Loop will re-feed the prompt, and the next iteration will resume via Phase 0
+   - If ALL modules for the **current version** are COMPLETED:
+     - Update the Version Processing Order table: mark current version as `COMPLETED`, record date
+     - Check if there are MORE versions in the resolved version list:
+       - If YES → perform a **version increment** (update app version in manifest, reset affected
+         modules to PENDING with the new version) and **IMMEDIATELY proceed to Phase 3** for the
+         next version's modules. Do NOT stop between versions.
+       - If NO (this was the last version) → **Proceed to Phase 5 (Generate Deployment Artifacts)**
+         before outputting the completion promise
 
 ### Phase 5: Generate Deployment Artifacts
 
@@ -864,12 +954,13 @@ See the [k8s/](k8s/) folder for per-environment Kubernetes manifests.
 1. Update IMPLEMENTATION_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Add a note: `README.md generated at <source-code-path>/README.md`
-2. Append an entry to `CHANGELOG.md` in the project root:
+2. Append entries to `CHANGELOG.md` in the project root — **one entry per version processed**:
    - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
-   - Search for a `## {version}` heading matching the current version. If no version argument was provided, use `v1.0.0` as the default.
-   - If the section **exists**: append a new row to its table.
-   - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
-   - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-feature-develop | {module or "All"} | Implemented all modules — application development complete |`
+   - For EACH version in the resolved version list (ascending order):
+     - Search for a `## {version}` heading matching this version.
+     - If the section **exists**: append a new row to its table.
+     - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+     - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-feature-develop | {module or "All"} | Implemented modules for {version} — {count} modules |`
    - **Never modify or delete existing rows.**
 3. Output the Ralph Loop completion promise: `<promise>ALL MODULES IMPLEMENTED</promise>`
 4. This signals the Ralph Loop to exit
@@ -994,8 +1085,10 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
 4. **Usage limit handling** — If you hit API usage limits, wait and resume. The tracking
    files ensure no work is lost. Ralph Loop will re-feed the prompt on next iteration.
 
-5. **Module order is strict** — Follow the execution order from TEST_PLAN.md exactly.
-   Dependencies mean earlier modules must complete before later ones can start.
+5. **Module order is strict, version order is strict** — Follow the execution order from
+   TEST_PLAN.md exactly within each version. When processing multiple versions, ALL modules
+   for version N must be COMPLETED before ANY module from version N+1 begins. Dependencies
+   mean earlier modules must complete before later ones can start within the same version.
 
 6. **Track everything** — Every action should be logged in IMPLEMENTATION_MODULE.md so
    that any future session (or Ralph Loop iteration) can understand what was done and what
@@ -1021,11 +1114,13 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     "Mockup Interpretation Guide" section above for the full template strategy framework.
 
 11. **Ralph Loop discipline — NEVER stop prematurely** — After completing a module, IMMEDIATELY
-    check for the next pending module and start it. Do NOT output the completion promise
-    (`<promise>ALL MODULES IMPLEMENTED</promise>`) until EVERY module is COMPLETED. Do NOT
-    stop "to let the user review" — Ralph Loop handles multi-iteration execution automatically.
-    The only valid reasons to stop within an iteration are: (a) context window approaching limit,
-    (b) all modules completed (output promise), or (c) an unrecoverable error requiring user input.
+    check for the next pending module and start it. After completing all modules for a version,
+    IMMEDIATELY perform the version increment and start the next version's modules. Do NOT
+    output the completion promise (`<promise>ALL MODULES IMPLEMENTED</promise>`) until EVERY
+    module for EVERY version is COMPLETED. Do NOT stop "to let the user review" — Ralph Loop
+    handles multi-iteration execution automatically. The only valid reasons to stop within an
+    iteration are: (a) context window approaching limit, (b) all modules for all versions
+    completed (output promise), or (c) an unrecoverable error requiring user input.
 
 12. **Complete implementation per module** — Each module must have ALL of these before marking
     COMPLETED: (a) all source files (entities, repositories, services, controllers, mappers),

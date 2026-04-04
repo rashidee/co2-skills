@@ -6,6 +6,9 @@ description: >
   Context artifacts preparation orchestrator — generates all context artifacts (module models,
   HTML mockups, technical specifications, test specifications) by invoking the appropriate
   sub-skills. Takes an application name (mandatory), with optional version and module filters.
+  Version supports single version, comma-separated list, "all", or omit for all versions.
+  When multiple versions are resolved, they are processed SEQUENTIALLY in ascending semver
+  order — all artifacts for version N are fully generated before version N+1 begins.
   Use this skill when the user asks to "prepare artifacts", "generate context", "prepare for
   development", "generate models and specs", "create mockups and specs", or any request to
   systematically generate all context artifacts from user stories before implementation begins.
@@ -108,7 +111,7 @@ The skill expects these arguments:
 | Argument | Required | Example | Description |
 |----------|----------|---------|-------------|
 | `<application>` | Yes | `mainapp` | Application name to locate the context folder |
-| `version:<version>` | No | `version:v2` | If provided, filter user stories and artifacts for this version only. If omitted, process all versions |
+| `version:<version>` | No | `version:v2` or `version:v1,v2` or `version:all` | Filter user stories and artifacts by version. Supports single version, comma-separated list, `all`, or omit for all versions. Multiple versions are processed sequentially in ascending semver order |
 | `module:<module>` | No | `module:user` | If provided, process only this module. If omitted, process all modules |
 
 ### Input Resolution
@@ -130,6 +133,34 @@ The application name is matched against root-level application folders:
 | Test Specs | `<app_folder>/context/test/` |
 | References | `<app_folder>/context/reference/` |
 
+### Version Resolution
+
+The `version:` argument supports four forms:
+
+| Form | Example | Behavior |
+|------|---------|----------|
+| Single version | `version:v2` | Process only v2 |
+| Comma-separated list | `version:v1,v2,v3` | Process each version sequentially in ascending semver order |
+| Explicit all | `version:all` | Discover all versions from PRD.md, process sequentially in ascending semver order |
+| Omitted | _(no version arg)_ | Same as `version:all` |
+
+#### Version Discovery
+
+When `version:all` or omitted:
+1. Scan PRD.md for all `[vX.Y.Z]` version tags across all module sections
+2. Collect unique versions
+3. Sort in ascending semantic version order (v1.0.0 < v1.0.1 < v1.1.0 < v2.0.0)
+4. This becomes the ordered version list for sequential processing
+
+#### Sequential Version Processing Rule
+
+**Versions are ALWAYS processed one at a time, in ascending semver order.** All artifacts for
+version N must be fully generated (or confirmed to already exist) before version N+1 begins.
+This ensures:
+- Module models from earlier versions are in place before later version models are layered on
+- Mockups, specifications, and test specs build incrementally on prior version artifacts
+- Each version's artifacts reflect the cumulative state up to that version
+
 ## Pre-Requisite: Project Information from CLAUDE.md (MANDATORY)
 
 **CLAUDE.md is automatically loaded into context** at the start of every session. It contains
@@ -138,19 +169,27 @@ it manually — the information is already available in your context.
 
 ## Redo/Redevelop Guard
 
-If the requested version already has a `conductor-feature-prepare` entry in CHANGELOG.md for
-the same application, this means the context artifacts were previously generated. Before
-proceeding, check whether the previous artifacts still exist:
+This guard prevents accidental re-execution of already-completed work while allowing
+incremental processing of new versions. It uses a **partition and filter** approach.
 
 1. Read `CHANGELOG.md` from the project root. If it does not exist, skip this check.
-2. Scan for rows matching the requested version, application, AND skill name
-   `conductor-feature-prepare`.
-3. If a matching entry is found:
-   - Check if context artifacts still exist in `<app_folder>/context/` (model/, mockup/,
-     specification/, test/ folders with `.md` or `.html` files inside)
-   - If artifacts **exist**: **STOP immediately**. Print: `"Version {version} for {application} already has context artifacts (recorded in CHANGELOG.md) and they still exist. To redo, first delete the existing context artifact folders (model/, mockup/, specification/, test/), then re-run this skill."` Do NOT proceed.
-   - If artifacts **do not exist** (folders are empty or deleted): proceed normally — this is a legitimate redo scenario.
-4. If no matching entry is found, proceed normally.
+2. Resolve the version list (see Version Resolution).
+3. **Partition** the resolved versions into two groups:
+   - `completed_versions` — versions that have a matching `conductor-feature-prepare` entry
+     in CHANGELOG.md for this application
+   - `new_versions` — versions with NO matching entry
+4. **Decision**:
+
+   | `new_versions` | `completed_versions` | Artifacts exist? | Action |
+   |---------------|---------------------|-----------------|--------|
+   | Not empty | Any (including empty) | Yes (expected — prior versions built them) | **Proceed with `new_versions` only** — filter out completed versions from the processing list. Existing artifacts are the base for version increment. |
+   | Not empty | Any | No | **Proceed with all resolved versions** — no prior artifacts, start from scratch. |
+   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} already have context artifacts (recorded in CHANGELOG.md) and they still exist. To redo, first delete the existing context artifact folders (model/, mockup/, specification/, test/), then re-run this skill."` |
+   | Empty | Not empty | No | **Proceed with all resolved versions** — artifacts were cleaned up, this is a legitimate redo. |
+
+5. **Update the resolved version list** to contain only the versions that will be processed
+   (either `new_versions` or all versions for redo). This filtered list is what the Sequential
+   Version Loop in Phase 1 will iterate over.
 
 ## Workflow
 
@@ -169,14 +208,20 @@ to understand what has already been completed.
 
 1. **Use project information from CLAUDE.md (already in context)** — extract database type,
    design system, technology stack, and all infrastructure details.
-2. Check which artifacts already exist:
+2. **Resolve the version list** using the Version Resolution rules:
+   - Single version → `[v2]`
+   - Comma-separated → parse and sort ascending by semver → `[v1, v2, v3]`
+   - `all` or omitted → scan PRD.md for ALL `[vX.Y.Z]` tags, deduplicate, sort ascending
+3. Check which artifacts already exist:
    - Check `<app_folder>/context/model/` for module model files
    - Check `<app_folder>/context/mockup/` for HTML mockup files
    - Check `<app_folder>/context/specification/` for spec files
    - Check `<app_folder>/context/test/` for test spec files
-3. If ALL artifacts exist (and this is NOT a version increment):
+4. If ALL artifacts exist AND only a single version was resolved AND this is NOT a version increment:
    - Output `<promise>ALL ARTIFACTS GENERATED</promise>` and stop
-4. Otherwise, proceed to Phase 1, starting from the first step with missing artifacts
+5. If multiple versions were resolved, proceed to Phase 1 — the version loop will determine
+   which versions still need processing (see Phase 1 Sequential Version Loop)
+6. Otherwise, proceed to Phase 1, starting from the first step with missing artifacts
 
 ### Phase 1: Context Artifacts Generation
 
@@ -184,18 +229,37 @@ This phase generates all required context artifacts before code implementation b
 checks if the artifact already exists — if it does, the step is skipped. This ensures the phase
 is idempotent and can be resumed safely.
 
-**IMPORTANT**: If `version` or `module` arguments were provided, pass them through to each
-sub-skill invocation so that only the relevant subset of artifacts is generated.
+**IMPORTANT**: If `module` argument was provided, pass it through to each sub-skill invocation
+so that only the relevant subset of artifacts is generated.
+
+#### Sequential Version Loop
+
+When multiple versions are resolved (list, `all`, or omitted), Phase 1 wraps Steps 1.1–1.9 in
+a **version loop**:
+
+```
+resolved_versions = [v1.0.0, v1.0.1, v1.0.2]  # ascending semver order
+
+For each version in resolved_versions:
+  1. Run Steps 1.1–1.9 with this single version as the version argument
+  2. For the FIRST version: artifacts are generated from scratch (Steps 1.2–1.9)
+  3. For SUBSEQUENT versions: artifacts already exist from the prior version — operate in
+     Version Increment Mode (update, not skip)
+  4. All artifacts for this version must be complete before moving to the next version
+```
+
+When only a single version is resolved, the loop runs once — no behavioral difference from
+the original single-version flow.
 
 #### Version Increment Mode
 
-When artifacts exist from a previous version but the specified `version` has new/changed user
-stories, Phase 1 operates in **update mode**:
+When artifacts exist from a previous version but the current version in the loop has new/changed
+user stories, Steps 1.4–1.9 operate in **update mode**:
 
 - **DO NOT skip steps just because artifacts already exist.** The existing artifacts are from a
-  previous version and need to be updated with the new version's changes.
-- Re-invoke ALL sub-skills (modelgen, mockgen, specgen, testgen) with BOTH the `version` AND
-  `module` arguments so they can update the existing artifacts incrementally.
+  previous version and need to be updated with the current version's changes.
+- Re-invoke ALL sub-skills (modelgen, mockgen, specgen, testgen) with BOTH the current `version`
+  AND `module` arguments so they can update the existing artifacts incrementally.
 - The sub-skills are responsible for reading the `[v<version>]` sections in PRD.md and
   updating their output files accordingly (appending new fields, modifying existing diagrams,
   updating specs and test scenarios).
@@ -231,9 +295,13 @@ Tag all untagged items in PRD.md with unique ID codes before any artifact genera
 This ensures all user stories, NFRs, constraints, and references have stable IDs that downstream
 artifacts (module models, specs, tests) can reference for traceability.
 
+**This step runs ONCE before the version loop starts** (not per-version), because tagging
+applies to all items regardless of version.
+
 1. Determine the version label to pass:
-   - If `version` argument was provided → use that version (e.g., `v2`)
-   - If no `version` argument → use `v1` as the default
+   - If processing a single version → use that version (e.g., `v2`)
+   - If processing multiple versions → use the HIGHEST version in the resolved list
+   - If no `version` argument (all) → use `v1` as the default
 2. Invoke the tagging skill:
    - `Skill(skill: "util-ustagger", args: "<application> <version>")`
    - Example: `Skill(skill: "util-ustagger", args: "mainapp v1")`
@@ -325,9 +393,14 @@ artifacts (module models, specs, tests) can reference for traceability.
 
 #### Phase 1 Completion
 
-After all artifacts are generated (or confirmed to already exist):
-1. Output a summary of what was generated/skipped
+After all artifacts for ALL versions in the resolved version list are generated (or confirmed
+to already exist):
+1. Output a summary of what was generated/skipped per version
 2. Output `<promise>ALL ARTIFACTS GENERATED</promise>` to signal Ralph Loop completion
+
+**IMPORTANT — Version loop completion**: The completion promise is ONLY output after the LAST
+version in the resolved list has been fully processed. Do NOT output it after completing an
+intermediate version — proceed to the next version immediately.
 
 ## Critical Rules
 
@@ -337,25 +410,33 @@ After all artifacts are generated (or confirmed to already exist):
 2. **Idempotent execution** — Each step checks if artifacts already exist before generating.
    This ensures the skill can be safely re-run or resumed without duplicating work.
 
-3. **Version increment awareness** — When a version argument is provided and artifacts already
-   exist from a previous version, ALL sub-skills must be re-invoked in update mode.
+3. **Version increment awareness** — When processing multiple versions sequentially, artifacts
+   from the prior version already exist when the next version begins. ALL sub-skills must be
+   re-invoked in update mode for each subsequent version.
 
-4. **Pass through filters** — If `version` or `module` arguments were provided, they MUST be
-   passed to every sub-skill invocation.
+4. **Pass through filters** — The current version from the version loop AND the `module`
+   argument (if provided) MUST be passed to every sub-skill invocation. Each sub-skill
+   receives a SINGLE version at a time, never a list.
 
-5. **Context window awareness (Ralph Loop handles recovery)** — If approaching context limits,
+5. **Sequential version order** — When multiple versions are resolved, they are processed
+   in ascending semver order. All artifacts for version N must complete before version N+1
+   begins. Never process versions in parallel or merge them into a single invocation.
+
+6. **Context window awareness (Ralph Loop handles recovery)** — If approaching context limits,
    the Ralph Loop will automatically re-feed the prompt, and the next iteration will resume
    from the first step with missing artifacts.
 
-6. **Auto-start Ralph Loop** — When this skill is triggered, the FIRST action (Phase 0, Step 0)
+7. **Auto-start Ralph Loop** — When this skill is triggered, the FIRST action (Phase 0, Step 0)
    MUST be to check if Ralph Loop is active (`.claude/ralph-loop.local.md` exists). If not active,
    invoke the Ralph Loop skill. Do NOT proceed with any work until Ralph Loop is confirmed active.
 
-7. **AUTONOMOUS CONTINUATION — NEVER STOP BETWEEN STEPS.** This is an orchestrator skill that
-   runs a multi-step pipeline (Steps 1.1 through 1.9). When a sub-skill (e.g., util-ustagger,
-   modelgen-relational, mockgen-tailwind, specgen-*, testgen-functional) completes and returns
-   control, you MUST immediately proceed to the NEXT step in the pipeline. Do NOT stop, do NOT
-   wait for user input, do NOT treat a sub-skill completion as the end of your task. Each sub-skill
-   invocation is just ONE intermediate step — the task is only complete when ALL steps have been
-   executed and the completion promise `<promise>ALL ARTIFACTS GENERATED</promise>` has been output.
-   **Stopping after any intermediate step is a bug in execution.**
+8. **AUTONOMOUS CONTINUATION — NEVER STOP BETWEEN STEPS OR VERSIONS.** This is an orchestrator
+   skill that runs a multi-step pipeline (Steps 1.1 through 1.9) across potentially multiple
+   versions. When a sub-skill (e.g., util-ustagger, modelgen-relational, mockgen-tailwind,
+   specgen-*, testgen-functional) completes and returns control, you MUST immediately proceed
+   to the NEXT step in the pipeline. When all steps for the current version are done, you MUST
+   immediately proceed to the NEXT version. Do NOT stop, do NOT wait for user input, do NOT
+   treat a sub-skill or version completion as the end of your task. The task is only complete
+   when ALL steps for ALL versions have been executed and the completion promise
+   `<promise>ALL ARTIFACTS GENERATED</promise>` has been output. **Stopping after any
+   intermediate step or version is a bug in execution.**

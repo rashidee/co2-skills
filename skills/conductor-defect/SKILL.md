@@ -4,15 +4,18 @@ model: claude-opus-4-6
 effort: max
 description: >
   Fix bugs reported by humans from a BUG.md file. Takes an application name (mandatory),
-  version (optional), and module (optional), resolves the context folder automatically from
-  root-level application folders. Tags untagged bugs, creates a BUG_MASTER.md tracking checklist, then fixes each bug
-  one at a time: reproduce with Playwright, write a test spec, plan the fix, apply the fix,
-  verify, and update related artifacts (mockups, specifications, module models, user stories).
-  Integrates with Ralph Loop to ensure all bugs are fully fixed across sessions. Use this skill
-  when the user asks to "fix bugs", "fix bug", "start bug fixing", "resolve bugs from BUG.md",
-  "bug fix session", or any request to systematically fix bugs from a BUG.md file. Also trigger
-  when user says "resume bug fixing" to continue from where a previous session left off using
-  BUG_MASTER.md progress file.
+  version (optional — supports single version, comma-separated list, "all", or omit for all),
+  and module (optional), resolves the context folder automatically from root-level application
+  folders. When multiple versions are provided (or "all"/omitted), versions are processed
+  SEQUENTIALLY in ascending semver order — all bugs from version N are fully resolved before
+  version N+1 begins. Tags untagged bugs, creates a BUG_MASTER.md tracking checklist, then
+  fixes each bug one at a time: reproduce with Playwright, write a test spec, plan the fix,
+  apply the fix, verify, and update related artifacts (mockups, specifications, module models,
+  user stories). Integrates with Ralph Loop to ensure all bugs are fully fixed across sessions.
+  Use this skill when the user asks to "fix bugs", "fix bug", "start bug fixing", "resolve bugs
+  from BUG.md", "bug fix session", or any request to systematically fix bugs from a BUG.md file.
+  Also trigger when user says "resume bug fixing" to continue from where a previous session left
+  off using BUG_MASTER.md progress file.
 ---
 
 # Bug Fixer
@@ -42,6 +45,8 @@ version:v1.0.4 module:location-information`) and pass it as the `args` value, ap
 |------------|----------------|
 | `/conductor-defect hub_middleware` | `/conductor-defect hub_middleware --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
 | `/conductor-defect hub_middleware version:v1.0.4` | `/conductor-defect hub_middleware version:v1.0.4 --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
+| `/conductor-defect hub_middleware version:v1.0.3,v1.0.4` | `/conductor-defect hub_middleware version:v1.0.3,v1.0.4 --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
+| `/conductor-defect hub_middleware version:all` | `/conductor-defect hub_middleware version:all --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
 | `/conductor-defect hub_middleware version:v1.0.4 module:location-information` | `/conductor-defect hub_middleware version:v1.0.4 module:location-information --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
 
 **Skip if already active**: If `.claude/ralph-loop.local.md` already exists, Ralph Loop is
@@ -95,7 +100,7 @@ The skill expects these arguments:
 | Argument | Required | Example | Description |
 |----------|----------|---------|-------------|
 | `<application>` | Yes | `hub_middleware` | Application name to locate the context folder |
-| `version:<version>` | No | `version:v1.0.4` | Filter bugs by version tag |
+| `version:<version>` | No | `version:v1.0.4` or `version:v1.0.3,v1.0.4` or `version:all` | Filter bugs by version. Supports single version, comma-separated list, `all`, or omit for all versions. Multiple versions are processed sequentially in ascending semver order |
 | `module:<module>` | No | `module:location-information` | Filter bugs by module |
 
 ### Input Resolution
@@ -121,9 +126,39 @@ The application name is matched against root-level application folders:
 
 | Provided | Behavior |
 |----------|----------|
-| `<application>` only | All versions, all modules |
-| `<application>` + `version:` | Specific version, all modules |
-| `<application>` + `version:` + `module:` | Specific version, specific module |
+| `<application>` only | All versions (sequential, ascending semver), all modules |
+| `<application>` + `version:v1.0.4` | Single version, all modules |
+| `<application>` + `version:v1.0.3,v1.0.4` | Multiple versions (sequential, ascending semver), all modules |
+| `<application>` + `version:all` | All versions (sequential, ascending semver), all modules |
+| Any above + `module:<module>` | Same as above, filtered to specific module |
+
+### Version Resolution
+
+The `version:` argument supports four forms:
+
+| Form | Example | Behavior |
+|------|---------|----------|
+| Single version | `version:v1.0.3` | Process only v1.0.3 |
+| Comma-separated list | `version:v1.0.1,v1.0.2,v1.0.3` | Process each version sequentially in ascending semver order |
+| Explicit all | `version:all` | Discover all versions from BUG.md, process sequentially in ascending semver order |
+| Omitted | _(no version arg)_ | Same as `version:all` |
+
+#### Version Discovery
+
+When `version:all` or omitted:
+1. Scan BUG.md for all `[vX.Y.Z]` version tags across all module sections
+2. Collect unique versions
+3. Sort in ascending semantic version order (v1.0.0 < v1.0.1 < v1.1.0 < v2.0.0)
+4. This becomes the ordered version list for sequential processing
+
+#### Sequential Version Processing Rule
+
+**Versions are ALWAYS processed one at a time, in ascending semver order.** All bugs from
+version N must be fully resolved (terminal status: `FIXED`, `CANNOT_REPRODUCE`, or `HIGH_IMPACT`)
+before ANY bug from version N+1 is started. This ensures:
+- Bug fixes from earlier versions are in place before later version bugs are addressed
+- The codebase is progressively stabilized version by version
+- Each version's fixes build on a stable foundation from prior versions
 
 ### Context Folder Structure (Expected)
 
@@ -254,9 +289,15 @@ The BUG.md file follows a hierarchical structure mirroring the module structure 
 ### Version Filtering Logic
 
 - Version tags appear as `[vX.Y.Z]` on their own line within a module section
-- When `version:` filter is provided, only include bugs that appear AFTER the matching version tag
-  and BEFORE the next version tag or module header
-- When no `version:` filter is provided, include ALL bugs from all versions
+- When a single `version:` filter is provided, only include bugs that appear AFTER the matching
+  version tag and BEFORE the next version tag or module header
+- When a comma-separated list is provided (e.g., `version:v1.0.3,v1.0.4`), include bugs from
+  each listed version. Bugs are grouped by version for sequential processing
+- When `version:all` or version is omitted, discover ALL `[vX.Y.Z]` tags in BUG.md, collect
+  bugs from every version, and group them by version for sequential processing
+- **Sequential processing**: Regardless of how versions are specified (list, all, omitted),
+  when multiple versions are resolved, bugs are processed version-by-version in ascending
+  semver order. All bugs from version N must reach terminal status before version N+1 begins
 
 ### Module Filtering Logic
 
@@ -295,10 +336,10 @@ Before starting any work, check `CHANGELOG.md` in the project root:
 
 1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
 2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
-3. Compare the requested version against the highest version:
-   - If requested version **>=** highest version: proceed normally.
-   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
-4. If no version argument was provided (version filter = "All"), skip this check.
+3. Apply the gate based on the version argument form:
+   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **`version:all` or omitted**: Skip this check — when processing all discovered versions, historical versions are expected to be present in the source file.
 
 ## PRD.md Extended Sections
 
@@ -343,22 +384,39 @@ This phase runs at the START of every iteration, including the first.
 2. Check if `<app_folder>/context/bug/BUG_MASTER.md` exists
 
 3. If it exists, read it and determine the current state:
-   - Scan the bug table for the FIRST bug with status `NEW` or `IN_PROGRESS`
-   - If ALL bugs have terminal status (`FIXED`, `CANNOT_REPRODUCE`, `HIGH_IMPACT`) →
+   - **Resolve the version list** using the Version Resolution rules (same as Phase 1)
+   - Read the **Version Processing Order** table from BUG_MASTER.md
+   - **New version detection**: Compare the resolved version list against the versions tracked
+     in the Version Processing Order table. If BUG.md contains versions that are NOT yet in
+     the Version Processing Order table (and those versions have bugs matching the module filter):
+     - These are **new versions added since the last run**
+     - Add them to the Version Processing Order table with status `NEW`
+     - Tag any untagged bugs for these new versions (same as Step 1.2)
+     - Add new version sections with their bug tables to BUG_MASTER.md
+     - Update the Summary table counts
+     - Resume processing from the first new version
+   - Scan the Version Processing Order table for the FIRST version with status != `COMPLETED`
+   - If ALL versions are `COMPLETED` (and therefore all bugs have terminal status) →
      output `<promise>ALL BUGS RESOLVED</promise>` and stop
-   - Otherwise, read its `BUG_FIX_PLAN.md` (if exists) for detailed progress
-   - Resume from the last incomplete step
+   - Otherwise, within the active version section, find the FIRST bug with status `NEW` or
+     `IN_PROGRESS`
+   - Read its `BUG_FIX_PLAN.md` (if exists) for detailed progress
+   - Resume from the last incomplete step within that version
 
 4. If it does not exist, proceed to Phase 1 (fresh start)
 
 ### Phase 1: Pre-Implementation — Analyze, Tag, and Create Master Checklist
 
-#### Step 1.1: Read and Filter BUG.md
+#### Step 1.1: Read, Resolve Versions, and Filter BUG.md
 
 1. Read `<app_folder>/context/BUG.md`
-2. Apply version and module filters based on the provided arguments
-3. Identify all bugs that match the filter criteria
-4. Count the total bugs to process
+2. **Resolve the version list** using the Version Resolution rules:
+   - Single version → `[v1.0.4]`
+   - Comma-separated → parse and sort ascending by semver → `[v1.0.3, v1.0.4]`
+   - `all` or omitted → scan BUG.md for ALL `[vX.Y.Z]` tags, deduplicate, sort ascending → `[v1.0.1, v1.0.2, v1.0.3, ...]`
+3. Apply module filter if provided
+4. For each resolved version, identify all bugs that match the filter criteria
+5. Count the total bugs per version and overall
 
 #### Step 1.2: Tag Untagged Bugs
 
@@ -376,26 +434,50 @@ Create `<app_folder>/context/bug/BUG_MASTER.md` with this structure:
 
 **Started**: <date>
 **Context**: <app_folder>/context
-**Version Filter**: <version or "All">
+**Resolved Versions**: <comma-separated sorted version list, e.g., "v1.0.3, v1.0.4, v1.0.5">
 **Module Filter**: <module or "All">
 **Status**: IN PROGRESS
 
 ---
 
-## <Module Name>
+## Version Processing Order
 
-| Code | Version | Description | Status | Remark |
-|------|---------|-------------|--------|--------|
-| BUG-001 | v1.0.4 | Short description of the bug | NEW | |
-| BUG-002 | v1.0.4 | Short description of the bug | NEW | |
+| # | Version | Bug Count | Status | Started | Completed |
+|---|---------|-----------|--------|---------|-----------|
+| 1 | v1.0.3 | 3 | NEW | - | - |
+| 2 | v1.0.4 | 5 | NEW | - | - |
+| 3 | v1.0.5 | 2 | NEW | - | - |
+
+> **Processing Rule**: All bugs from version N must reach terminal status before version N+1 begins.
 
 ---
 
-## <Another Module>
+## v1.0.3
 
-| Code | Version | Description | Status | Remark |
-|------|---------|-------------|--------|--------|
-| BUG-003 | v1.0.5 | Short description of the bug | NEW | |
+### <Module Name>
+
+| Code | Description | Status | Remark |
+|------|-------------|--------|--------|
+| BUG-001 | Short description of the bug | NEW | |
+| BUG-002 | Short description of the bug | NEW | |
+
+---
+
+### <Another Module>
+
+| Code | Description | Status | Remark |
+|------|-------------|--------|--------|
+| BUG-003 | Short description of the bug | NEW | |
+
+---
+
+## v1.0.4
+
+### <Module Name>
+
+| Code | Description | Status | Remark |
+|------|-------------|--------|--------|
+| BUG-004 | Short description of the bug | NEW | |
 
 ---
 
@@ -411,6 +493,15 @@ Create `<app_folder>/context/bug/BUG_MASTER.md` with this structure:
 | **Total** | **X** |
 ```
 
+**IMPORTANT — Single version shortcut**: When only a single version is resolved (either
+explicitly provided or only one version exists in BUG.md), the BUG_MASTER.md still uses
+the same structure above but with only one version section. The Version Processing Order
+table will have a single row.
+
+**IMPORTANT — Version-first organization**: Bugs are grouped by version (H2), then by
+module (H3) within each version. This ensures the version-sequential processing order
+is visually clear and easy to track.
+
 **Status Values:**
 - `NEW` — Bug has been tagged but not yet worked on
 - `IN_PROGRESS` — Bug is currently being investigated/fixed
@@ -418,9 +509,21 @@ Create `<app_folder>/context/bug/BUG_MASTER.md` with this structure:
 - `CANNOT_REPRODUCE` — Bug could not be reproduced via Playwright
 - `HIGH_IMPACT` — Fix would potentially break other working functionalities; deferred
 
-### Phase 2: Implementation — Fix Each Bug (One at a Time)
+### Phase 2: Implementation — Fix Each Bug (Version by Version, One at a Time)
 
-For each bug with status `NEW` in BUG_MASTER.md, in order:
+Process bugs **version by version** in the order defined in the Version Processing Order table:
+
+1. Find the FIRST version in the Version Processing Order table with status != `COMPLETED`
+2. Update that version's status to `IN_PROGRESS` and record the start date
+3. Within that version section, find the FIRST bug with status `NEW` or `IN_PROGRESS`
+4. Fix that bug using Steps 2.1–2.8 below
+5. After fixing, check if ALL bugs in the current version have terminal status:
+   - If YES → mark the version as `COMPLETED` in the Version Processing Order table, record
+     completion date, and move to the NEXT version (step 1)
+   - If NO → find the next `NEW` bug in the same version and continue
+6. Repeat until ALL versions are `COMPLETED`
+
+For each bug with status `NEW` in BUG_MASTER.md (within the current version), in order:
 
 #### Step 2.1: Initialize Bug Folder
 
@@ -677,12 +780,13 @@ After all bugs have been processed (every bug has a terminal status):
 1. Update BUG_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Update all Summary table counts
-2. Append an entry to `CHANGELOG.md` in the project root:
+2. Append entries to `CHANGELOG.md` in the project root — **one entry per version processed**:
    - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
-   - Search for a `## {version}` heading matching the current version (use the version filter; if "All", use the highest version found in BUG.md).
-   - If the section **exists**: append a new row to its table.
-   - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
-   - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-defect | {module or "All"} | Fixed {count} bugs ({list of BUG codes}) |`
+   - For EACH version in the resolved version list (ascending order):
+     - Search for a `## {version}` heading matching this version.
+     - If the section **exists**: append a new row to its table.
+     - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
+     - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-defect | {module or "All"} | Fixed {count} bugs ({list of BUG codes for this version}) |`
    - **Never modify or delete existing rows.**
 3. Output the Ralph Loop completion promise: `<promise>ALL BUGS RESOLVED</promise>`
 
