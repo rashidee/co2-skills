@@ -3,25 +3,26 @@ name: conductor-upgrade-version
 model: claude-opus-4-6
 effort: max
 description: >
-  Version upgrade orchestrator — orchestrates both bug fixing (conductor-defect) and feature
-  development (conductor-feature-develop) for a new version in a single session. First resolves
-  all bugs from BUG.md, then implements new features from user stories — ensuring the upgraded
-  version is both stable and feature-complete. Takes an application name (mandatory), version
-  (optional — supports single version, comma-separated list, "all", or omit for all), and
-  optional module filter. When multiple versions are resolved, they are processed SEQUENTIALLY
-  in ascending semver order — both Phase A (bugs) and Phase B (features) for version N are
-  fully completed before version N+1 begins. Use this skill when the user asks to "upgrade
-  version", "version upgrade", "upgrade to new version", "new version with bugs and features",
-  "upgrade and fix bugs", or any request to systematically fix bugs and implement new features
-  for a version upgrade. Also trigger when user says "resume upgrade" to continue from where a
-  previous session left off using UPGRADE_MASTER.md progress file.
+  Version upgrade orchestrator — orchestrates both feature development (conductor-feature-develop)
+  and bug fixing (conductor-defect) for a new version in a single session. First implements new
+  features from user stories, then resolves all bugs from BUG.md — ensuring the upgraded version
+  is both feature-complete and stable. Takes an application name (mandatory), version (optional —
+  supports single version, comma-separated list, "all", or omit for all), and optional module
+  filter. When multiple versions are resolved, they are processed SEQUENTIALLY in ascending
+  semver order — both Phase A (features) and Phase B (bugs) for version N are fully completed
+  before version N+1 begins. Use this skill when the user asks to "upgrade version", "version
+  upgrade", "upgrade to new version", "new version with bugs and features", "upgrade and fix
+  bugs", or any request to systematically implement new features and fix bugs for a version
+  upgrade. Also trigger when user says "resume upgrade" to continue from where a previous
+  session left off using UPGRADE_MASTER.md progress file.
 ---
 
 # Version Upgrade Conductor
 
-Orchestrates a full version upgrade by running bug fixing (conductor-defect) followed by
-feature development (conductor-feature-develop) in sequence. Ensures the upgraded version
-is both stable (all bugs resolved) and feature-complete (all modules implemented).
+Orchestrates a full version upgrade by running feature development (conductor-feature-develop)
+followed by bug fixing (conductor-defect) in sequence. Ensures the upgraded version is both
+feature-complete (all modules implemented) and stable (all bugs resolved). Development runs
+first so that code exists before bug reproduction and fixing is attempted.
 
 ## Ralph Loop Integration (AUTO-START — MANDATORY)
 
@@ -90,8 +91,8 @@ After Ralph Loop is active, proceed with Phase 0 (Resume Check) and continue nor
 
 1. This skill auto-starts a Ralph Loop with the upgrade orchestrator prompt as the loop body
 2. On each iteration, the agent reads UPGRADE_MASTER.md to determine which phase is active
-3. Phase A (Bug Fixing): delegates to conductor-defect — agent fixes bugs until all are resolved
-4. Phase B (Feature Development): delegates to conductor-feature-develop — agent implements modules until all are completed
+3. Phase A (Feature Development): delegates to conductor-feature-develop — agent implements modules until all are completed
+4. Phase B (Bug Fixing): delegates to conductor-defect — agent fixes bugs until all are resolved
 5. When the agent tries to exit, Ralph Loop re-feeds the same prompt automatically
 6. The next iteration resumes from where the last one left off (tracked in UPGRADE_MASTER.md)
 7. When BOTH phases are COMPLETED, the agent outputs the completion promise to exit the loop
@@ -107,7 +108,7 @@ following promise tag to signal the Ralph Loop that the version upgrade is done:
 
 **CRITICAL**: Only output this promise when:
 - ALL versions in the Version Processing Order table have status `COMPLETED`
-- For each version: Phase A has terminal status (`COMPLETED` or `SKIPPED`) and Phase B is `COMPLETED`
+- For each version: Phase A is `COMPLETED` and Phase B has terminal status (`COMPLETED` or `SKIPPED`)
 - Deployment artifacts (Phase 4) have been generated after the last version
 
 Do NOT output the promise prematurely. Do NOT output it to escape the loop.
@@ -125,8 +126,8 @@ At the START of every iteration (including the first), the agent MUST:
 
 Within a Ralph Loop iteration, the agent MUST:
 - Continue working through the current phase until context limits force a stop
-- After Phase A completes for the current version, IMMEDIATELY transition to Phase B
-- After Phase B completes for the current version, IMMEDIATELY advance to the next version
+- After Phase A (features) completes for the current version, IMMEDIATELY transition to Phase B (bugs)
+- After Phase B (bugs) completes for the current version, IMMEDIATELY advance to the next version
 - Do NOT stop between phases or between versions "to let the user review" — Ralph Loop handles iteration
 - Do NOT output the completion promise until ALL versions have BOTH phases verified complete
 - If approaching context limits mid-phase, save progress to UPGRADE_MASTER.md so the
@@ -175,8 +176,8 @@ each sub-skill invocation receives a **single version** (the current version in 
 
 | Sub-Skill | Forwarded Arguments |
 |-----------|-------------------|
-| `conductor-defect` | `<application> version:<current-version> [module:<module>]` |
 | `conductor-feature-develop` | `<application> version:<current-version> [module:<module>]` |
+| `conductor-defect` | `<application> version:<current-version> [module:<module>]` |
 
 The `source:` argument for `conductor-feature-develop` is NOT accepted by this skill.
 It defaults to the resolved `<app_folder>` as per conductor-feature-develop's default behavior.
@@ -207,9 +208,10 @@ When `version:all` or omitted:
 #### Sequential Version Processing Rule
 
 **Versions are ALWAYS processed one at a time, in ascending semver order.** Both Phase A
-(bug fixing) and Phase B (feature development) for version N must fully complete before
+(feature development) and Phase B (bug fixing) for version N must fully complete before
 version N+1 begins. This ensures:
-- Bug fixes from earlier versions are in place before later version bugs are addressed
+- Features are implemented before bug reproduction and fixing is attempted
+- Bug fixes target code that actually exists (developed in Phase A)
 - Feature implementations build incrementally on prior version work
 - The codebase is progressively upgraded version by version
 
@@ -236,8 +238,8 @@ developer's machine. Every shell command MUST use the values from CLAUDE.md.
 ### High Level Process Flow Awareness
 
 If PRD.md contains a `# High Level Process Flow` section, be aware that process flow changes between versions may affect both bug fixing and feature development:
-- **Phase A (Bug Fixing)**: Process flows provide step-by-step debugging context for message-driven bugs. conductor-defect uses them to trace which flow step is failing.
-- **Phase B (Feature Development)**: Process flows serve as implementation blueprints for message-driven modules. conductor-feature-develop uses them to implement flow steps in the correct order.
+- **Phase A (Feature Development)**: Process flows serve as implementation blueprints for message-driven modules. conductor-feature-develop uses them to implement flow steps in the correct order.
+- **Phase B (Bug Fixing)**: Process flows provide step-by-step debugging context for message-driven bugs. conductor-defect uses them to trace which flow step is failing.
 - If process flows have changed between the previous version and the target version (new steps, modified steps), both phases should be aware of these changes.
 
 ---
@@ -246,14 +248,7 @@ If PRD.md contains a `# High Level Process Flow` section, be aware that process 
 
 Before the upgrade can proceed, verify the following exist:
 
-### For Phase A (Bug Fixing)
-- `<app_folder>/context/BUG.md` — Bug reports for the target version(s)
-- Phase A applicability is checked **per version** during the version loop:
-  - If BUG.md does not exist OR has no bugs for the current version being processed, Phase A
-    is **skipped** for that version (marked SKIPPED in the Version Processing Order table)
-  - Phase A may be skipped for some versions but not others
-
-### For Phase B (Feature Development)
+### For Phase A (Feature Development)
 - Context artifacts MUST exist (from conductor-feature-prepare):
   - `<app_folder>/context/model/` — Module models
   - `<app_folder>/context/mockup/` — HTML mockups
@@ -261,16 +256,28 @@ Before the upgrade can proceed, verify the following exist:
   - `<app_folder>/context/test/` — Test specifications
 - If context artifacts are missing, **stop and inform the user** to run `conductor-feature-prepare` first
 
+### For Phase B (Bug Fixing)
+- `<app_folder>/context/BUG.md` — Bug reports for the target version(s)
+- Phase B applicability is checked **per version** during the version loop, AFTER Phase A
+  (feature development) completes:
+  - If BUG.md does not exist OR has no bugs for the current version being processed, Phase B
+    is **skipped** for that version (marked SKIPPED in the Version Processing Order table)
+  - Phase B may be skipped for some versions but not others
+
 ### Bug Regression Awareness (Redo/Redevelop Scenario)
 - PRD.md modules may contain `### Bug` sections listing previously fixed bugs from prior
-  development cycles. Both Phase A (conductor-defect) and Phase B (conductor-feature-develop)
+  development cycles. Both Phase A (conductor-feature-develop) and Phase B (conductor-defect)
   must take these into account:
-  - **Phase A (conductor-defect)**: Bug fixes recorded in PRD.md `### Bug` sections are
-    already-resolved issues from past versions — they do not need re-fixing but inform context.
-  - **Phase B (conductor-feature-develop)**: When implementing modules, the `### Bug` section
+  - **Phase A (conductor-feature-develop)**: When implementing modules, the `### Bug` section
     entries are treated as supplementary requirements to prevent the same bugs from reappearing
     during redevelopment. conductor-feature-develop reads these entries alongside user stories,
-    NFRs, and constraints for each module.
+    NFRs, and constraints for each module. This means many previously reported bugs are
+    proactively prevented during development, reducing the number of bugs that Phase B
+    needs to address.
+  - **Phase B (conductor-defect)**: Bug fixes recorded in PRD.md `### Bug` sections are
+    already-resolved issues from past versions — they do not need re-fixing but inform context.
+    Phase B focuses on bugs in BUG.md that were NOT already addressed by the Bug Regression
+    Awareness in Phase A.
 
 ## UPGRADE_MASTER.md — Central Tracking File
 
@@ -288,13 +295,14 @@ and updated throughout the workflow. Location: `<app_folder>/context/develop/UPG
 
 ## Version Processing Order
 
-| # | Version | Phase A (Bugs) | Phase B (Features) | Status | Started | Completed |
-|---|---------|---------------|-------------------|--------|---------|-----------|
+| # | Version | Phase A (Features) | Phase B (Bugs) | Status | Started | Completed |
+|---|---------|-------------------|---------------|--------|---------|-----------|
 | 1 | v1.0.3 | NEW | NEW | NEW | - | - |
 | 2 | v1.0.4 | NEW | NEW | NEW | - | - |
 | 3 | v2.0.0 | NEW | NEW | NEW | - | - |
 
 > **Processing Rule**: Both Phase A and Phase B for version N must complete before version N+1 begins.
+> **Phase order**: Phase A (develop features) runs first, then Phase B (fix bugs) — code must exist before bugs can be reproduced and fixed.
 
 ## Current Version: {current version being processed}
 
@@ -302,21 +310,21 @@ and updated throughout the workflow. Location: `<app_folder>/context/develop/UPG
 
 | Phase | Name | Status | Started | Completed | Notes |
 |-------|------|--------|---------|-----------|-------|
-| A | Bug Fixing | {NEW / IN_PROGRESS / COMPLETED / SKIPPED} | {date} | {date} | {notes} |
-| B | Feature Development | {NEW / IN_PROGRESS / COMPLETED} | {date} | {date} | {notes} |
+| A | Feature Development | {NEW / IN_PROGRESS / COMPLETED} | {date} | {date} | {notes} |
+| B | Bug Fixing | {NEW / IN_PROGRESS / COMPLETED / SKIPPED} | {date} | {date} | {notes} |
 
-### Phase A: Bug Fixing
-
-- **Sub-Skill**: conductor-defect
-- **Invocation**: `/conductor-defect {application} version:{current-version} [module:{module}]`
-- **Tracking File**: `<app_folder>/context/bug/BUG_MASTER.md`
-- **Status**: {detailed status}
-
-### Phase B: Feature Development
+### Phase A: Feature Development
 
 - **Sub-Skill**: conductor-feature-develop
 - **Invocation**: `/conductor-feature-develop {application} version:{current-version} [module:{module}]`
 - **Tracking File**: `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md`
+- **Status**: {detailed status}
+
+### Phase B: Bug Fixing
+
+- **Sub-Skill**: conductor-defect
+- **Invocation**: `/conductor-defect {application} version:{current-version} [module:{module}]`
+- **Tracking File**: `<app_folder>/context/bug/BUG_MASTER.md`
 - **Status**: {detailed status}
 
 ## Upgrade Log
@@ -331,7 +339,7 @@ flow — no extra complexity.
 
 **IMPORTANT — Current Version section**: The `## Current Version` section is updated each time
 the version loop advances. When Phase A and Phase B for the current version are both COMPLETED
-(or Phase A is SKIPPED), the current version row in the Version Processing Order table is marked
+(or Phase B is SKIPPED), the current version row in the Version Processing Order table is marked
 `COMPLETED`, the `## Current Version` heading is updated to the next version, and the Phase
 Summary table is reset to `NEW` for the next version.
 
@@ -378,8 +386,8 @@ a **partition and filter** approach.
      - Scan the **Version Processing Order** table for the FIRST version with status != `COMPLETED`
      - If such a version exists, this is the **current version**. Read its Phase Summary:
        - If Phase A is `IN_PROGRESS` or `NEW` → resume Phase A for this version (go to Phase 2)
-       - If Phase A is `COMPLETED` or `SKIPPED` and Phase B is `IN_PROGRESS` or `NEW` → resume Phase B for this version (go to Phase 3)
-       - If BOTH phases for this version are `COMPLETED` or `SKIPPED` → mark this version as
+       - If Phase A is `COMPLETED` and Phase B is `IN_PROGRESS` or `NEW` → resume Phase B for this version (go to Phase 3)
+       - If BOTH phases for this version are `COMPLETED` (or Phase B is `SKIPPED`) → mark this version as
          `COMPLETED` in the Version Processing Order table, advance to the NEXT version
          (update `## Current Version`), and go to Phase 1.5 (Version Initialization) for it
      - If ALL versions are `COMPLETED` → go to Phase 4 (deployment artifacts), then Phase 5 (completion)
@@ -403,53 +411,23 @@ a **partition and filter** approach.
 This phase runs at the start of each new version in the Version Processing Order:
 
 1. **Update `## Current Version`** in UPGRADE_MASTER.md to the current version
-2. **Determine Phase A applicability for the current version**:
+2. **Phase A (Feature Development) is always required** — set Phase A status = `NEW`
+3. **Determine Phase B applicability for the current version**:
    - Read BUG.md and check for bugs matching the current version (and optional module filter)
-   - If bugs exist → Phase A status = `NEW`
-   - If no bugs for the current version → Phase A status = `SKIPPED`
-3. **Reset the Phase Summary table** for the current version:
-   - Phase A = `NEW` (or `SKIPPED` if no bugs)
-   - Phase B = `NEW`
-4. **Update the Version Processing Order table**: set current version status to `IN_PROGRESS`
-5. **Log** the version initialization event
-6. Proceed to Phase 2 (or Phase 3 if Phase A is SKIPPED)
+   - If bugs exist → Phase B status = `NEW`
+   - If no bugs for the current version → Phase B status = `SKIPPED`
+4. **Reset the Phase Summary table** for the current version:
+   - Phase A = `NEW`
+   - Phase B = `NEW` (or `SKIPPED` if no bugs)
+5. **Update the Version Processing Order table**: set current version status to `IN_PROGRESS`
+6. **Log** the version initialization event
+7. Proceed to Phase 2 (Feature Development)
 
-### Phase 2: Bug Fixing (Phase A)
-
-This phase delegates entirely to `conductor-defect`. The delegation works as follows:
-
-1. **Update UPGRADE_MASTER.md**: Set Phase A status to `IN_PROGRESS`, record start date
-2. **Invoke conductor-defect** by calling the Skill tool with the **current version only**:
-   ```
-   Skill(skill: "conductor-defect", args: "<application> version:<current-version> [module:<module>]")
-   ```
-   - Pass the application, the **current version from the version loop** (single version),
-     and module arguments
-   - conductor-defect will handle its own Ralph Loop internally — **do NOT start a nested Ralph Loop**
-
-   **IMPORTANT — Ralph Loop Delegation**:
-   When invoking conductor-defect from within this skill, the conductor-defect skill will
-   attempt to start its own Ralph Loop. Since this skill's Ralph Loop is ALREADY ACTIVE,
-   conductor-defect will detect the existing `.claude/ralph-loop.local.md` and skip
-   re-invoking Ralph Loop. This is the expected behavior — both skills share the same
-   Ralph Loop session.
-
-3. **Monitor completion**: After conductor-defect returns or the iteration ends:
-   - Check `<app_folder>/context/bug/BUG_MASTER.md`
-   - If ALL bugs for the **current version** have terminal status (`FIXED`, `CANNOT_REPRODUCE`, `HIGH_IMPACT`):
-     - Update UPGRADE_MASTER.md: Phase A = `COMPLETED`, record completion date
-     - Log the completion event
-     - Proceed to Phase 3 for the **same version**
-   - If bugs remain unresolved for the current version:
-     - UPGRADE_MASTER.md remains Phase A = `IN_PROGRESS`
-     - Ralph Loop will re-feed the prompt, and Phase 0 will resume Phase A for this version
-4. **Log** progress in the Upgrade Log table (include the version column)
-
-### Phase 3: Feature Development (Phase B)
+### Phase 2: Feature Development (Phase A)
 
 This phase delegates entirely to `conductor-feature-develop`. The delegation works as follows:
 
-1. **Update UPGRADE_MASTER.md**: Set Phase B status to `IN_PROGRESS`, record start date
+1. **Update UPGRADE_MASTER.md**: Set Phase A status to `IN_PROGRESS`, record start date
 2. **Invoke conductor-feature-develop** by calling the Skill tool with the **current version only**:
    ```
    Skill(skill: "conductor-feature-develop", args: "<application> version:<current-version> [module:<module>]")
@@ -459,12 +437,44 @@ This phase delegates entirely to `conductor-feature-develop`. The delegation wor
    - conductor-feature-develop will handle its own Ralph Loop internally — **do NOT start a nested Ralph Loop**
 
    **IMPORTANT — Ralph Loop Delegation**:
-   Same as Phase A — conductor-feature-develop will detect the existing Ralph Loop and
-   skip re-invoking. Both skills share the same Ralph Loop session.
+   When invoking conductor-feature-develop from within this skill, the conductor-feature-develop
+   skill will attempt to start its own Ralph Loop. Since this skill's Ralph Loop is ALREADY
+   ACTIVE, conductor-feature-develop will detect the existing `.claude/ralph-loop.local.md` and
+   skip re-invoking Ralph Loop. This is the expected behavior — both skills share the same
+   Ralph Loop session.
 
 3. **Monitor completion**: After conductor-feature-develop returns or the iteration ends:
    - Check `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md`
    - If ALL modules for the **current version** have status `COMPLETED`:
+     - Update UPGRADE_MASTER.md: Phase A = `COMPLETED`, record completion date
+     - Log the completion event
+     - Proceed to Phase 3 for the **same version** (or skip if Phase B is `SKIPPED`)
+   - If modules remain pending for the current version:
+     - UPGRADE_MASTER.md remains Phase A = `IN_PROGRESS`
+     - Ralph Loop will re-feed the prompt, and Phase 0 will resume Phase A for this version
+4. **Log** progress in the Upgrade Log table (include the version column)
+
+### Phase 3: Bug Fixing (Phase B)
+
+This phase delegates entirely to `conductor-defect`. It runs AFTER Phase A (Feature Development)
+so that code exists before bug reproduction and fixing is attempted.
+
+1. **Update UPGRADE_MASTER.md**: Set Phase B status to `IN_PROGRESS`, record start date
+2. **Invoke conductor-defect** by calling the Skill tool with the **current version only**:
+   ```
+   Skill(skill: "conductor-defect", args: "<application> version:<current-version> [module:<module>]")
+   ```
+   - Pass the application, the **current version from the version loop** (single version),
+     and module arguments
+   - conductor-defect will handle its own Ralph Loop internally — **do NOT start a nested Ralph Loop**
+
+   **IMPORTANT — Ralph Loop Delegation**:
+   Same as Phase A — conductor-defect will detect the existing Ralph Loop and skip
+   re-invoking. Both skills share the same Ralph Loop session.
+
+3. **Monitor completion**: After conductor-defect returns or the iteration ends:
+   - Check `<app_folder>/context/bug/BUG_MASTER.md`
+   - If ALL bugs for the **current version** have terminal status (`FIXED`, `CANNOT_REPRODUCE`, `HIGH_IMPACT`):
      - Update UPGRADE_MASTER.md: Phase B = `COMPLETED`, record completion date
      - **Mark the current version as `COMPLETED`** in the Version Processing Order table
      - Log the completion event
@@ -472,7 +482,7 @@ This phase delegates entirely to `conductor-feature-develop`. The delegation wor
        - If YES → go to Phase 1.5 (Version Initialization) for the NEXT version. Do NOT
          proceed to Phase 4 yet — deployment artifacts are generated only after the LAST version.
        - If NO (this was the last version) → proceed to Phase 4
-   - If modules remain pending for the current version:
+   - If bugs remain unresolved for the current version:
      - UPGRADE_MASTER.md remains Phase B = `IN_PROGRESS`
      - Ralph Loop will re-feed the prompt, and Phase 0 will resume Phase B for this version
 4. **Log** progress in the Upgrade Log table (include the version column)
@@ -480,8 +490,8 @@ This phase delegates entirely to `conductor-feature-develop`. The delegation wor
 ### Phase 4: Generate Deployment Artifacts
 
 After ALL versions in the Version Processing Order are `COMPLETED` (each version's Phase A
-is `COMPLETED` or `SKIPPED`, and Phase B is `COMPLETED`), regenerate deployment artifacts
-to ensure they reflect the final state of all bug fixes and new features across all versions.
+is `COMPLETED`, and Phase B is `COMPLETED` or `SKIPPED`), regenerate deployment artifacts
+to ensure they reflect the final state of all new features and bug fixes across all versions.
 
 #### Step 4.1: Invoke depgen-k8s
 
@@ -507,7 +517,7 @@ If either file is missing, log a warning in UPGRADE_MASTER.md and proceed to Pha
 ### Phase 5: Completion
 
 1. **Verify ALL versions in the Version Processing Order table are `COMPLETED`**:
-   - For each version: Phase A is `COMPLETED` or `SKIPPED`, AND Phase B is `COMPLETED`
+   - For each version: Phase A is `COMPLETED`, AND Phase B is `COMPLETED` or `SKIPPED`
 2. **Update UPGRADE_MASTER.md**: Set top-level status to `COMPLETED`, record completion date
 3. **Log** the final completion event
 4. **Output the completion promise**:
@@ -520,10 +530,11 @@ If either file is missing, log a warning in UPGRADE_MASTER.md and proceed to Pha
 1. **CLAUDE.md is source of truth** — All tool commands (Maven, database CLI, Keycloak, Playwright,
    etc.) MUST use paths and credentials from CLAUDE.md, which is already loaded in context.
 
-2. **Phase order is strict, version order is strict** — Phase A (bug fixing) MUST complete
-   before Phase B (feature development) begins for each version. When processing multiple
-   versions, both Phase A and Phase B for version N must fully complete before version N+1
-   begins. This ensures the codebase is progressively stabilized version by version.
+2. **Phase order is strict, version order is strict** — Phase A (feature development) MUST
+   complete before Phase B (bug fixing) begins for each version. Code must exist before bugs
+   can be reproduced and fixed. When processing multiple versions, both Phase A and Phase B
+   for version N must fully complete before version N+1 begins. This ensures the codebase is
+   progressively upgraded and stabilized version by version.
 
 3. **UPGRADE_MASTER.md is the master checkpoint** — Every iteration starts by reading this file to
    determine where to resume. The Version Processing Order table and Current Version section
@@ -535,21 +546,22 @@ If either file is missing, log a warning in UPGRADE_MASTER.md and proceed to Pha
    own completion promises (`ALL BUGS RESOLVED`, `ALL MODULES IMPLEMENTED`) are NOT used —
    instead, this skill checks the sub-skills' tracking files directly.
 
-5. **Phase A can be skipped per version** — If BUG.md does not exist or has no bugs for the
-   current version being processed, Phase A is marked `SKIPPED` for that version and the
-   workflow proceeds directly to Phase B. Phase A may be skipped for some versions but not
-   others.
-
-6. **Phase B cannot be skipped** — Feature development is always required for each version in
+5. **Phase A cannot be skipped** — Feature development is always required for each version in
    the upgrade. If context artifacts are missing, stop and inform the user.
+
+6. **Phase B can be skipped per version** — If BUG.md does not exist or has no bugs for the
+   current version being processed, Phase B is marked `SKIPPED` for that version and the
+   workflow proceeds to the next version (or Phase 4 if this is the last version). Phase B
+   may be skipped for some versions but not others.
 
 7. **Context window awareness** — Ralph Loop handles recovery across context window limits.
    Always save progress to UPGRADE_MASTER.md before context runs out.
 
 8. **Ralph Loop discipline** — NEVER stop prematurely. Continue working through phases and
-   versions until context limits force a stop or ALL versions are completed. After completing
-   both phases for the current version, IMMEDIATELY advance to the next version — do NOT
-   stop between versions.
+   versions until context limits force a stop or ALL versions are completed. After Phase A
+   (features) completes, IMMEDIATELY start Phase B (bugs). After both phases for the current
+   version complete, IMMEDIATELY advance to the next version — do NOT stop between phases
+   or versions.
 
 9. **NO creative alternatives for 3rd party apps** — Use ONLY the tools, commands, and
    configurations specified in CLAUDE.md. Do NOT invent alternative approaches.
