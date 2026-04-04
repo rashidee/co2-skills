@@ -1,7 +1,7 @@
 ---
 name: conductor-upgrade-version
-model: claude-opus-4-6
-effort: max
+model: claude-sonnet-4-6
+effort: high
 description: >
   Version upgrade orchestrator — orchestrates both feature development (conductor-feature-develop)
   and bug fixing (conductor-defect) for a new version in a single session. First implements new

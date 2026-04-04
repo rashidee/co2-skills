@@ -1,6 +1,6 @@
 ---
 name: specgen-laravel-eloquent-bladehtmx
-model: claude-sonnet-4-6
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a monolith Laravel 12 web

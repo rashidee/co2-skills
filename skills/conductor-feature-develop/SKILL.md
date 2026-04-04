@@ -1,7 +1,7 @@
 ---
 name: conductor-feature-develop
-model: claude-opus-4-6
-effort: max
+model: claude-sonnet-4-6
+effort: high
 description: >
   Application development orchestrator — orchestrates full-stack code implementation
   module-by-module (code + Playwright E2E tests), tracking progress in IMPLEMENTATION_MASTER.md

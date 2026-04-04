@@ -1,7 +1,7 @@
 ---
 name: conductor-defect
 model: claude-opus-4-6
-effort: max
+effort: high
 description: >
   Fix bugs reported by humans from a BUG.md file. Takes an application name (mandatory),
   version (optional — supports single version, comma-separated list, "all", or omit for all),
