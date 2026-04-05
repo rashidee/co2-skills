@@ -201,46 +201,55 @@ Output format for ambiguities:
 
 ## 6. Phase 4: Relationship Mapping
 
+> **ARCHITECTURAL CONSTRAINT — `ONE_TO_MANY` is prohibited as an ORM relationship.**
+> Supported relationship types are: `ONE_TO_ONE`, `MANY_TO_ONE`, `MANY_TO_MANY` only.
+> When a domain relationship is logically "parent has many children", model it from the
+> child's perspective as `MANY_TO_ONE` (child entity stores the FK to the parent). The
+> parent entity MUST NOT declare a collection field mapped with `@OneToMany` or equivalent.
+> Retrieval of child records is always handled at the application layer via a dedicated
+> repository query (e.g., `childRepository.findByParentId(parentId)`). This eliminates
+> N+1 query problems, uncontrolled eager/lazy loading, and unbounded in-memory collection growth.
+
 ### 6.1 Relationship Detection from Linguistic Cues
 
 The agent MUST scan for verb and preposition patterns to identify relationships between entities:
 
-| Linguistic Pattern                  | Relationship Type     | Cardinality    |
-|-------------------------------------|-----------------------|----------------|
-| "assign X to Y"                    | Association            | Many-to-Many   |
-| "X belongs to Y"                   | Composition/Ownership  | Many-to-One    |
-| "X has Y" / "X contains Y"        | Aggregation            | One-to-Many    |
-| "X's Y" (possessive)              | Composition            | One-to-One     |
-| "create X for Y"                   | Ownership              | Many-to-One    |
-| "view X of Y" / "view X for Y"    | Read relationship      | One-to-Many    |
-| "X manages Y"                      | Hierarchical           | One-to-Many    |
-| "X is classified by Y"            | Categorization         | Many-to-One    |
-| "X references Y"                   | Weak association       | Many-to-One    |
+| Linguistic Pattern                  | Relationship Type     | Cardinality                                                                         |
+|-------------------------------------|-----------------------|-------------------------------------------------------------------------------------|
+| "assign X to Y"                    | Association            | Many-to-Many                                                                        |
+| "X belongs to Y"                   | Composition/Ownership  | Many-to-One                                                                         |
+| "X has Y" / "X contains Y"        | Aggregation            | **Many-to-One** (Y stores FK to X; parent-to-child collection resolved at application layer) |
+| "X's Y" (possessive)              | Composition            | One-to-One                                                                          |
+| "create X for Y"                   | Ownership              | Many-to-One                                                                         |
+| "view X of Y" / "view X for Y"    | Read relationship      | **Many-to-One** (Y stores FK to X; collection fetched via repository query)         |
+| "X manages Y"                      | Hierarchical           | **Many-to-One** (Y stores FK to X; parent-to-child collection resolved at application layer) |
+| "X is classified by Y"            | Categorization         | Many-to-One                                                                         |
+| "X references Y"                   | Weak association       | Many-to-One                                                                         |
 
 ### 6.2 Relationship Specification
 
 For each identified relationship, the agent MUST capture:
 
-| Field              | Description                                                        |
-|--------------------|--------------------------------------------------------------------|
-| `sourceEntity`     | The entity on the owning side                                      |
-| `targetEntity`     | The entity on the referenced side                                  |
-| `type`             | `ONE_TO_ONE`, `ONE_TO_MANY`, `MANY_TO_ONE`, `MANY_TO_MANY`        |
-| `joinEntity`       | Name of join entity (for Many-to-Many relationships only)          |
-| `ownerSide`        | Which entity owns the foreign key                                  |
-| `cascadeBehavior`  | What happens on delete/update of the parent                        |
-| `sourceStory`      | Traceability reference                                             |
-| `businessRule`     | Plain-language description of the relationship constraint          |
+| Field              | Description                                                                              |
+|--------------------|------------------------------------------------------------------------------------------|
+| `sourceEntity`     | The entity on the owning side                                                            |
+| `targetEntity`     | The entity on the referenced side                                                        |
+| `type`             | `ONE_TO_ONE`, `MANY_TO_ONE`, `MANY_TO_MANY` — **`ONE_TO_MANY` is not permitted**        |
+| `joinEntity`       | Name of join entity (for Many-to-Many relationships only)                                |
+| `ownerSide`        | Which entity owns the foreign key                                                        |
+| `cascadeBehavior`  | What happens on delete/update of the parent                                              |
+| `sourceStory`      | Traceability reference                                                                   |
+| `businessRule`     | Plain-language description of the relationship constraint                                |
 
 ### 6.3 Cardinality Decision Matrix
 
-| Question                                                    | If YES                 | If NO              |
-|-------------------------------------------------------------|------------------------|---------------------|
-| Can one instance of A be associated with many B?            | A → B is One-to-Many   | Check reverse       |
-| Can one instance of B be associated with many A?            | B → A is One-to-Many   | One-to-One          |
-| Can both A and B have many of each other?                   | Many-to-Many           | —                   |
-| Does A cease to exist without B?                            | Composition (strong)   | Association (weak)  |
-| Does the relationship itself carry data (e.g., timestamps)? | Promote to join entity | Use simple FK/join  |
+| Question                                                    | If YES                                                                              | If NO              |
+|-------------------------------------------------------------|-------------------------------------------------------------------------------------|--------------------|
+| Can one instance of A be associated with many B?            | B stores Many-to-One FK to A; child collection fetched at application layer         | Check reverse      |
+| Can one instance of B be associated with many A?            | A stores Many-to-One FK to B; child collection fetched at application layer         | One-to-One         |
+| Can both A and B have many of each other?                   | Many-to-Many                                                                        | —                  |
+| Does A cease to exist without B?                            | Composition (strong)                                                                | Association (weak) |
+| Does the relationship itself carry data (e.g., timestamps)? | Promote to join entity                                                              | Use simple FK/join |
 
 ---
 
@@ -338,7 +347,7 @@ A markdown table listing all relationships:
 |------------------|-----------------------------------------------------------|
 | Source Entity    | Owning-side entity                                         |
 | Target Entity    | Referenced entity                                         |
-| Cardinality      | `1:1`, `1:N`, `N:1`, `M:N`                               |
+| Cardinality      | `1:1`, `N:1`, `M:N` — `1:N` is not modelled as an ORM relationship; child collection is resolved at the application layer |
 | Join Entity      | Name of join entity (M:N only)                            |
 | Cascade Behavior | What happens on parent delete/update                      |
 | Business Rule    | Plain-language constraint description                     |
@@ -430,6 +439,7 @@ After generating the model, the agent MUST perform a self-review.
 - [ ] No aggregate contains more than 4–5 entities (split if larger).
 - [ ] No entity has more than 15–20 attributes (decompose into value objects).
 - [ ] All Many-to-Many relationships have clearly defined join entities.
+- [ ] No `ONE_TO_MANY` ORM relationship exists in the model — all parent-to-child collections are resolved at the application layer via repository queries.
 - [ ] Enum values match the role codes and states defined in the PRD.
 - [ ] Naming conventions are consistent across all entities and attributes.
 - [ ] The ERD Mermaid diagram is valid and parseable.
@@ -438,7 +448,7 @@ After generating the model, the agent MUST perform a self-review.
 
 After initial extraction, the agent SHOULD run a second pass reviewing for:
 
-1. Missing inverse relationships.
+1. Any `ONE_TO_MANY` collection field on a parent entity — replace with `MANY_TO_ONE` FK on the child and a repository query at the application layer.
 2. Aggregates that are too large (more than 4 entities).
 3. Attributes that should be Value Objects instead of primitives.
 4. Missing domain events for state transitions.
@@ -453,7 +463,7 @@ After initial extraction, the agent SHOULD run a second pass reviewing for:
 |-----------------------------------|----------------------------|-------------------------------------------------------------|
 | `assign X to Y`                  | Many-to-Many               | Join entity with audit fields                               |
 | `create X`                       | Entity lifecycle            | Entity with full CRUD and audit fields                      |
-| `view X logs`                    | One-to-Many                | Audit/log entity with FK to parent                          |
+| `view X logs`                    | Many-to-One (on log entity) | Audit/log entity with Many-to-One FK to parent; logs fetched via repository query |
 | `deactivate / reactivate X`      | State machine               | `status` enum + `statusChangedAt` + transition rules        |
 | `reset X`                        | Command / Domain Event      | Event sourcing candidate                                    |
 | `authenticate / log in`          | Identity boundary           | Credential value object or entity                           |
@@ -465,7 +475,7 @@ After initial extraction, the agent SHOULD run a second pass reviewing for:
 | `schedule X`                     | Temporal entity              | `scheduledAt`, `startDate`, `endDate` fields                |
 | `notify X about Y`              | Event-driven                | Notification entity + template entity                       |
 | `upload / attach X`             | File association             | Stored file entity with metadata                            |
-| `X manages Y`                   | Hierarchical                | One-to-Many parent-child with self-referencing FK possible  |
+| `X manages Y`                   | Many-to-One (on Y)          | Y stores Many-to-One FK to X; children fetched via repository query |
 
 ---
 
