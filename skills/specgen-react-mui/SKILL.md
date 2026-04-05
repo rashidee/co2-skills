@@ -120,6 +120,11 @@ The spec must include these in the npm configuration section (always):
 - `react-quill-new` — Rich text editor (Quill-based, React 19 compatible)
 - `dompurify` + `@types/dompurify` — HTML sanitization for rich text content
 
+**If Reporting = yes:**
+- `xlsx` — Client-side XLSX file generation
+- `papaparse` + `@types/papaparse` — Client-side CSV generation
+- Report service (Node.js companion): `puppeteer`, `express`, `cors` — server-side HTML-to-PDF via headless Chrome
+
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
@@ -402,6 +407,9 @@ If Auth = Local (API-managed JWT):
 | NFRs mention "real-time", "live updates", "push notification", "WebSocket" | WebSocket = yes |
 | PRD.md mentions multiple languages or localization | i18n = yes |
 | User stories mention "rich text", "WYSIWYG", "formatted content", "HTML content" | RichText = yes |
+| NFRs mention "report", "generate report", "report generation", "PDF report" | Reporting = yes |
+| User stories describe generating/downloading PDF, Excel, or CSV reports | Reporting = yes |
+| A "Report" module exists in PRD.md with NFRs defining a Report interface | Reporting = yes |
 
 ### Summary of Determination
 
@@ -418,6 +426,7 @@ Optional Component Determination:
 - WebSocket:      no
 - i18n:           no
 - RichText:       yes (from PRD.md → blog content editor requires rich text)
+- Reporting:      yes (from PRD.md → Report module with Report interface NFR)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -661,6 +670,20 @@ language switcher component.
 #### 21. WebSocket Integration *(conditional — include only if WebSocket = yes)*
 `socket.io-client` setup, connection management Zustand store, custom `useSocket()`
 hook, event subscription patterns, reconnection handling.
+
+#### 22. Reporting (Puppeteer) *(conditional — include only if Reporting = yes)*
+Client-side report UI components and server-side Puppeteer PDF generation service.
+Includes report list page (MUI DataGrid or Card grid grouped by domain), report parameter
+form page (React Hook Form + Zod + MUI), report preview dialog (iframe-based HTML preview),
+`useReportGeneration()` hook orchestrating PDF/XLSX/CSV generation, `renderReportHtml()`
+utility using `ReactDOMServer.renderToStaticMarkup()` to produce self-contained HTML with
+Tailwind CDN for Puppeteer rendering, report layout components (React components rendering
+tabular/summary reports as HTML), client-side XLSX export via `xlsx` library, client-side
+CSV export via `PapaParse`, lightweight Node.js Express report service using Puppeteer for
+HTML-to-PDF conversion (deployed as sidecar or microservice), Vite proxy configuration for
+development. Report layouts are fully AI-agent-developed React components — no visual
+designers needed. Read `references/reporting-patterns.md` for the full reporting
+architecture.
 
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 

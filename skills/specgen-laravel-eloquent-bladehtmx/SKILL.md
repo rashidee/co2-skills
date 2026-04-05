@@ -98,8 +98,9 @@ The spec must include these in the Composer configuration section (always):
 - `php-amqplib/php-amqplib` — Low-level AMQP for advanced exchange patterns
 
 **If Reporting = yes:**
-- `barryvdh/laravel-dompdf` — PDF generation via DomPDF
+- `spatie/browsershot` — PDF generation via Puppeteer (headless Chrome) with full CSS support
 - `maatwebsite/excel` — XLSX and CSV export
+- Requires `npm install puppeteer` on the server (Node.js + headless Chrome binary)
 
 **Additional cross-cutting packages:**
 - `spatie/laravel-permission` — RBAC (roles and permissions)
@@ -459,13 +460,13 @@ Reporting is determined from PRD.md content:
 | No reporting-related requirements found | Reporting = no |
 
 **If Reporting = yes**, the spec includes:
-- DomPDF for PDF generation from Blade templates
+- Puppeteer via Browsershot for PDF generation from Blade templates (full CSS/Tailwind support)
 - Laravel Excel for XLSX and CSV export
 - `ReportDefinition` interface for modules to implement
 - `ReportService` orchestrating render → export
 - Report registry persisted in the database
 - Report controller with parameter form and download endpoint
-- Blade templates for report list and parameter form pages
+- Blade templates for report list, parameter form, and PDF report layouts (Tailwind-styled)
 
 ### Summary of Determination
 
@@ -825,13 +826,17 @@ Overview of testing approach — unit tests (PHPUnit), feature tests (Laravel HT
 module isolation tests, security test utilities (Socialite fake for Keycloak, `actingAs()`
 for form login), view model tests.
 
-#### 23. Reporting *(conditional — include only if Reporting = yes)*
-DomPDF for PDF generation from Blade templates, Laravel Excel for XLSX/CSV export.
+#### 23. Reporting (Puppeteer / Browsershot) *(conditional — include only if Reporting = yes)*
+Puppeteer via `spatie/browsershot` for PDF generation from Blade templates with full
+CSS/Tailwind support (headless Chrome rendering), Laravel Excel for XLSX/CSV export.
 Includes `ReportDefinition` interface for modules to implement, `ReportService`
-orchestrating render → export, `ReportRegistry` for auto-discovering and persisting
-report definitions at startup, report controller with parameter form and download
-endpoint, Blade templates for report list and parameter form, multi-format export.
-Read `references/reporting-patterns.md` for the full reporting architecture.
+orchestrating HTML render → Browsershot PDF conversion → export, `ReportRegistry` for
+auto-discovering and persisting report definitions at startup, report controller with
+parameter form and download endpoint, Blade templates for report list, parameter form,
+and self-contained PDF report layouts (including Tailwind CDN for standalone rendering),
+multi-format export. Report Blade templates are fully AI-agent-developed — no visual
+designers needed. Read `references/reporting-patterns.md` for the full reporting
+architecture.
 
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 

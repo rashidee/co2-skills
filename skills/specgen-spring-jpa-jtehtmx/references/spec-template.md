@@ -1974,11 +1974,14 @@ Provides a JasperReports-based reporting infrastructure with DTO data sources:
 ### Architecture
 
 - **`ReportDefinition` interface** — modules implement this to define their reports.
-  Each implementation is a `@Component` auto-discovered by the `ReportRegistry`
-- **`ReportService`** — compiles `.jrxml` templates via `JasperCompileManager`, fills with
-  data via `JRBeanCollectionDataSource` from DTO collections, and exports to PDF/XLSX/CSV
+  Each implementation is a `@Component` auto-discovered by the `ReportRegistry`.
+  Includes `buildDesign()` method that returns a `JasperDesign` built via JRDesign API.
+- **`ReportDesignHelper`** — static utility class with builders for common report patterns
+  (A4 portrait/landscape, title band, column headers, detail band, page footer)
+- **`ReportService`** — compiles `JasperDesign` from `buildDesign()` via `JasperCompileManager`,
+  fills with data via `JRBeanCollectionDataSource` from DTO collections, and exports to PDF/XLSX/CSV
 - **`ReportRegistry`** — auto-discovers all `ReportDefinition` beans at startup and persists
-  their metadata (name, description, module, template path) to the database
+  their metadata (name, description, module) to the database
 - **`ReportPageController`** — serves the report list page (`GET /reports`), parameter form
   (`GET /reports/{id}`), and generate/download endpoint (`POST /reports/{id}/generate`)
 - **JTE templates** — report list page (grouped by module) and parameter form page with
@@ -1990,17 +1993,17 @@ Provides a JasperReports-based reporting infrastructure with DTO data sources:
 2. At startup, `ReportRegistry` discovers it and persists to the `report` table
 3. User selects report → parameter form rendered from `ReportParameter` descriptors
 4. User submits → `ReportDefinition.generateData(params)` calls module services to produce `List<DTO>`
-5. `ReportService` wraps DTOs in `JRBeanCollectionDataSource`, compiles + fills + exports
+5. `ReportService` wraps DTOs in `JRBeanCollectionDataSource`, compiles `JasperDesign` + fills + exports
 6. File returned as download (PDF, XLSX, or CSV)
 
 ### Key Constraint: DTO as Data Source (no SQL in templates)
 
 Report definitions call **module services** (never repositories) to produce DTO collections.
-`.jrxml` templates contain **no `<queryString>` SQL** — all data comes via
-`JRBeanCollectionDataSource`. This preserves Spring Modulith module boundaries and enables
-unit testing of report data generation independently from the Jasper engine.
+Report layouts are built programmatically via JRDesign API — no `.jrxml` templates, no SQL
+in reports. All data comes via `JRBeanCollectionDataSource`. This preserves Spring Modulith
+module boundaries and enables unit testing of report data generation independently from Jasper.
 
-DTO field names must use **camelCase** and match `.jrxml` `<field name="...">` declarations
+DTO field names must use **camelCase** and match `JRDesignField` names declared in `buildDesign()`
 exactly (JavaBean getter convention). Nested objects should be flattened into the report DTO
 (e.g., `staff.department.name` → `departmentName`).
 
@@ -2035,8 +2038,6 @@ exactly (JavaBean getter convention). Nested objects should be flattened into th
 ```yaml
 app:
   reporting:
-    template-path: classpath:reports/
-    compiled-path: reports/compiled/
     temp-path: ${java.io.tmpdir}/reports
     default-format: PDF
 ```
@@ -2050,6 +2051,7 @@ shared/
     ├── ReportParameter.java
     ├── ReportFormat.java
     ├── ReportResult.java
+    ├── ReportDesignHelper.java
     ├── ReportService.java
     ├── ReportRegistry.java
     ├── ReportConfig.java
@@ -2070,18 +2072,17 @@ CREATE TABLE report (
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(500),
     domain      VARCHAR(100) NOT NULL,
-    template_path VARCHAR(500) NOT NULL,
     active      BOOLEAN NOT NULL DEFAULT TRUE
 );
 ```
 
 **[If MongoDB]:**
-Collection `report` with fields: `reportId`, `name`, `description`, `module`,
-`templatePath`, `active`.
+Collection `report` with fields: `reportId`, `name`, `description`, `module`, `active`.
 
 ### Module Integration Pattern
 
-Each module registers reports by creating `@Component` classes implementing `ReportDefinition`:
+Each module registers reports by creating `@Component` classes implementing `ReportDefinition`.
+Report layouts are built programmatically using JRDesign API — no `.jrxml` template files:
 
 ```java
 @Component
@@ -2103,7 +2104,26 @@ public class StaffAllocationSummaryReport implements ReportDefinition {
         );
     }
 
-    @Override public String getTemplatePath() { return "staff/staff-allocation-summary.jrxml"; }
+    @Override
+    public JasperDesign buildDesign(Map<String, Object> parameters) {
+        var columns = List.of(
+            new ReportDesignHelper.ColumnDef("Staff No.", "staffNumber", 80),
+            new ReportDesignHelper.ColumnDef("Full Name", "fullName", 150),
+            new ReportDesignHelper.ColumnDef("Department", "departmentName", 130),
+            new ReportDesignHelper.ColumnDef("Status", "allocationStatus", 80)
+        );
+
+        JasperDesign design = ReportDesignHelper.createA4LandscapeDesign("staff-allocation-summary");
+        ReportDesignHelper.addField(design, "staffNumber", String.class);
+        ReportDesignHelper.addField(design, "fullName", String.class);
+        ReportDesignHelper.addField(design, "departmentName", String.class);
+        ReportDesignHelper.addField(design, "allocationStatus", String.class);
+        design.setTitle(ReportDesignHelper.createTitleBand("Staff Allocation Summary", 50));
+        design.setColumnHeader(ReportDesignHelper.createColumnHeaderBand(columns));
+        design.getDetailSection().getBands()[0] = ReportDesignHelper.createDetailBand(columns);
+        design.setPageFooter(ReportDesignHelper.createPageFooterBand());
+        return design;
+    }
 
     @Override
     public Collection<?> generateData(Map<String, Object> parameters) {
@@ -2113,9 +2133,9 @@ public class StaffAllocationSummaryReport implements ReportDefinition {
 ```
 
 The report DTO (e.g., `StaffReportDTO`) is a flat bean whose field names map 1:1 to the
-`.jrxml` template's `<field name="...">` declarations. See `references/jasper-patterns.md`
-for the complete `ReportDefinition` interface, `ReportService`, `ReportRegistry`,
-`ReportPageController`, view models, JTE templates, and a sample `.jrxml` template.
+`JRDesignField` names declared in `buildDesign()`. See `references/jasper-patterns.md`
+for the complete `ReportDefinition` interface, `ReportDesignHelper`, `ReportService`,
+`ReportRegistry`, `ReportPageController`, view models, and JTE templates.
 
 ---
 

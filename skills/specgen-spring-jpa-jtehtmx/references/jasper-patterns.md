@@ -1,4 +1,4 @@
-# Reporting Patterns — Jasper Reports with DTO Data Source
+# Reporting Patterns — JasperReports with JRDesign API (Programmatic Layout)
 
 This reference describes the reporting infrastructure for the spec. Include this content
 in the Reporting section of the generated specification. All code samples must be reproduced
@@ -6,11 +6,12 @@ in the generated spec with full import statements and constructor injection.
 
 The reporting feature provides:
 - **Report Interface** for modules to define and register their own reports
-- **Jasper Reports** engine for compiling `.jrxml` templates and filling them with data
+- **JasperReports JRDesign API** for building report layouts entirely in Java code — no `.jrxml` templates
 - **DTO-based data source** via `JRBeanCollectionDataSource` — no direct DB queries in reports
 - **Multi-format export** — PDF, XLSX, CSV
 - **Report registry** persisted in the database for discoverability
 - **Report parameter forms** rendered via JTE for user input before generation
+- **ReportDesignHelper** utility with static builders for common layout patterns
 
 ---
 
@@ -20,19 +21,24 @@ The reporting feature provides:
 Module                    Shared Reporting Infrastructure
 ┌─────────────────────┐         ┌─────────────────────────────────────────┐
 │  StaffReport        │         │  ReportService                          │
-│  implements         │────────►│    compile(.jrxml → .jasper)            │
+│  implements         │────────►│    compile(JasperDesign → JasperReport) │
 │  ReportDefinition   │         │    fill(JasperReport + DTO Collection)  │
 │                     │         │    export(JasperPrint → PDF/XLSX/CSV)   │
 │  getReportId()      │         │                                         │
-│  getName()          │         │  ReportRegistry                         │
-│  getDescription()   │         │    discovers @Component ReportDefinition│
-│  getParameters()    │         │    persists to report table             │
-│  generateData(...)  │         │    provides report lookup               │
-│                     │         │                                         │
-│  DTO: StaffReportDTO│         │  ReportController                       │
-│  (data source bean) │         │    GET /reports — list all reports      │
-│                     │         │    GET /reports/{id} — parameter form   │
-└─────────────────────┘         │    POST /reports/{id}/generate — export │
+│  getName()          │         │  ReportDesignHelper                     │
+│  getDescription()   │         │    createA4PortraitDesign()             │
+│  getParameters()    │         │    createA4LandscapeDesign()            │
+│  buildDesign(...)   │         │    addField(), createTitleBand(), etc.  │
+│  generateData(...)  │         │                                         │
+│                     │         │  ReportRegistry                         │
+│  DTO: StaffReportDTO│         │    discovers @Component ReportDefinition│
+│  (data source bean) │         │    persists to report table             │
+│                     │         │    provides report lookup               │
+└─────────────────────┘         │                                         │
+                                │  ReportController                       │
+                                │    GET /reports — list all reports      │
+                                │    GET /reports/{id} — parameter form   │
+                                │    POST /reports/{id}/generate — export │
                                 └─────────────────────────────────────────┘
 ```
 
@@ -41,8 +47,8 @@ Module                    Shared Reporting Infrastructure
 2. Report parameter form is rendered (date range, filters, etc.)
 3. User submits parameters → `ReportController` dispatches to the matching `ReportDefinition`
 4. `ReportDefinition.generateData(params)` calls module services to produce a `List<DTO>`
-5. `ReportService` wraps the DTO list in `JRBeanCollectionDataSource`
-6. `ReportService` compiles the `.jrxml` template, fills it with the data source, and exports
+5. `ReportDefinition.buildDesign(params)` builds a `JasperDesign` programmatically via JRDesign API
+6. `ReportService` compiles `JasperDesign` → `JasperReport`, wraps DTOs in `JRBeanCollectionDataSource`, fills, and exports
 7. The exported file (PDF/XLSX/CSV) is returned as a download response
 
 ---
@@ -87,8 +93,6 @@ Module                    Shared Reporting Infrastructure
 # [If Reporting = yes] add to application.yml:
 app:
   reporting:
-    template-path: classpath:reports/    # .jrxml templates location
-    compiled-path: reports/compiled/     # compiled .jasper cache directory
     temp-path: ${java.io.tmpdir}/reports # temp directory for export files
     default-format: PDF                  # PDF, XLSX, CSV
 ```
@@ -98,8 +102,6 @@ app:
 ```yaml
 app:
   reporting:
-    template-path: classpath:reports/
-    compiled-path: ${REPORT_COMPILED_PATH:reports/compiled/}
     temp-path: ${REPORT_TEMP_PATH:/tmp/reports}
     default-format: PDF
 ```
@@ -115,11 +117,14 @@ shared/
     ├── ReportParameter.java               # Report parameter descriptor record
     ├── ReportFormat.java                   # Enum: PDF, XLSX, CSV
     ├── ReportResult.java                   # Holds generated bytes + metadata
+    ├── ReportDesignHelper.java            # Utility for common JRDesign layout patterns
     ├── ReportService.java                  # Compile, fill, export orchestrator
     ├── ReportRegistry.java                 # Auto-discovers and persists report definitions
     ├── ReportConfig.java                   # Configuration properties binding
+    ├── ReportGenerationException.java      # Runtime exception for report failures
     ├── ReportEntity.java                   # [If JPA] Database entity for report registry
-    ├── ReportRepository.java              # [If JPA] Spring Data repository
+    ├── ReportDocument.java                # [If MongoDB] Document for report registry
+    ├── ReportRepository.java              # [If JPA/MongoDB] Spring Data repository
     ├── page/
     │   └── ReportPageController.java      # Page controller for report UI
     ├── fragment/
@@ -138,6 +143,8 @@ a Spring `@Component` automatically discovered by the `ReportRegistry`.
 
 ```java
 package {{BASE_PACKAGE}}.shared.reporting;
+
+import net.sf.jasperreports.engine.design.JasperDesign;
 
 import java.util.Collection;
 import java.util.List;
@@ -180,10 +187,16 @@ public interface ReportDefinition {
     List<ReportParameter> getParameters();
 
     /**
-     * Path to the .jrxml template file relative to the template-path config.
-     * Example: "staff/staff-allocation-summary.jrxml"
+     * Builds the report layout programmatically using the JRDesign API.
+     * This method constructs a JasperDesign with all bands, fields, styles,
+     * and expressions needed for the report. The design is compiled into a
+     * JasperReport by the ReportService.
+     *
+     * @param parameters user-supplied parameter values — allows dynamic layout
+     *                   adjustments based on user input (e.g., hiding columns)
+     * @return a fully configured JasperDesign ready for compilation
      */
-    String getTemplatePath();
+    JasperDesign buildDesign(Map<String, Object> parameters);
 
     /**
      * Executes domain-specific logic to produce the report data as a collection
@@ -308,6 +321,310 @@ public record ReportResult(
 
 ---
 
+## Report Design Helper
+
+Utility class with static builder methods for common JRDesign layout patterns. Module
+report implementations use these helpers to construct their `JasperDesign` without
+repeating boilerplate for page setup, fonts, bands, and element placement.
+
+```java
+package {{BASE_PACKAGE}}.shared.reporting;
+
+import net.sf.jasperreports.engine.design.JRDesignBand;
+import net.sf.jasperreports.engine.design.JRDesignExpression;
+import net.sf.jasperreports.engine.design.JRDesignField;
+import net.sf.jasperreports.engine.design.JRDesignLine;
+import net.sf.jasperreports.engine.design.JRDesignStaticText;
+import net.sf.jasperreports.engine.design.JRDesignStyle;
+import net.sf.jasperreports.engine.design.JRDesignTextField;
+import net.sf.jasperreports.engine.design.JRDesignVariable;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.EvaluationTimeType;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
+
+import java.awt.Color;
+import java.util.List;
+
+/**
+ * Static utility methods for building JasperDesign objects programmatically.
+ * Provides convenient builders for page setup, fields, bands, and styles
+ * so that module-level report implementations stay concise and consistent.
+ */
+public final class ReportDesignHelper {
+
+    private ReportDesignHelper() {
+        // utility class — no instantiation
+    }
+
+    /**
+     * Column definition used by header and detail band builders.
+     *
+     * @param label     display label for the column header
+     * @param fieldName DTO field name (must match the JRDesignField name)
+     * @param width     column width in pixels
+     */
+    public record ColumnDef(String label, String fieldName, int width) {}
+
+    // ── Page Setup ──────────────────────────────────────────────────────
+
+    /**
+     * Create an A4 portrait JasperDesign (595 x 842 pt) with 20pt margins.
+     * Column width = 595 - 20 - 20 = 555.
+     *
+     * @param name report name (used internally by JasperReports)
+     * @return a JasperDesign with portrait page dimensions configured
+     */
+    public static JasperDesign createA4PortraitDesign(String name) {
+        JasperDesign design = new JasperDesign();
+        design.setName(name);
+        design.setPageWidth(595);
+        design.setPageHeight(842);
+        design.setLeftMargin(20);
+        design.setRightMargin(20);
+        design.setTopMargin(20);
+        design.setBottomMargin(20);
+        design.setColumnWidth(555);
+        return design;
+    }
+
+    /**
+     * Create an A4 landscape JasperDesign (842 x 595 pt) with 20pt margins.
+     * Column width = 842 - 20 - 20 = 802.
+     *
+     * @param name report name (used internally by JasperReports)
+     * @return a JasperDesign with landscape page dimensions configured
+     */
+    public static JasperDesign createA4LandscapeDesign(String name) {
+        JasperDesign design = new JasperDesign();
+        design.setName(name);
+        design.setPageWidth(842);
+        design.setPageHeight(595);
+        design.setLeftMargin(20);
+        design.setRightMargin(20);
+        design.setTopMargin(20);
+        design.setBottomMargin(20);
+        design.setColumnWidth(802);
+        return design;
+    }
+
+    // ── Fields ──────────────────────────────────────────────────────────
+
+    /**
+     * Add a field declaration to the design. Field names must match the getter
+     * names on the DTO (JavaBean convention: field "staffNumber" maps to
+     * getStaffNumber()).
+     *
+     * @param design the JasperDesign to add the field to
+     * @param name   field name matching the DTO property
+     * @param type   Java class of the field (e.g., String.class, Integer.class)
+     */
+    public static void addField(JasperDesign design, String name, Class<?> type) {
+        try {
+            JRDesignField field = new JRDesignField();
+            field.setName(name);
+            field.setValueClass(type);
+            design.addField(field);
+        } catch (Exception e) {
+            throw new ReportGenerationException("Failed to add field: " + name, e);
+        }
+    }
+
+    // ── Styles ──────────────────────────────────────────────────────────
+
+    /**
+     * Create a named style and add it to the design.
+     *
+     * @param design   the JasperDesign to register the style with
+     * @param name     unique style name (referenced by elements)
+     * @param fontName font family name (e.g., "SansSerif", "DejaVu Sans")
+     * @param fontSize font size in points
+     * @param bold     whether the font is bold
+     * @return the created JRDesignStyle for further customization if needed
+     */
+    public static JRDesignStyle createStyle(JasperDesign design, String name,
+                                            String fontName, int fontSize, boolean bold) {
+        try {
+            JRDesignStyle style = new JRDesignStyle();
+            style.setName(name);
+            style.setFontName(fontName);
+            style.setFontSize((float) fontSize);
+            style.setBold(bold);
+            design.addStyle(style);
+            return style;
+        } catch (Exception e) {
+            throw new ReportGenerationException("Failed to create style: " + name, e);
+        }
+    }
+
+    // ── Title Band ──────────────────────────────────────────────────────
+
+    /**
+     * Create a title band with a centered title label.
+     *
+     * @param title       the report title text
+     * @param bandHeight  height of the title band in pixels
+     * @param columnWidth full usable column width of the page
+     * @return a JRDesignBand configured as the title band
+     */
+    public static JRDesignBand createTitleBand(String title, int bandHeight, int columnWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(bandHeight);
+
+        JRDesignStaticText titleText = new JRDesignStaticText();
+        titleText.setX(0);
+        titleText.setY(0);
+        titleText.setWidth(columnWidth);
+        titleText.setHeight(bandHeight - 10);
+        titleText.setText(title);
+        titleText.setFontSize(18f);
+        titleText.setBold(true);
+        titleText.setHorizontalTextAlign(HorizontalTextAlignEnum.CENTER);
+        titleText.setVerticalTextAlign(VerticalTextAlignEnum.MIDDLE);
+        band.addElement(titleText);
+
+        // Separator line below title
+        JRDesignLine line = new JRDesignLine();
+        line.setX(0);
+        line.setY(bandHeight - 5);
+        line.setWidth(columnWidth);
+        line.setHeight(1);
+        line.setForecolor(Color.GRAY);
+        band.addElement(line);
+
+        return band;
+    }
+
+    // ── Column Header Band ──────────────────────────────────────────────
+
+    /**
+     * Create a column header band with static text labels for each column.
+     * Headers are rendered with a light gray background and bold font.
+     *
+     * @param columns list of column definitions (label, fieldName, width)
+     * @return a JRDesignBand configured as the column header band
+     */
+    public static JRDesignBand createColumnHeaderBand(List<ColumnDef> columns) {
+        int bandHeight = 30;
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(bandHeight);
+
+        int xOffset = 0;
+        for (ColumnDef col : columns) {
+            JRDesignStaticText header = new JRDesignStaticText();
+            header.setX(xOffset);
+            header.setY(0);
+            header.setWidth(col.width());
+            header.setHeight(bandHeight);
+            header.setText(col.label());
+            header.setFontSize(10f);
+            header.setBold(true);
+            header.setVerticalTextAlign(VerticalTextAlignEnum.MIDDLE);
+            header.setMode(net.sf.jasperreports.engine.type.ModeEnum.OPAQUE);
+            header.setBackcolor(new Color(0xE8, 0xE8, 0xE8));
+            band.addElement(header);
+
+            xOffset += col.width();
+        }
+
+        return band;
+    }
+
+    // ── Detail Band ─────────────────────────────────────────────────────
+
+    /**
+     * Create a detail band with text fields bound to DTO properties.
+     * Each column renders a $F{fieldName} expression matching the DTO getter.
+     *
+     * @param columns list of column definitions — fieldName must match an addField() call
+     * @return a JRDesignBand configured as the detail band
+     */
+    public static JRDesignBand createDetailBand(List<ColumnDef> columns) {
+        int bandHeight = 25;
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(bandHeight);
+
+        int xOffset = 0;
+        for (ColumnDef col : columns) {
+            JRDesignTextField textField = new JRDesignTextField();
+            textField.setX(xOffset);
+            textField.setY(0);
+            textField.setWidth(col.width());
+            textField.setHeight(bandHeight);
+            textField.setVerticalTextAlign(VerticalTextAlignEnum.MIDDLE);
+            textField.setBlankWhenNull(true);
+
+            JRDesignExpression expression = new JRDesignExpression();
+            expression.setText("$F{" + col.fieldName() + "}");
+            textField.setExpression(expression);
+
+            band.addElement(textField);
+            xOffset += col.width();
+        }
+
+        return band;
+    }
+
+    // ── Page Footer Band ────────────────────────────────────────────────
+
+    /**
+     * Create a page footer band with "Page X of Y" text.
+     * Uses the built-in PAGE_NUMBER variable with evaluation-time splitting
+     * to display total page count.
+     *
+     * @param columnWidth full usable column width of the page
+     * @return a JRDesignBand configured as the page footer band
+     */
+    public static JRDesignBand createPageFooterBand(int columnWidth) {
+        int bandHeight = 30;
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(bandHeight);
+
+        // Separator line above footer
+        JRDesignLine line = new JRDesignLine();
+        line.setX(0);
+        line.setY(0);
+        line.setWidth(columnWidth);
+        line.setHeight(1);
+        line.setForecolor(Color.LIGHT_GRAY);
+        band.addElement(line);
+
+        // "Page X" — evaluated per page
+        JRDesignTextField pageCurrentField = new JRDesignTextField();
+        pageCurrentField.setX(0);
+        pageCurrentField.setY(5);
+        pageCurrentField.setWidth(100);
+        pageCurrentField.setHeight(20);
+        pageCurrentField.setVerticalTextAlign(VerticalTextAlignEnum.MIDDLE);
+        pageCurrentField.setFontSize(8f);
+
+        JRDesignExpression currentExpr = new JRDesignExpression();
+        currentExpr.setText("\"Page \" + $V{PAGE_NUMBER}");
+        pageCurrentField.setExpression(currentExpr);
+        band.addElement(pageCurrentField);
+
+        // " of Y" — evaluated at report level (after all pages rendered)
+        JRDesignTextField pageTotalField = new JRDesignTextField();
+        pageTotalField.setX(100);
+        pageTotalField.setY(5);
+        pageTotalField.setWidth(100);
+        pageTotalField.setHeight(20);
+        pageTotalField.setVerticalTextAlign(VerticalTextAlignEnum.MIDDLE);
+        pageTotalField.setFontSize(8f);
+        pageTotalField.setEvaluationTime(EvaluationTimeType.REPORT);
+
+        JRDesignExpression totalExpr = new JRDesignExpression();
+        totalExpr.setText("\" of \" + $V{PAGE_NUMBER}");
+        pageTotalField.setExpression(totalExpr);
+        band.addElement(pageTotalField);
+
+        return band;
+    }
+}
+```
+
+---
+
 ## Report Configuration
 
 ```java
@@ -324,8 +641,6 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class ReportConfig {
 
-    private String templatePath = "classpath:reports/";
-    private String compiledPath = "reports/compiled/";
     private String tempPath = System.getProperty("java.io.tmpdir") + "/reports";
     private ReportFormat defaultFormat = ReportFormat.PDF;
 }
@@ -335,8 +650,9 @@ public class ReportConfig {
 
 ## Report Service
 
-The central orchestrator that compiles `.jrxml` templates, fills them with DTO collections
-via `JRBeanCollectionDataSource`, and exports to the requested format.
+The central orchestrator that compiles `JasperDesign` objects returned by report
+definitions, fills them with DTO collections via `JRBeanCollectionDataSource`, and
+exports to the requested format.
 
 ```java
 package {{BASE_PACKAGE}}.shared.reporting;
@@ -349,6 +665,7 @@ import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.export.SimpleCsvExporterConfiguration;
@@ -356,11 +673,9 @@ import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 import net.sf.jasperreports.export.SimpleXlsxReportConfiguration;
 import net.sf.jasperreports.pdf.JRPdfExporter;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -371,16 +686,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ReportService {
 
-    private final ResourceLoader resourceLoader;
     private final ReportConfig config;
 
-    // Cache compiled JasperReport objects to avoid re-compilation on every request
+    // Cache compiled JasperReport objects by reportId to avoid re-compilation on every request
     private final Map<String, JasperReport> compiledCache = new ConcurrentHashMap<>();
 
     /**
      * Generate a report using the specified ReportDefinition, user parameters, and format.
      *
-     * @param definition the report definition (provides template path and data generation)
+     * @param definition the report definition (builds design and generates data)
      * @param parameters user-supplied parameter values
      * @param format     desired export format (PDF, XLSX, CSV)
      * @return ReportResult containing the exported bytes and metadata
@@ -394,8 +708,8 @@ public class ReportService {
         Collection<?> data = definition.generateData(parameters);
         log.debug("Report [{}] produced {} data records", definition.getReportId(), data.size());
 
-        // 2. Compile the .jrxml template (cached)
-        JasperReport jasperReport = compileTemplate(definition.getTemplatePath());
+        // 2. Compile the JasperDesign (cached by reportId)
+        JasperReport jasperReport = compileDesign(definition, parameters);
 
         // 3. Create the DTO-based data source
         JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(data);
@@ -414,17 +728,18 @@ public class ReportService {
     }
 
     /**
-     * Compile a .jrxml template into a JasperReport. Results are cached in memory.
+     * Compile a JasperDesign into a JasperReport. Results are cached by reportId.
+     * The design is built programmatically by the ReportDefinition — no XML files involved.
      */
-    private JasperReport compileTemplate(String templatePath) {
-        return compiledCache.computeIfAbsent(templatePath, path -> {
+    private JasperReport compileDesign(ReportDefinition definition,
+                                       Map<String, Object> parameters) {
+        return compiledCache.computeIfAbsent(definition.getReportId(), id -> {
             try {
-                String fullPath = config.getTemplatePath() + path;
-                log.debug("Compiling Jasper template: {}", fullPath);
-                InputStream templateStream = resourceLoader.getResource(fullPath).getInputStream();
-                return JasperCompileManager.compileReport(templateStream);
-            } catch (Exception e) {
-                throw new ReportGenerationException("Failed to compile template: " + path, e);
+                log.debug("Building and compiling design for report: {}", id);
+                JasperDesign design = definition.buildDesign(parameters);
+                return JasperCompileManager.compileReport(design);
+            } catch (JRException e) {
+                throw new ReportGenerationException("Failed to compile design for report: " + id, e);
             }
         });
     }
@@ -493,11 +808,15 @@ public class ReportService {
     }
 
     /**
-     * Evict a cached compiled template (useful if templates are updated at runtime).
+     * Evict a cached compiled report by its reportId. Call this when the
+     * buildDesign() logic changes and the cached JasperReport must be rebuilt.
+     * Typically used during development or after deploying updated report logic.
+     *
+     * @param reportId the report identifier to evict from the cache
      */
-    public void evictTemplate(String templatePath) {
-        compiledCache.remove(templatePath);
-        log.info("Evicted cached template: {}", templatePath);
+    public void evictReport(String reportId) {
+        compiledCache.remove(reportId);
+        log.info("Evicted cached compiled report: {}", reportId);
     }
 }
 ```
@@ -560,9 +879,6 @@ public class ReportEntity {
     @Column(name = "domain", nullable = false, length = 100)
     private String domain;
 
-    @Column(name = "template_path", nullable = false, length = 500)
-    private String templatePath;
-
     @Column(name = "active", nullable = false)
     private boolean active = true;
 }
@@ -594,7 +910,6 @@ CREATE TABLE report (
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(500),
     domain      VARCHAR(100) NOT NULL,
-    template_path VARCHAR(500) NOT NULL,
     active      BOOLEAN NOT NULL DEFAULT TRUE
 );
 ```
@@ -619,8 +934,24 @@ public class ReportDocument {
     private String name;
     private String description;
     private String domain;
-    private String templatePath;
     private boolean active = true;
+}
+```
+
+### [If MongoDB] Report Repository
+
+```java
+package {{BASE_PACKAGE}}.shared.reporting;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface ReportRepository extends MongoRepository<ReportDocument, String> {
+
+    List<ReportDocument> findByActiveTrue();
+
+    List<ReportDocument> findByDomainAndActiveTrue(String domain);
 }
 ```
 
@@ -662,14 +993,14 @@ public class ReportRegistry {
         for (ReportDefinition definition : reportDefinitions) {
             definitionMap.put(definition.getReportId(), definition);
 
-            // Upsert to database
+            // Upsert to database — [If PostgreSQL/MySQL] use ReportEntity,
+            //                       [If MongoDB] use ReportDocument
             ReportEntity entity = reportRepository.findById(definition.getReportId())
                     .orElseGet(ReportEntity::new);
             entity.setReportId(definition.getReportId());
             entity.setName(definition.getName());
             entity.setDescription(definition.getDescription());
             entity.setDomain(definition.getDomain());
-            entity.setTemplatePath(definition.getTemplatePath());
             entity.setActive(true);
             reportRepository.save(entity);
 
@@ -791,6 +1122,59 @@ public class ReportPageController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + result.fileName() + "\"")
                 .body(result.data());
+    }
+}
+```
+
+---
+
+## Report Fragment Controller
+
+```java
+package {{BASE_PACKAGE}}.shared.reporting.fragment;
+
+import {{BASE_PACKAGE}}.shared.reporting.ReportRegistry;
+import {{BASE_PACKAGE}}.shared.reporting.view.ReportGenerateView;
+import {{BASE_PACKAGE}}.shared.reporting.view.ReportListView;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.util.Map;
+
+@Controller
+@RequestMapping("/reports/fragments")
+@PreAuthorize("isAuthenticated()")
+@RequiredArgsConstructor
+@Slf4j
+public class ReportFragmentController {
+
+    private final ReportRegistry reportRegistry;
+
+    /**
+     * htmx fragment: report list content (replaces #content-area without full page load).
+     */
+    @GetMapping("/list")
+    public ModelAndView listReportsFragment() {
+        var reports = reportRegistry.listActiveReports();
+        var view = ReportListView.from(reports);
+        return new ModelAndView("shared/reporting/fragment/list", Map.of("view", view));
+    }
+
+    /**
+     * htmx fragment: report parameter form (replaces #content-area without full page load).
+     */
+    @GetMapping("/{reportId}")
+    public ModelAndView showReportFormFragment(@PathVariable String reportId) {
+        var definition = reportRegistry.getDefinition(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
+        var view = ReportGenerateView.from(definition);
+        return new ModelAndView("shared/reporting/fragment/generate", Map.of("view", view));
     }
 }
 ```
@@ -1032,7 +1416,8 @@ public class ReportGenerateView {
 
 Each module creates `@Component` classes implementing `ReportDefinition` to register
 their reports. The implementation calls module services (never repositories directly) to
-produce DTO collections.
+produce DTO collections, and builds the report layout programmatically using the
+JRDesign API (with help from `ReportDesignHelper`).
 
 ### Sample: Staff Allocation Summary Report
 
@@ -1040,9 +1425,13 @@ produce DTO collections.
 package {{BASE_PACKAGE}}.staff.internal;
 
 import {{BASE_PACKAGE}}.shared.reporting.ReportDefinition;
+import {{BASE_PACKAGE}}.shared.reporting.ReportDesignHelper;
+import {{BASE_PACKAGE}}.shared.reporting.ReportDesignHelper.ColumnDef;
+import {{BASE_PACKAGE}}.shared.reporting.ReportGenerationException;
 import {{BASE_PACKAGE}}.shared.reporting.ReportParameter;
 import {{BASE_PACKAGE}}.staff.StaffService;
 import lombok.RequiredArgsConstructor;
+import net.sf.jasperreports.engine.design.JasperDesign;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -1054,7 +1443,7 @@ import java.util.Map;
  * allocation status, department, and position.
  *
  * Data source: StaffReportDTO (flat DTO projected from Staff entity/document).
- * Template: staff/staff-allocation-summary.jrxml
+ * Layout: built programmatically via JRDesign API — no .jrxml template.
  */
 @Component
 @RequiredArgsConstructor
@@ -1101,8 +1490,49 @@ public class StaffAllocationSummaryReport implements ReportDefinition {
     }
 
     @Override
-    public String getTemplatePath() {
-        return "staff/staff-allocation-summary.jrxml";
+    public JasperDesign buildDesign(Map<String, Object> parameters) {
+        try {
+            // 1. Create landscape A4 page
+            JasperDesign design = ReportDesignHelper.createA4LandscapeDesign("staff-allocation-summary");
+
+            // 2. Declare fields — names must match StaffReportDTO getter names
+            ReportDesignHelper.addField(design, "staffNumber", String.class);
+            ReportDesignHelper.addField(design, "fullName", String.class);
+            ReportDesignHelper.addField(design, "email", String.class);
+            ReportDesignHelper.addField(design, "departmentName", String.class);
+            ReportDesignHelper.addField(design, "positionName", String.class);
+            ReportDesignHelper.addField(design, "allocationStatus", String.class);
+            ReportDesignHelper.addField(design, "allocationPercentage", String.class);
+
+            // 3. Define column layout
+            List<ColumnDef> columns = List.of(
+                    new ColumnDef("Staff No.", "staffNumber", 80),
+                    new ColumnDef("Full Name", "fullName", 150),
+                    new ColumnDef("Email", "email", 170),
+                    new ColumnDef("Department", "departmentName", 130),
+                    new ColumnDef("Position", "positionName", 100),
+                    new ColumnDef("Status", "allocationStatus", 80),
+                    new ColumnDef("Allocation %", "allocationPercentage", 92)
+            );
+
+            // 4. Build title band
+            design.setTitle(ReportDesignHelper.createTitleBand(
+                    "Staff Allocation Summary", 50, design.getColumnWidth()));
+
+            // 5. Build column header band
+            design.setColumnHeader(ReportDesignHelper.createColumnHeaderBand(columns));
+
+            // 6. Build detail band
+            design.setDetail(ReportDesignHelper.createDetailBand(columns));
+
+            // 7. Build page footer with "Page X of Y"
+            design.setPageFooter(ReportDesignHelper.createPageFooterBand(design.getColumnWidth()));
+
+            return design;
+        } catch (Exception e) {
+            throw new ReportGenerationException(
+                    "Failed to build design for report: staff-allocation-summary", e);
+        }
     }
 
     @Override
@@ -1117,7 +1547,9 @@ public class StaffAllocationSummaryReport implements ReportDefinition {
 }
 ```
 
-### Sample Report DTO (Jasper Data Source Bean)
+---
+
+## Sample Report DTO
 
 ```java
 package {{BASE_PACKAGE}}.staff.internal;
@@ -1126,10 +1558,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Flat DTO used as the data source bean for Jasper Reports.
- * Each field maps to a JasperReports field in the .jrxml template.
- * Field names must match exactly between this DTO and the template's
- * <field name="..."> declarations.
+ * Flat DTO used as the data source bean for JasperReports.
+ * Each field maps to a JRDesignField declared in the buildDesign() method.
+ * Field names must match exactly between this DTO's getter names and the
+ * JRDesignField names declared via ReportDesignHelper.addField().
  */
 @Getter
 @Setter
@@ -1145,168 +1577,25 @@ public class StaffReportDTO {
 }
 ```
 
-### Sample .jrxml Template
-
-Place `.jrxml` files under `src/main/resources/reports/`. The field names must match
-the DTO getter names exactly (JavaBean convention).
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
-              http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="staff-allocation-summary"
-              pageWidth="842" pageHeight="595" orientation="Landscape"
-              columnWidth="802" leftMargin="20" rightMargin="20"
-              topMargin="20" bottomMargin="20">
-
-    <!-- Fields must match DTO getter names (without "get" prefix, camelCase) -->
-    <field name="staffNumber" class="java.lang.String"/>
-    <field name="fullName" class="java.lang.String"/>
-    <field name="email" class="java.lang.String"/>
-    <field name="departmentName" class="java.lang.String"/>
-    <field name="positionName" class="java.lang.String"/>
-    <field name="allocationStatus" class="java.lang.String"/>
-    <field name="allocationPercentage" class="java.lang.String"/>
-
-    <title>
-        <band height="50">
-            <staticText>
-                <reportElement x="0" y="0" width="802" height="40"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font size="18" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Staff Allocation Summary]]></text>
-            </staticText>
-        </band>
-    </title>
-
-    <columnHeader>
-        <band height="30">
-            <staticText>
-                <reportElement x="0" y="0" width="80" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Staff No.]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="80" y="0" width="150" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Full Name]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="230" y="0" width="170" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Email]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="400" y="0" width="130" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Department]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="530" y="0" width="100" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Position]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="630" y="0" width="80" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Status]]></text>
-            </staticText>
-            <staticText>
-                <reportElement x="710" y="0" width="92" height="30" mode="Opaque"
-                               backcolor="#E8E8E8"/>
-                <textElement verticalAlignment="Middle">
-                    <font size="10" isBold="true"/>
-                </textElement>
-                <text><![CDATA[Allocation %]]></text>
-            </staticText>
-        </band>
-    </columnHeader>
-
-    <detail>
-        <band height="25">
-            <textField>
-                <reportElement x="0" y="0" width="80" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{staffNumber}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="80" y="0" width="150" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{fullName}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="230" y="0" width="170" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{email}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="400" y="0" width="130" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{departmentName}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="530" y="0" width="100" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{positionName}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="630" y="0" width="80" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{allocationStatus}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="710" y="0" width="92" height="25"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{allocationPercentage}]]></textFieldExpression>
-            </textField>
-        </band>
-    </detail>
-
-    <pageFooter>
-        <band height="30">
-            <textField>
-                <reportElement x="0" y="0" width="100" height="30"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression>
-                    <![CDATA["Page " + $V{PAGE_NUMBER}]]>
-                </textFieldExpression>
-            </textField>
-            <textField evaluationTime="Report">
-                <reportElement x="100" y="0" width="100" height="30"/>
-                <textElement verticalAlignment="Middle"/>
-                <textFieldExpression>
-                    <![CDATA[" of " + $V{PAGE_NUMBER}]]>
-                </textFieldExpression>
-            </textField>
-        </band>
-    </pageFooter>
-</jasperReport>
-```
-
 ---
 
 ## Key Design Decisions
+
+### Why Programmatic Design (JRDesign API)?
+
+1. **No XML files to maintain** — the report layout is Java code, versioned with the
+   application in the same repository. There are no `.jrxml` files to keep in sync.
+2. **Fully AI-agent-friendly** — coding agents write Java, not XML. The JRDesign API
+   produces the same result as `.jrxml` but is expressed as regular Java method calls.
+3. **Compile-time safety** — typos in field names, incorrect types, and missing elements
+   surface as Java compilation errors or obvious runtime exceptions in the `buildDesign()`
+   method, not as opaque Jasper XML parsing failures.
+4. **Dynamic layouts** — report structure can adapt based on parameters or data. For
+   example, columns can be conditionally included or excluded based on user selections
+   without maintaining multiple template variants.
+5. **No template/code synchronization** — the design and the data source DTO live in the
+   same codebase. When a DTO field is renamed, the `buildDesign()` method is updated in
+   the same commit. There is no separate XML file that can drift out of sync.
 
 ### Why DTO as Data Source (not direct DB query)?
 
@@ -1316,26 +1605,17 @@ the DTO getter names exactly (JavaBean convention).
 3. **Flexibility**: The DTO can aggregate data from multiple sources (entities, computed
    fields, cross-module lookups via public APIs) before feeding it to Jasper.
 4. **Type safety**: `JRBeanCollectionDataSource` reads Java getter methods, so field
-   mismatches between the DTO and `.jrxml` template are caught early.
-5. **No SQL in templates**: Jasper templates contain only layout — no `<queryString>` SQL.
+   mismatches between the DTO and `JRDesignField` declarations are caught early.
+5. **No SQL in reports**: Jasper reports contain only layout logic — no `<queryString>` SQL.
    All data access goes through the standard service layer.
-
-### Template Management
-
-- `.jrxml` source files live under `src/main/resources/reports/{module}/`
-- Templates are compiled to `.jasper` at runtime on first use and cached in memory
-- The `ReportService.evictTemplate()` method allows cache invalidation if templates
-  are updated without restart (useful during development)
-- In production, consider pre-compiling templates during the build using the Jasper
-  Maven plugin (optional — not included by default)
 
 ### Report DTO Field Naming Convention
 
 - DTO field names use **camelCase** (Java standard)
-- `.jrxml` `<field name="...">` must match the DTO getter name exactly
-  (e.g., field `staffNumber` → getter `getStaffNumber()`)
+- `JRDesignField` names added via `ReportDesignHelper.addField()` must match the DTO
+  getter name exactly (e.g., field `staffNumber` maps to getter `getStaffNumber()`)
 - For nested objects, flatten them into the report DTO
-  (e.g., `staff.department.name` → `departmentName` in the DTO)
+  (e.g., `staff.department.name` becomes `departmentName` in the DTO)
 
 ---
 
@@ -1344,13 +1624,15 @@ the DTO getter names exactly (JavaBean convention).
 - **Memory**: Large reports can consume significant memory during filling and export.
   Consider streaming exports for very large data sets (JasperReports supports
   `JRVirtualizer` for swapping pages to disk).
-- **Concurrency**: The `ReportService` is thread-safe. Compiled templates are cached
-  in a `ConcurrentHashMap`. Each `generate()` call creates its own `JasperPrint`.
+- **Concurrency**: The `ReportService` is thread-safe. Compiled `JasperReport` objects are
+  cached in a `ConcurrentHashMap`. Each `generate()` call creates its own `JasperPrint`.
 - **Timeouts**: For long-running reports, consider executing generation asynchronously
   via `@Async` or Spring Modulith events, with the result stored temporarily for download.
-- **Template hot-reload**: During development, call `evictTemplate()` after modifying
-  a `.jrxml` file to force recompilation. In production, templates are stable and
-  the cache provides fast repeat generation.
 - **Font embedding**: For PDF export, ensure fonts are embedded via the
   `jasperreports-fonts` dependency. Configure `jasperreports.properties` or
   `jasperreports_extension.properties` for custom font families if needed.
+- **Cache invalidation**: After deploying updated `buildDesign()` logic, call
+  `ReportService.evictReport(reportId)` to force recompilation from the new design.
+  In practice, a fresh deployment restarts the JVM and clears the in-memory cache
+  automatically. The `evictReport()` method is primarily useful during development
+  or in hot-reload scenarios.

@@ -145,7 +145,7 @@ Include:
   - **Audit**: `owen-it/laravel-auditing`
   - **Health**: `spatie/laravel-health`
   - **[If Messaging = yes]** `vladimir-yuldashev/laravel-queue-rabbitmq`, `php-amqplib/php-amqplib`
-  - **[If Reporting = yes]** `barryvdh/laravel-dompdf`, `maatwebsite/excel`
+  - **[If Reporting = yes]** `spatie/browsershot`, `maatwebsite/excel`
 - `"require-dev"`:
   - `phpunit/phpunit`, `phpat/phpat`, `laravel/pint`
 

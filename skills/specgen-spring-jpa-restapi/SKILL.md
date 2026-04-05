@@ -104,6 +104,12 @@ The spec must include these in the Maven configuration section (always):
 - Spring Boot AMQP Starter (`spring-boot-starter-amqp`)
   *(shared with Remote Partitioning — if both are selected, include the dependency once)*
 
+**If Reporting = yes:**
+- JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`) — report engine with JRDesign API for programmatic layout
+- JasperReports Fonts (`net.sf.jasperreports:jasperreports-fonts:7.0.3`)
+- OpenPDF (`com.github.librepdf:openpdf:2.0.4`) — PDF export engine for JasperReports 7.x
+- Apache POI OOXML (`org.apache.poi:poi-ooxml:5.4.1`) — XLSX export support
+
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
@@ -390,6 +396,26 @@ Scheduling is determined from PRD.md content:
 - **Remote Partitioning = yes** if NFRs mention "distributed processing", "horizontal
   scaling", or "partitioned batch jobs"
 
+### Reporting Detection
+
+Reporting is determined from PRD.md content:
+
+| Content Pattern | Reporting Selection |
+|---|---|
+| NFRs mention "report", "Report interface", "generate report", "report generation" | Reporting = yes |
+| User stories describe generating/downloading PDF, Excel, or CSV reports | Reporting = yes |
+| A "Report" module exists in PRD.md with NFRs defining a Report interface | Reporting = yes |
+| No reporting-related requirements found | Reporting = no |
+
+**If Reporting = yes**, the spec includes:
+- JasperReports with JRDesign API for fully programmatic report layout (no .jrxml templates)
+- `ReportDefinition` interface with `buildDesign()` method for modules to implement
+- `ReportDesignHelper` utility class with static builders for common layout patterns
+- `ReportService` orchestrating compile → fill → export via `JRBeanCollectionDataSource`
+- Report registry persisted in the database
+- REST controller with report list, details, and generation endpoints (JSON + file download)
+- Multi-format export: PDF (OpenPDF), XLSX (Apache POI), CSV
+
 ### Summary of Determination
 
 After analyzing all inputs, produce a determination summary before generating the spec.
@@ -401,6 +427,7 @@ Optional Component Determination:
 - Authentication: Keycloak Resource Server (from CLAUDE.md -> depends on Hub Single Sign On)
 - Scheduling:    no
 - Messaging:     yes (from CLAUDE.md -> depends on Hub to HC Adapter Message Queue)
+- Reporting:     yes (from PRD.md → Report module with Report interface NFR)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -662,6 +689,22 @@ Spring Cache and Caffeine. Cache eviction strategies.
 #### 19. Idempotency *(optional — include if applicable)*
 `Idempotency-Key` header pattern for mutating operations. Duplicate detection
 and response replay.
+
+#### 20. Reporting (JasperReports JRDesign API) *(conditional — include only if Reporting = yes)*
+JasperReports infrastructure with fully programmatic report layout via JRDesign API — no
+`.jrxml` XML templates. Report layouts are built entirely in Java code using `JasperDesign`,
+`JRDesignBand`, `JRDesignStaticText`, `JRDesignTextField`, and `JRDesignField` classes.
+Includes `ReportDefinition` interface with `buildDesign()` method for modules to implement,
+`ReportDesignHelper` utility with static builders for common patterns (A4 portrait/landscape,
+column headers, detail bands, page footers), `ReportService` orchestrating compile → fill →
+export via `JRBeanCollectionDataSource`, `ReportRegistry` for auto-discovering and persisting
+report definitions at startup, REST controller with report list, details, and generation
+endpoints (`GET /api/v1/reports`, `POST /api/v1/reports/{id}/generate`), multi-format export
+(PDF via OpenPDF, XLSX via Apache POI, CSV). Modules register reports by creating
+`@Component` classes implementing `ReportDefinition` — each report builds its layout
+programmatically and calls module services to produce DTOs (never repositories directly),
+preserving Spring Modulith module boundaries. Read `references/reporting-patterns.md` for
+the full reporting architecture.
 
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 

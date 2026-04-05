@@ -112,7 +112,7 @@ The spec must include these in the Maven configuration section (always):
   *(shared with Remote Partitioning — if both are selected, include the dependency once)*
 
 **If Reporting = yes:**
-- JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`)
+- JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`) — report engine with JRDesign API for programmatic layout
 - JasperReports Fonts (`net.sf.jasperreports:jasperreports-fonts:7.0.3`)
 - OpenPDF (`com.github.librepdf:openpdf:2.0.4`) — PDF export engine for JasperReports 7.x
 - Apache POI OOXML (`org.apache.poi:poi-ooxml:5.4.1`) — XLSX export support
@@ -475,8 +475,9 @@ Reporting is determined from PRD.md content:
 | No reporting-related requirements found | Reporting = no |
 
 **If Reporting = yes**, the spec includes:
-- Jasper Reports compilation and export infrastructure
-- `ReportDefinition` interface for modules to implement
+- JasperReports with JRDesign API for fully programmatic report layout (no .jrxml templates)
+- `ReportDefinition` interface with `buildDesign()` method for modules to implement
+- `ReportDesignHelper` utility class with static builders for common layout patterns
 - `ReportService` orchestrating compile → fill → export via `JRBeanCollectionDataSource`
 - Report registry persisted in the database
 - Report page controller with parameter form and download endpoint
@@ -736,7 +737,7 @@ logs/
 **Conditional additions:**
 - **If Database = PostgreSQL/MySQL:** No additional entries needed (Flyway migrations are committed)
 - **If Scheduling = yes AND Spring Batch = yes:** Add `*.tmp` for batch temp files
-- **If Reporting = yes:** Add `*.jasper` for compiled JasperReports templates (regenerated at build time)
+- **If Reporting = yes:** No additional .gitignore entries needed (report layouts are programmatic Java code, not external template files)
 
 #### 5. Package Structure
 The complete directory tree rooted at the base package. The structure follows
@@ -851,16 +852,21 @@ Per-module MapStruct mapper conventions and mapping flow patterns.
 Overview of testing approach — unit tests, module tests, security test utilities
 (JWT mocking if Keycloak, or `@WithMockUser` if form login), view model tests.
 
-#### 23. Reporting (Jasper Reports) *(conditional — include only if Reporting = yes)*
-JasperReports infrastructure with DTO-based data sources via `JRBeanCollectionDataSource`.
-Includes `ReportDefinition` interface for modules to implement, `ReportService`
-orchestrating compile → fill → export, `ReportRegistry` for auto-discovering and persisting
+#### 23. Reporting (JasperReports JRDesign API) *(conditional — include only if Reporting = yes)*
+JasperReports infrastructure with fully programmatic report layout via JRDesign API — no
+`.jrxml` XML templates. Report layouts are built entirely in Java code using `JasperDesign`,
+`JRDesignBand`, `JRDesignStaticText`, `JRDesignTextField`, and `JRDesignField` classes.
+Includes `ReportDefinition` interface with `buildDesign()` method for modules to implement,
+`ReportDesignHelper` utility with static builders for common patterns (A4 portrait/landscape,
+column headers, detail bands, page footers), `ReportService` orchestrating compile → fill →
+export via `JRBeanCollectionDataSource`, `ReportRegistry` for auto-discovering and persisting
 report definitions at startup, report page controller with parameter form and download
 endpoint, JTE templates for report list and parameter form, multi-format export (PDF via
 OpenPDF, XLSX via Apache POI, CSV). Modules register reports by creating `@Component`
-classes implementing `ReportDefinition` — each report calls module services to produce DTOs
-(never repositories directly), preserving Spring Modulith module boundaries. Read
-`references/jasper-patterns.md` for the full reporting architecture.
+classes implementing `ReportDefinition` — each report builds its layout programmatically
+and calls module services to produce DTOs (never repositories directly), preserving Spring
+Modulith module boundaries. Read `references/jasper-patterns.md` for the full reporting
+architecture.
 
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 
@@ -1073,10 +1079,12 @@ unauthorized functionality in the UI.
 **If Reporting = yes:**
 - Report definitions must call **module services** to produce DTOs, never repositories
   directly. This preserves Spring Modulith module boundaries.
-- Report DTO field names must match `.jrxml` template `<field name="...">` declarations
+- Report layouts are built programmatically using JRDesign API — no `.jrxml` XML templates.
+  Each `ReportDefinition` implements `buildDesign()` to construct the `JasperDesign` in Java.
+- Report DTO field names must match `JRDesignField` names declared in `buildDesign()`
   exactly (JavaBean getter convention).
-- `.jrxml` templates must NOT contain `<queryString>` SQL — all data comes via
-  `JRBeanCollectionDataSource` from DTOs. No direct database access in report templates.
+- Use `ReportDesignHelper` utility methods for common layout patterns (title bands, column
+  headers, detail bands, page footers) to keep report implementations concise.
 - Report implementations must be `@Component` beans implementing `ReportDefinition` so
   that `ReportRegistry` auto-discovers them at startup.
 

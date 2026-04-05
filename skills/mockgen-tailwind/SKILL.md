@@ -313,6 +313,56 @@ For each module screen, analyze the user stories and identify sub-screens needed
 | "view history/audit of X" | `{module}_history.html` - History/audit log view |
 | "view associated X of Y" | `{module}_{sub}_list.html` - Associated records list |
 
+#### 3f: Report Layout Screens (conditional — if PRD.md contains report-related content)
+
+Scan PRD.md for report-related content:
+- NFRs mentioning "report", "Report interface", "generate report", "report generation"
+- User stories describing generating/downloading PDF, Excel, or CSV reports
+- A "Report" module or report-related NFRs defining specific report types
+
+**If report requirements are found**, generate HTML report layout mockups for each
+identified report. These layouts serve as draft previews for human designers/stakeholders
+to verify the report structure before the AI coding agent implements the actual report
+generation code (JasperReports JRDesign API for Java, Puppeteer for Laravel/React).
+
+For each identified report, create a standalone HTML file in a `reports/` subfolder:
+
+| Report Source | File Generated |
+|--------------|----------------|
+| NFR describes "Staff Allocation Summary report" | `reports/staff_allocation_summary.html` |
+| User story: "generate Job Demand report by country" | `reports/job_demand_by_country.html` |
+| Report module NFR: "Monthly Activity Report" | `reports/monthly_activity_report.html` |
+
+**Report layout file conventions:**
+- Each report layout is a **standalone self-contained HTML document** (not a content fragment)
+  with its own `<html>`, `<head>`, `<body>` tags and Tailwind CDN `<script>` in the head
+- Layout simulates a **print-ready A4 page** with appropriate margins and sizing:
+  ```html
+  <body class="bg-gray-100">
+    <div class="mx-auto bg-white shadow" style="width: 210mm; min-height: 297mm; padding: 15mm;">
+      <!-- Report content -->
+    </div>
+  </body>
+  ```
+- **Report header**: Report title (centered, bold), generation date, filter parameters used
+- **Report body**: Data table or summary layout using actual fields from the module model
+  (if `model/{module}/model.md` exists, use its field definitions for column headers)
+- **Report footer**: Page indicator text ("Page 1 of 1"), generation timestamp
+- Use **sample data rows** (5-10 rows) with realistic placeholder values matching model constraints
+- Apply the design system colors from Step 2 for header background, borders, and accents
+- For landscape reports (wide tables with many columns), use `style="width: 297mm; min-height: 210mm;"`
+
+**Report parameter section**: Above the report data, include a gray-shaded "Parameters" box
+showing the filter criteria used to generate the report (e.g., Date Range: 2025-01-01 to
+2025-12-31, Department: All, Status: Active).
+
+**Add to MOCKUP.html**: Include a "Reports" section at the bottom of each role's screen cards
+(after all module cards) listing the report layout links. Report links open in new tabs
+pointing directly to the standalone HTML files (no server route needed — static files).
+
+**Add to sidebar**: If reports are present, add a "Reports" navigation group in each role's
+sidebar with links opening report layouts in new tabs.
+
 #### 3c: Tabbed Screens
 
 If a module screen contains tabs (e.g., a detail page with Overview, Documents, History tabs),
@@ -787,3 +837,8 @@ After all mockup files are successfully generated, append an entry to `CHANGELOG
   Definitions (Section 7), not inferred strings
 - **Constraint-aware sample data**: Sample values must respect field constraints noted in the
   model (e.g., use `MYS`, `BHR`, `MDV` for countryCode fields constrained by CONSHM018)
+- **Report layouts**: When PRD.md contains report-related NFRs or user stories, generate
+  standalone HTML report layout files in `reports/` subfolder. These are self-contained A4
+  mockups (not content fragments) for stakeholder review of report structure before coding.
+  Use actual module model fields for column headers and realistic sample data rows. See
+  Step 3f for full report layout generation rules.
