@@ -214,6 +214,20 @@ CLAUDE.md is automatically loaded into context. Extract the following from it:
    The skill auto-detects which tools apply from CLAUDE.md dependencies. Do not assume
    a specific tech stack — read it from the project context.
 4. **Application dependencies**: What this application depends on (DB, MQ, SSO)
+5. **Environment variable mapping**: Map each infrastructure value from CLAUDE.md to a
+   standardized environment variable name. These env vars will be referenced in seeding
+   scripts and helper classes so that generated Playwright tests are portable across
+   machines. Common mappings:
+   - Database connection string → `TEST_DB_URI` (MongoDB) or `TEST_DB_HOST`, `TEST_DB_PORT`,
+     `TEST_DB_USER`, `TEST_DB_PASSWORD`, `TEST_DB_NAME` (MySQL/PostgreSQL)
+   - Message Queue → `TEST_MQ_HOST`, `TEST_MQ_PORT`, `TEST_MQ_USER`, `TEST_MQ_PASSWORD`,
+     `TEST_MQ_VHOST` (or `TEST_MQ_URL` for AMQP URL)
+   - SSO/Auth → `TEST_SSO_HOST`, `TEST_SSO_ADMIN_USER`, `TEST_SSO_ADMIN_PASSWORD`,
+     `TEST_SSO_CLI_PATH` (e.g., path to `kcadm.bat` or `kcadm.sh`), `TEST_SSO_REALM`
+   - Application → `TEST_APP_BASE_URL` (base URL for Playwright navigation)
+   - Additional CLI paths → `TEST_PHP_PATH`, `TEST_JAVA_HOME`, `TEST_MAVEN_PATH` (as needed)
+
+   Only include env vars for infrastructure components that actually exist in CLAUDE.md.
 
 ---
 
@@ -435,6 +449,49 @@ Write `<app_folder>/context/test/TEST_PLAN.md` with the following structure:
 
 {For each infrastructure component, provide the exact CLI command template with
 connection parameters filled in from CLAUDE.md}
+
+---
+
+## 2a. Environment Variables (.env)
+
+{Generate a `.env.example` block listing all environment variables needed by Playwright
+test helpers and seeding scripts. Values come from CLAUDE.md. This block serves as the
+template for each developer's local `.env` file (which is git-ignored). Only include
+variables for infrastructure components that exist in CLAUDE.md.}
+
+```dotenv
+# Application
+TEST_APP_BASE_URL={base URL from CLAUDE.md, e.g., http://localhost:8080}
+
+# Database ({type from CLAUDE.md})
+{If MongoDB:}
+TEST_DB_URI={full connection string from CLAUDE.md}
+{If MySQL or PostgreSQL:}
+TEST_DB_HOST={host}
+TEST_DB_PORT={port}
+TEST_DB_USER={username}
+TEST_DB_PASSWORD={password}
+TEST_DB_NAME={database name}
+
+# Message Queue ({type from CLAUDE.md}) — include only if MQ exists
+TEST_MQ_HOST={host}
+TEST_MQ_PORT={port}
+TEST_MQ_USER={username}
+TEST_MQ_PASSWORD={password}
+TEST_MQ_VHOST={vhost}
+TEST_MQ_URL={full AMQP URL}
+
+# SSO / Auth ({type from CLAUDE.md}) — include only if SSO exists
+TEST_SSO_HOST={host URL, e.g., http://localhost:8180}
+TEST_SSO_ADMIN_USER={admin username}
+TEST_SSO_ADMIN_PASSWORD={admin password}
+TEST_SSO_CLI_PATH={absolute path to CLI tool, e.g., /opt/keycloak/bin/kcadm.sh}
+TEST_SSO_REALM={test realm name}
+```
+
+**Important**: The `.env` file MUST be added to `.gitignore`. The `.env.example` file
+(with placeholder descriptions, NOT actual credentials) is committed to the repository
+so that other developers know which variables to configure.
 
 ---
 
@@ -714,18 +771,26 @@ _(No bug fixes recorded for this module.)_ ← use when the `### Bug` section is
 
 {Based on layer classification, generate appropriate seeding commands}
 
+**IMPORTANT**: All seeding scripts MUST reference environment variables (from Section 2a
+of TEST_PLAN.md) instead of hardcoded paths, credentials, or connection strings. This
+ensures Playwright tests are portable across developer machines. Use `$ENV_VAR` syntax
+in bash command templates and note that the actual Playwright helper code should read
+these from `process.env.*` via a `.env` file.
+
 **For L1 (Auth)** — use the auth provider's CLI or framework seeder:
 
 *If Keycloak (detected from CLAUDE.md):*
 ```bash
 # Create test user in Keycloak
-{kcadm path} config credentials --server {host} --realm master --user {admin} --password {pass}
-{kcadm path} create users -r {realm} -s username={user} -s enabled=true ...
+# Env vars: TEST_SSO_CLI_PATH, TEST_SSO_HOST, TEST_SSO_ADMIN_USER, TEST_SSO_ADMIN_PASSWORD, TEST_SSO_REALM
+"$TEST_SSO_CLI_PATH" config credentials --server "$TEST_SSO_HOST" --realm master --user "$TEST_SSO_ADMIN_USER" --password "$TEST_SSO_ADMIN_PASSWORD"
+"$TEST_SSO_CLI_PATH" create users -r "$TEST_SSO_REALM" -s username={user} -s enabled=true ...
 ```
 
 *If Laravel with DB-backed auth (detected from CLAUDE.md):*
 ```bash
 # Seed test users via artisan
+# Env vars: TEST_PHP_PATH (optional, defaults to 'php')
 php artisan tinker --execute="
     \App\Models\User::factory()->create([
         'name' => '{user}', 'email' => '{email}', 'password' => bcrypt('{pass}')
@@ -737,7 +802,8 @@ php artisan tinker --execute="
 
 *If MongoDB:*
 ```bash
-mongosh "{connection string}" --eval '
+# Env vars: TEST_DB_URI
+mongosh "$TEST_DB_URI" --eval '
 db.{collection}.insertMany([
   {sample document based on model fields},
   ...
@@ -747,7 +813,8 @@ db.{collection}.insertMany([
 
 *If MySQL:*
 ```bash
-mysql -h {host} -P {port} -u {user} -p{password} {database} -e "
+# Env vars: TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USER, TEST_DB_PASSWORD, TEST_DB_NAME
+mysql -h "$TEST_DB_HOST" -P "$TEST_DB_PORT" -u "$TEST_DB_USER" -p"$TEST_DB_PASSWORD" "$TEST_DB_NAME" -e "
 INSERT INTO {table} ({columns}) VALUES
   ({sample row based on model fields}),
   ...;
@@ -756,7 +823,8 @@ INSERT INTO {table} ({columns}) VALUES
 
 *If PostgreSQL:*
 ```bash
-psql "{connection string}" -c "
+# Env vars: TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USER, TEST_DB_PASSWORD, TEST_DB_NAME
+psql "postgresql://$TEST_DB_USER:$TEST_DB_PASSWORD@$TEST_DB_HOST:$TEST_DB_PORT/$TEST_DB_NAME" -c "
 INSERT INTO {table} ({columns}) VALUES
   ({sample row based on model fields}),
   ...;
@@ -772,7 +840,8 @@ php artisan db:seed --class=Test{Module}Seeder
 
 *If RabbitMQ:*
 ```bash
-rabbitmqadmin publish exchange={exchange} routing_key={key} payload='{
+# Env vars: TEST_MQ_HOST, TEST_MQ_PORT, TEST_MQ_USER, TEST_MQ_PASSWORD, TEST_MQ_VHOST
+rabbitmqadmin -H "$TEST_MQ_HOST" -P "$TEST_MQ_PORT" -u "$TEST_MQ_USER" -p "$TEST_MQ_PASSWORD" -V "$TEST_MQ_VHOST" publish exchange={exchange} routing_key={key} payload='{
   {sample message JSON from MESSAGE_*.md}
 }'
 ```
@@ -1086,25 +1155,31 @@ If no tagged items exist in `### Test`, omit Section 4l entirely.}
 
 {Reverse of seeding — remove all test data}
 
+**IMPORTANT**: Cleanup scripts MUST use the same environment variables as seeding scripts
+(from Section 2a of TEST_PLAN.md). Never hardcode paths, credentials, or connection strings.
+
 **For L2 (DB cleanup)** — use the database CLI matching CLAUDE.md:
 
 *If MongoDB:*
 ```bash
-mongosh "{connection string}" --eval '
+# Env vars: TEST_DB_URI
+mongosh "$TEST_DB_URI" --eval '
 db.{collection}.deleteMany({ _testData: true })
 '
 ```
 
 *If MySQL:*
 ```bash
-mysql -h {host} -P {port} -u {user} -p{password} {database} -e "
+# Env vars: TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USER, TEST_DB_PASSWORD, TEST_DB_NAME
+mysql -h "$TEST_DB_HOST" -P "$TEST_DB_PORT" -u "$TEST_DB_USER" -p"$TEST_DB_PASSWORD" "$TEST_DB_NAME" -e "
 DELETE FROM {table} WHERE _test_data = 1;
 "
 ```
 
 *If PostgreSQL:*
 ```bash
-psql "{connection string}" -c "
+# Env vars: TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USER, TEST_DB_PASSWORD, TEST_DB_NAME
+psql "postgresql://$TEST_DB_USER:$TEST_DB_PASSWORD@$TEST_DB_HOST:$TEST_DB_PORT/$TEST_DB_NAME" -c "
 DELETE FROM {table} WHERE _test_data = true;
 "
 ```
@@ -1118,7 +1193,8 @@ php artisan test:cleanup --module={module}
 
 *If RabbitMQ:*
 ```bash
-rabbitmqadmin purge queue name={queue_name}
+# Env vars: TEST_MQ_HOST, TEST_MQ_PORT, TEST_MQ_USER, TEST_MQ_PASSWORD, TEST_MQ_VHOST
+rabbitmqadmin -H "$TEST_MQ_HOST" -P "$TEST_MQ_PORT" -u "$TEST_MQ_USER" -p "$TEST_MQ_PASSWORD" -V "$TEST_MQ_VHOST" purge queue name={queue_name}
 ```
 
 ### 5b. Cleanup Order
@@ -1222,6 +1298,12 @@ After all test specification files are successfully generated, append an entry t
 - **No hardcoded message types**: Read message types from MESSAGE_*.md files.
 - **Infrastructure from CLAUDE.md**: CLI paths, connection strings, and credentials come
   from CLAUDE.md. Use generic placeholders if CLAUDE.md is not found.
+- **Environment variable portability**: All seeding scripts, cleanup scripts, and CLI
+  command templates in TEST_PLAN.md and TEST_SPEC.md MUST reference environment variables
+  (e.g., `$TEST_DB_URI`, `$TEST_SSO_CLI_PATH`) instead of hardcoded values. The env var
+  names and their values from CLAUDE.md are documented in TEST_PLAN.md Section 2a. This
+  ensures the generated test blueprints are portable — developers configure their local
+  `.env` file once and all test helpers work regardless of machine-specific paths.
 
 ### Document Quality
 - **Documents, not code**: Output is Markdown spec documents. Never generate Playwright

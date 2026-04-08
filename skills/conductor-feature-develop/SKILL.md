@@ -512,9 +512,21 @@ subdirectory. Instead:
 11. **Messaging**: Message queue configuration if applicable
 12. **Scheduling**: Scheduled task configuration if applicable
 13. **Playwright test project**: Initialize Playwright in `<source-code-path>/e2e/` with:
-    - `package.json` with Playwright dependency
-    - `playwright.config.ts` with base URL from TEST_PLAN.md
-    - Helper utilities for login, navigation, data seeding
+    - `package.json` with Playwright and `dotenv` dependencies
+    - `playwright.config.ts` with base URL read from `process.env.TEST_APP_BASE_URL`
+      (loaded via `dotenv` at the top of the config)
+    - `.env.example` — committed to git, contains all `TEST_*` environment variable names
+      with placeholder descriptions (from TEST_PLAN.md Section 2a). No real credentials.
+    - `.env` — contains actual values from CLAUDE.md for the current developer's machine.
+      Pre-populate with values from CLAUDE.md. This file MUST NOT be committed to git.
+    - **`.gitignore` update (MANDATORY)** — Add `e2e/.env` (or `.env` if `.gitignore` is
+      inside `e2e/`) to the project's `.gitignore` file. If `.gitignore` does not exist,
+      create it. This prevents credentials and machine-specific paths from being committed.
+      Verify the entry exists before proceeding with any other scaffolding step.
+    - Helper utilities for login, navigation, data seeding — all helpers MUST read
+      infrastructure paths, connection strings, and credentials from `process.env.*`
+      (loaded via `dotenv`). **NEVER hardcode** machine-specific paths, CLI tool locations,
+      database credentials, or SSO admin passwords in helper source code.
 14. **Mockup baseline screenshots**: Capture baseline screenshots from HTML mockups for visual consistency testing:
     - Start the mockup server (`npm start` in `<app_folder>/context/mockup/`)
     - For each role/screen in the mockup, capture a screenshot to `<source-code-path>/e2e/visual-baselines/`
@@ -661,9 +673,38 @@ After each major component, update IMPLEMENTATION_MODULE.md checklist.
 From the module's TEST_SPEC.md:
 
 1. **Create test file**: `<source-code-path>/e2e/tests/<module-slug>.spec.ts`
-2. **Implement data seeding**: Use the seeding scripts from TEST_SPEC.md Section 4
+2. **Implement data seeding**: Use the seeding scripts from TEST_SPEC.md Section 4.
+   All seeding helper functions MUST read paths, credentials, and connection strings
+   from `process.env.*` (loaded via `dotenv` from `<source-code-path>/e2e/.env`).
+   **NEVER hardcode** machine-specific values (file paths, CLI tool locations, database
+   hosts/passwords, SSO admin credentials) in TypeScript source code.
 3. **Implement test scenarios**: Convert each scenario from TEST_SPEC.md Section 5 into Playwright tests
 4. **DO NOT implement cleanup scripts** — test data must persist for downstream modules
+
+Pattern for helper file (e.g., `e2e/helpers/keycloak.ts`):
+```typescript
+import { execSync } from 'child_process';
+import 'dotenv/config';  // loads .env from e2e/ directory
+
+const KCADM = process.env.TEST_SSO_CLI_PATH!;
+const KC_HOST = process.env.TEST_SSO_HOST!;
+const KC_ADMIN = process.env.TEST_SSO_ADMIN_USER!;
+const KC_PASS = process.env.TEST_SSO_ADMIN_PASSWORD!;
+const KC_REALM = process.env.TEST_SSO_REALM!;
+
+function runKcadm(command: string): string {
+  try {
+    return execSync(`"${KCADM}" ${command}`, { encoding: 'utf-8', timeout: 30000 });
+  } catch (error: any) {
+    return error.stdout || error.stderr || error.message || '';
+  }
+}
+
+export function kcadmConfig(): void {
+  runKcadm(`config credentials --server ${KC_HOST} --realm master --user ${KC_ADMIN} --password ${KC_PASS}`);
+}
+// ... remaining helper functions use the env-based constants above
+```
 
 Pattern for test file:
 ```typescript
@@ -673,6 +714,7 @@ test.describe('<Module Name>', () => {
   // Data seeding (runs once before all tests in this module)
   test.beforeAll(async () => {
     // Execute seeding script from TEST_SPEC.md Section 4
+    // All infrastructure values come from process.env via helpers
   });
 
   // DO NOT add afterAll cleanup — data persists for dependent modules
@@ -1159,11 +1201,19 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     - Use CLIs at the EXACT paths specified in CLAUDE.md
     - For E2E test data seeding, connect to the database using the EXACT connection details from
       CLAUDE.md
+    - For E2E test helper classes and seeding utilities, store ALL machine-specific values
+      (CLI paths, connection strings, credentials) in `<source-code-path>/e2e/.env` and read
+      them via `process.env.*` using `dotenv`. Populate `.env` with values from CLAUDE.md
+      for the current machine, but NEVER hardcode these values in TypeScript source files.
+      Commit `.env.example` (with placeholder descriptions) and ensure `e2e/.env` is in
+      `.gitignore` so that credentials and machine-specific paths are never committed.
 
     **WHY**: Creative alternatives (Docker containers, alternative databases, alternative CLIs) connect to
     DIFFERENT data stores or service instances than the ones the application is configured to use.
-    This produces wrong test results, missing data, and phantom failures. The developer's machine
-    has all services running natively as described in CLAUDE.md — use them as-is.
+    This produces wrong test results, missing data, and phantom failures. Hardcoding CLAUDE.md values
+    directly in TypeScript source code makes tests non-portable — other developers with different
+    machine setups cannot run the tests without modifying source files. Using `.env` files allows
+    each developer to configure their own paths and credentials once without touching committed code.
 
 15. **Source code goes directly in `<source-code-path>/` — NO nested subdirectories (CRITICAL)** —
     The `<source-code-path>` (which defaults to `<app_folder>`) already contains a `context/` folder
