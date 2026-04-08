@@ -519,10 +519,11 @@ subdirectory. Instead:
       with placeholder descriptions (from TEST_PLAN.md Section 2a). No real credentials.
     - `.env` — contains actual values from CLAUDE.md for the current developer's machine.
       Pre-populate with values from CLAUDE.md. This file MUST NOT be committed to git.
-    - **`.gitignore` update (MANDATORY)** — Add `e2e/.env` (or `.env` if `.gitignore` is
-      inside `e2e/`) to the project's `.gitignore` file. If `.gitignore` does not exist,
-      create it. This prevents credentials and machine-specific paths from being committed.
-      Verify the entry exists before proceeding with any other scaffolding step.
+    - **`.gitignore` update (MANDATORY)** — Add the following entries to the project's
+      `.gitignore` file (or create it if it does not exist):
+      - `e2e/.env` — prevents credentials and machine-specific paths from being committed
+      - `e2e/node_modules/` — prevents Playwright and dotenv dependencies from being committed
+      Verify both entries exist before proceeding with any other scaffolding step.
     - `helpers/config.ts` — **single source of truth** for all infrastructure config.
       Loads `dotenv/config` and exports named constants for every `TEST_*` env var
       (DB, MQ, SSO, app URL). All other helpers and spec files import from this file
