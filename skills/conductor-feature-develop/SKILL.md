@@ -523,10 +523,14 @@ subdirectory. Instead:
       inside `e2e/`) to the project's `.gitignore` file. If `.gitignore` does not exist,
       create it. This prevents credentials and machine-specific paths from being committed.
       Verify the entry exists before proceeding with any other scaffolding step.
-    - Helper utilities for login, navigation, data seeding — all helpers MUST read
-      infrastructure paths, connection strings, and credentials from `process.env.*`
-      (loaded via `dotenv`). **NEVER hardcode** machine-specific paths, CLI tool locations,
-      database credentials, or SSO admin passwords in helper source code.
+    - `helpers/config.ts` — **single source of truth** for all infrastructure config.
+      Loads `dotenv/config` and exports named constants for every `TEST_*` env var
+      (DB, MQ, SSO, app URL). All other helpers and spec files import from this file
+      instead of reading `process.env` directly or hardcoding values.
+    - Helper utilities for login, navigation, data seeding — all helpers MUST import
+      infrastructure values from `helpers/config.ts`. **NEVER hardcode** machine-specific
+      paths, CLI tool locations, database credentials, or SSO admin passwords in any
+      TypeScript source file (helpers OR spec files).
 14. **Mockup baseline screenshots**: Capture baseline screenshots from HTML mockups for visual consistency testing:
     - Start the mockup server (`npm start` in `<app_folder>/context/mockup/`)
     - For each role/screen in the mockup, capture a screenshot to `<source-code-path>/e2e/visual-baselines/`
@@ -681,40 +685,75 @@ From the module's TEST_SPEC.md:
 3. **Implement test scenarios**: Convert each scenario from TEST_SPEC.md Section 5 into Playwright tests
 4. **DO NOT implement cleanup scripts** — test data must persist for downstream modules
 
-Pattern for helper file (e.g., `e2e/helpers/keycloak.ts`):
+Pattern for shared config helper (`e2e/helpers/config.ts`) — **single source of truth**
+for all infrastructure configuration. Every other helper and spec file imports from here
+instead of reading `process.env` directly or hardcoding values:
 ```typescript
-import { execSync } from 'child_process';
 import 'dotenv/config';  // loads .env from e2e/ directory
 
-const KCADM = process.env.TEST_SSO_CLI_PATH!;
-const KC_HOST = process.env.TEST_SSO_HOST!;
-const KC_ADMIN = process.env.TEST_SSO_ADMIN_USER!;
-const KC_PASS = process.env.TEST_SSO_ADMIN_PASSWORD!;
-const KC_REALM = process.env.TEST_SSO_REALM!;
+// Application
+export const APP_BASE_URL = process.env.TEST_APP_BASE_URL!;
+
+// Database (include only what exists in CLAUDE.md)
+export const DB_URI = process.env.TEST_DB_URI!;           // MongoDB
+// OR for MySQL/PostgreSQL:
+// export const DB_HOST = process.env.TEST_DB_HOST!;
+// export const DB_PORT = process.env.TEST_DB_PORT!;
+// export const DB_USER = process.env.TEST_DB_USER!;
+// export const DB_PASSWORD = process.env.TEST_DB_PASSWORD!;
+// export const DB_NAME = process.env.TEST_DB_NAME!;
+
+// Message Queue (include only if MQ exists in CLAUDE.md)
+export const MQ_HOST = process.env.TEST_MQ_HOST!;
+export const MQ_PORT = process.env.TEST_MQ_PORT!;
+export const MQ_USER = process.env.TEST_MQ_USER!;
+export const MQ_PASSWORD = process.env.TEST_MQ_PASSWORD!;
+export const MQ_VHOST = process.env.TEST_MQ_VHOST!;
+export const MQ_URL = process.env.TEST_MQ_URL!;
+
+// SSO / Auth (include only if SSO exists in CLAUDE.md)
+export const SSO_HOST = process.env.TEST_SSO_HOST!;
+export const SSO_ADMIN_USER = process.env.TEST_SSO_ADMIN_USER!;
+export const SSO_ADMIN_PASSWORD = process.env.TEST_SSO_ADMIN_PASSWORD!;
+export const SSO_CLI_PATH = process.env.TEST_SSO_CLI_PATH!;
+export const SSO_REALM = process.env.TEST_SSO_REALM!;
+```
+
+Pattern for domain-specific helper (e.g., `e2e/helpers/keycloak.ts`) — imports config
+from `config.ts`, never reads `process.env` directly:
+```typescript
+import { execSync } from 'child_process';
+import { SSO_CLI_PATH, SSO_HOST, SSO_ADMIN_USER, SSO_ADMIN_PASSWORD, SSO_REALM } from './config';
 
 function runKcadm(command: string): string {
   try {
-    return execSync(`"${KCADM}" ${command}`, { encoding: 'utf-8', timeout: 30000 });
+    return execSync(`"${SSO_CLI_PATH}" ${command}`, { encoding: 'utf-8', timeout: 30000 });
   } catch (error: any) {
     return error.stdout || error.stderr || error.message || '';
   }
 }
 
 export function kcadmConfig(): void {
-  runKcadm(`config credentials --server ${KC_HOST} --realm master --user ${KC_ADMIN} --password ${KC_PASS}`);
+  runKcadm(`config credentials --server ${SSO_HOST} --realm master --user ${SSO_ADMIN_USER} --password ${SSO_ADMIN_PASSWORD}`);
 }
-// ... remaining helper functions use the env-based constants above
+// ... remaining helper functions use the config imports above
 ```
+
+**No hardcoded config in spec files**: If a spec file needs infrastructure values (e.g.,
+database connection for direct seeding, MQ host for publishing, mail server URL), it MUST
+import them from `helpers/config.ts` — never hardcode them inline in the spec. This applies
+to ALL spec files, not just those with dedicated helper modules.
 
 Pattern for test file:
 ```typescript
 import { test, expect } from '@playwright/test';
+import { DB_URI, MQ_URL } from '../helpers/config';  // import what this spec needs
 
 test.describe('<Module Name>', () => {
   // Data seeding (runs once before all tests in this module)
   test.beforeAll(async () => {
     // Execute seeding script from TEST_SPEC.md Section 4
-    // All infrastructure values come from process.env via helpers
+    // All infrastructure values come from helpers/config.ts — never hardcode
   });
 
   // DO NOT add afterAll cleanup — data persists for dependent modules
