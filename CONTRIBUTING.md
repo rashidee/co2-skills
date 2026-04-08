@@ -50,6 +50,8 @@ co2-skills/
 │   ├── specgen-spring-jpa-jtehtmx/
 │   ├── specgen-spring-jpa-restapi/
 │   ├── specgen-laravel-eloquent-bladehtmx/
+│   ├── specgen-react-mui/
+│   ├── specgen-ts-cli/
 │   ├── testgen-functional/
 │   ├── conductor-feature-prepare/
 │   ├── depgen-k8s/
@@ -183,6 +185,8 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 | `specgen-spring-jpa-jtehtmx` | Spring Boot 3 + JTE + Tailwind + htmx |
 | `specgen-spring-jpa-restapi` | Spring Boot 3 REST API |
 | `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
+| `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
+| `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
 
 **Priority gaps — PRs welcome:**
 

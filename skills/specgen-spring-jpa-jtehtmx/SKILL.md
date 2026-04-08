@@ -521,8 +521,10 @@ After determination, these values are needed. Most are derived automatically:
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
+**Auto-derived from CLAUDE.md (Port Allocation table):**
+- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default — the port MUST match the allocated port for this application.
+
 **Optional (use sensible defaults if not found in context):**
-- **Server port**: Default `8080`
 - **Default theme**: Default `light` (supports `light`/`dark`)
 - **Log level**: Default `INFO` for application, `WARN` for frameworks
 
@@ -670,7 +672,7 @@ RABBITMQ_USERNAME=guest
 RABBITMQ_PASSWORD=guest
 
 # Server
-SERVER_PORT=8080
+SERVER_PORT=<port from CLAUDE.md Port Allocation table>
 
 # Platform
 JAVA_HOME=C:\Users\rashidee.rashid.BESTINET\.jdks\azul-21.0.9

@@ -503,8 +503,10 @@ After determination, these values are needed. Most are derived automatically:
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
+**Auto-derived from CLAUDE.md (Port Allocation table):**
+- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default — the port MUST match the allocated port for this application.
+
 **Optional (use sensible defaults if not found in context):**
-- **Server port**: Default `8000`
 - **Default theme**: Default `light` (supports `light`/`dark`)
 - **Log level**: Default `info` for application, `warning` for frameworks
 
@@ -630,7 +632,7 @@ names referenced in `config/` files via `env()` calls. The spec must define the 
 APP_NAME="HC Support Portal"
 APP_ENV=local
 APP_DEBUG=true
-APP_URL=http://localhost:8000
+APP_URL=http://localhost:<port from CLAUDE.md Port Allocation table>
 
 # Database
 DB_CONNECTION=mysql

@@ -418,7 +418,7 @@ Present it to the user for confirmation:
 
 ```
 Optional Component Determination:
-- Backend API:    http://localhost:8080/api (from CLAUDE.md → depends on Admin API)
+- Backend API:    http://localhost:<port>/api (from CLAUDE.md Port Allocation table → depends on backend app)
 - Authentication: Keycloak PKCE (from CLAUDE.md → depends on Single Sign On)
 - DataGrid:       yes (from PRD.md → NFR mentions sortable user list with bulk actions)
 - Charts:         no
@@ -446,6 +446,9 @@ After determination, these values are needed. Most are derived automatically:
 - **Optional components**: Auto-determined (see above)
 - **User roles**: From mockup role folders
 - **Design tokens**: MUI theme colors extracted from mockup CSS/inline styles
+
+**Auto-derived from CLAUDE.md (Port Allocation table):**
+- **Backend API base URL**: Look up the backend application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Construct the base URL as `http://localhost:<port>/api/v1`. Do NOT hardcode `8080` — the port MUST match the allocated port for the backend application this SPA depends on.
 
 **Optional (use sensible defaults if not found in context):**
 - **Dev server port**: Default `3000`
@@ -558,7 +561,7 @@ The `.env.production` file uses placeholder values for production deployment.
 **Example `.env.development` output (derived from SECRET.md):**
 ```properties
 # Backend API
-VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_API_BASE_URL=http://localhost:<port from CLAUDE.md Port Allocation table>/api/v1
 
 # Authentication (Keycloak)
 VITE_KEYCLOAK_URL=http://localhost:8180
