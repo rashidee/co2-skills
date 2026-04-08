@@ -155,7 +155,7 @@ For each custom application folder:
 Create a new `PRD.md` inside the application folder using the template below:
 - Populate the `# System Module` section with all system modules from CLAUDE.md
 - Populate the `# Business Module` section with all business modules from CLAUDE.md
-- Each module gets the standard subsections: `### User Story`, `### Non Functional Requirement`, `### Constraint`, `### Reference` — all versioned with `[v1.0.0]`
+- Each module gets the standard subsections: `### User Story`, `### Non Functional Requirement`, `### Constraint`, `### Reference`, `### Test` — all versioned with `[v1.0.0]`
 - The `# Standards` section is included with placeholder text
 
 #### 4b. PRD.md Already Exists
@@ -174,6 +174,12 @@ Create a new `PRD.md` inside the application folder using the template below:
    - **Module exists in both CLAUDE.md and PRD.md**: Do nothing
    - **Module exists in CLAUDE.md but NOT in PRD.md**: Append the missing module section at the end of its parent section (`# System Module` or `# Business Module`) using the template structure with empty versioned subsections `[v1.0.0]`
    - **Module exists in PRD.md but NOT in CLAUDE.md**: Do nothing to the file. Record a warning for the summary output
+4. **Check for missing `### Test` subsections in existing modules.** For each module that already exists in PRD.md, check whether it contains a `### Test` subsection. If the `### Test` subsection is **missing**, insert it after the last existing standard subsection (`### Reference`) and before the `---` separator that ends the module section, using the template:
+   ```markdown
+   ### Test
+   [v1.0.0]
+   ```
+   Record the addition for the summary output. If the `### Test` subsection already exists, do nothing — never modify existing content.
 
 ### 5. Sync BUG.md for Each Application
 
@@ -233,10 +239,10 @@ Print a summary of all actions taken, validation results, and warnings:
 | HC Adapter | hc_adapter | Already exists |
 
 ### PRD.md Sync
-| Application | Status | Sections Added | Modules Added | Warnings |
-|-------------|--------|----------------|---------------|----------|
-| hub_middleware | Updated | Design System, Architecture Principle | Payment, Billing | Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md |
-| hc_adapter | Created | (all sections) | (all modules) | - |
+| Application | Status | Sections Added | Modules Added | Test Subsections Added | Warnings |
+|-------------|--------|----------------|---------------|----------------------|----------|
+| hub_middleware | Updated | Design System, Architecture Principle | Payment, Billing | User, Notification, Activities | Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md |
+| hc_adapter | Created | (all sections) | (all modules) | (all modules) | - |
 
 ### BUG.md Sync
 | Application | Status | Modules Added | Warnings |
@@ -306,6 +312,9 @@ When creating a new PRD.md or adding module sections, use this structure:
 ### Reference
 [v1.0.0]
 
+### Test
+[v1.0.0]
+
 ---
 
 # Business Module
@@ -322,6 +331,9 @@ When creating a new PRD.md or adding module sections, use this structure:
 [v1.0.0]
 
 ### Reference
+[v1.0.0]
+
+### Test
 [v1.0.0]
 
 ---
@@ -345,6 +357,9 @@ When a module exists in CLAUDE.md but not in PRD.md, append this block at the en
 [v1.0.0]
 
 ### Reference
+[v1.0.0]
+
+### Test
 [v1.0.0]
 
 ---
