@@ -61,6 +61,7 @@
     - modelgen-relational: Extracts relational (SQL) entity models from user stories using Domain-Driven Design principles. (Prerequisite: PRD.md)
     - modelgen-nosql: Extracts NoSQL document models (MongoDB, Couchbase, DynamoDB, Firestore, CosmosDB) from user stories. (Prerequisite: PRD.md)
     - mockgen-tailwind: Generates HTML mockup screens served via Node.js + Express + HTMX. (Prerequisite: PRD.md, modelgen-relational or modelgen-nosql)
+    - mockgen-shadcn: Generates React + shadcn/ui mockup screens served via Vite dev server with React Router. (Prerequisite: PRD.md, modelgen-relational or modelgen-nosql)
     - specgen-laravel-eloquent-bladehtmx: Generates Laravel 12 web application technical specification with Blade, Tailwind and htmx. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-react-mui: Generates React 19 SPA technical specification with TypeScript 5, Vite 6, Material UI v6, React Router v7, TanStack Query v5, Zustand v5, React Hook Form v7, and Zod v3. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-spring-jpa-jtehtmx: Generates Spring Boot 3 web application technical specification with JTE, Tailwind and htmx. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
