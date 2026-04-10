@@ -93,13 +93,13 @@ The application name is matched against root-level application folders:
 
 ## Version Gate
 
-Before starting any work, check `CHANGELOG.md` in the project root:
+Before starting any work, resolve the application folder first (see Input Resolution below), then check `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`):
 
-1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
-2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+1. If `<app_folder>/CHANGELOG.md` does not exist, skip this check (first-ever execution for this application).
+2. If `<app_folder>/CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
 3. Compare the requested version against the highest version:
    - If requested version **>=** highest version: proceed normally.
-   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
+   - If requested version **<** highest version: **STOP immediately**. Print: `"Version {requested} is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."` Do NOT proceed with any work.
 
 ## Workflow
 
@@ -878,14 +878,14 @@ If any dead-end link is found in the final output, the generation is **incomplet
 
 ## Changelog Append
 
-After all mockup files are successfully generated, append an entry to `CHANGELOG.md` in the project root:
+After all mockup files are successfully generated, append an entry to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`):
 
-1. Read `CHANGELOG.md` from the project root. If it does not exist, create it with:
+1. Read `<app_folder>/CHANGELOG.md`. If it does not exist, create it with:
    ```markdown
    # Changelog
 
-   - This file tracks all skill executions by version across all applications.
-   - The highest version recorded here is the current project version.
+   - This file tracks all skill executions by version for this application.
+   - The highest version recorded here is the current application version.
    - Skills MUST NOT execute for a version lower than the highest version in this file.
 
    ---

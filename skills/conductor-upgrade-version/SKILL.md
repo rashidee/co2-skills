@@ -349,11 +349,11 @@ This guard prevents accidental re-execution of already-completed work while allo
 incremental processing of new versions. It runs ONCE before the version loop starts and uses
 a **partition and filter** approach.
 
-1. Read `CHANGELOG.md` from the project root. If it does not exist, skip this check.
+1. Read `<app_folder>/CHANGELOG.md` (the application folder's changelog). If it does not exist, skip this check.
 2. Resolve the version list (see Version Resolution).
 3. **Partition** the resolved versions into two groups:
    - `completed_versions` — versions that have a matching `conductor-upgrade-version` OR
-     `conductor-feature-develop` entry in CHANGELOG.md for this application
+     `conductor-feature-develop` entry in `<app_folder>/CHANGELOG.md`
    - `new_versions` — versions with NO matching entry
 4. **Decision**:
 
@@ -361,7 +361,7 @@ a **partition and filter** approach.
    |---------------|---------------------|----------------------|--------|
    | Not empty | Any (including empty) | Yes (expected — prior versions built them) | **Proceed with `new_versions` only** — filter out completed versions. Existing code/artifacts are the base for the next version's upgrade. |
    | Not empty | Any | No | **Proceed with all resolved versions** — no prior artifacts, start from scratch. |
-   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} were already upgraded (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing tracking files (UPGRADE_MASTER.md, IMPLEMENTATION_MASTER.md) and source code, then re-run this skill."` |
+   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} were already upgraded (recorded in <app_folder>/CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing tracking files (UPGRADE_MASTER.md, IMPLEMENTATION_MASTER.md) and source code, then re-run this skill."` |
    | Empty | Not empty | No | **Proceed with all resolved versions** — code was cleaned up, this is a legitimate redo. |
 
    **Artifacts/code exist check**: `<app_folder>/context/develop/UPGRADE_MASTER.md` or

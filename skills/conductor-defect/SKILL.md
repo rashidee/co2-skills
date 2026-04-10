@@ -332,13 +332,13 @@ Example after tagging:
 
 ## Version Gate
 
-Before starting any work, check `CHANGELOG.md` in the project root:
+Before starting any work, check `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`):
 
-1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
-2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+1. If `<app_folder>/CHANGELOG.md` does not exist, skip this check (first-ever execution for this application).
+2. If `<app_folder>/CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
 3. Apply the gate based on the version argument form:
-   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
-   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
+   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
    - **`version:all` or omitted**: Skip this check — when processing all discovered versions, historical versions are expected to be present in the source file.
 
 ## PRD.md Extended Sections
@@ -780,8 +780,8 @@ After all bugs have been processed (every bug has a terminal status):
 1. Update BUG_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Update all Summary table counts
-2. Append entries to `CHANGELOG.md` in the project root — **one entry per version processed**:
-   - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
+2. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) — **one entry per version processed**:
+   - Read `<app_folder>/CHANGELOG.md`. If it does not exist, create it with context header.
    - For EACH version in the resolved version list (ascending order):
      - Search for a `## {version}` heading matching this version.
      - If the section **exists**: append a new row to its table.

@@ -209,8 +209,8 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 
 All new skills that accept a `version` argument **MUST** include two protocol sections:
 
-1. **Version Gate** (`## Version Gate`) — placed before `## Input Resolution` or `## Workflow`. Reads `CHANGELOG.md` from the project root, determines the highest recorded version, and rejects execution if the requested version is lower.
-2. **Changelog Append** (`## Changelog Append`) — placed before `## Important Rules` or `## Output Format`. After successful completion, appends a row to the matching version section in `CHANGELOG.md` (or creates a new section if it doesn't exist).
+1. **Version Gate** (`## Version Gate`) — placed before `## Input Resolution` or `## Workflow`. Reads `CHANGELOG.md` from the application folder (`<app_folder>/CHANGELOG.md`), determines the highest recorded version for that application, and rejects execution if the requested version is lower. Each application maintains its own independent version history.
+2. **Changelog Append** (`## Changelog Append`) — placed before `## Important Rules` or `## Output Format`. After successful completion, appends a row to the matching version section in `<app_folder>/CHANGELOG.md` (or creates a new section if it doesn't exist).
 
 See any existing skill (e.g., `specgen-spring-jpa-jtehtmx/SKILL.md`) for the exact protocol text to copy.
 

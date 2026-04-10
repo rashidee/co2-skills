@@ -172,11 +172,11 @@ it manually — the information is already available in your context.
 This guard prevents accidental re-execution of already-completed work while allowing
 incremental processing of new versions. It uses a **partition and filter** approach.
 
-1. Read `CHANGELOG.md` from the project root. If it does not exist, skip this check.
+1. Read `<app_folder>/CHANGELOG.md` (the application folder's changelog). If it does not exist, skip this check.
 2. Resolve the version list (see Version Resolution).
 3. **Partition** the resolved versions into two groups:
    - `completed_versions` — versions that have a matching `conductor-feature-prepare` entry
-     in CHANGELOG.md for this application
+     in `<app_folder>/CHANGELOG.md`
    - `new_versions` — versions with NO matching entry
 4. **Decision**:
 
@@ -184,7 +184,7 @@ incremental processing of new versions. It uses a **partition and filter** appro
    |---------------|---------------------|-----------------|--------|
    | Not empty | Any (including empty) | Yes (expected — prior versions built them) | **Proceed with `new_versions` only** — filter out completed versions from the processing list. Existing artifacts are the base for version increment. |
    | Not empty | Any | No | **Proceed with all resolved versions** — no prior artifacts, start from scratch. |
-   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} already have context artifacts (recorded in CHANGELOG.md) and they still exist. To redo, first delete the existing context artifact folders (model/, mockup/, specification/, test/), then re-run this skill."` |
+   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} already have context artifacts (recorded in <app_folder>/CHANGELOG.md) and they still exist. To redo, first delete the existing context artifact folders (model/, mockup/, specification/, test/), then re-run this skill."` |
    | Empty | Not empty | No | **Proceed with all resolved versions** — artifacts were cleaned up, this is a legitimate redo. |
 
 5. **Update the resolved version list** to contain only the versions that will be processed

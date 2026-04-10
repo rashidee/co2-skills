@@ -294,13 +294,13 @@ first. Do NOT attempt to generate artifacts — that is the responsibility of th
 
 ## Version Gate
 
-Before starting any work, check `CHANGELOG.md` in the project root:
+Before starting any work, check `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`):
 
-1. If `CHANGELOG.md` does not exist, skip this check (first-ever execution).
-2. If `CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
+1. If `<app_folder>/CHANGELOG.md` does not exist, skip this check (first-ever execution for this application).
+2. If `<app_folder>/CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
 3. Apply the gate based on the version argument form:
-   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
-   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current project version {highest} recorded in CHANGELOG.md. Execution rejected."`
+   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
+   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
    - **`version:all` or omitted**: Skip this check — when processing all discovered versions, historical versions are expected.
 
 ### Redo/Redevelop Guard
@@ -311,7 +311,7 @@ incremental processing of new versions. It uses a **partition and filter** appro
 1. Resolve the version list (see Version Resolution).
 2. **Partition** the resolved versions into two groups:
    - `completed_versions` — versions that have a matching `conductor-feature-develop` entry
-     in CHANGELOG.md for this application
+     in `<app_folder>/CHANGELOG.md`
    - `new_versions` — versions with NO matching entry
 3. **Decision**:
 
@@ -319,7 +319,7 @@ incremental processing of new versions. It uses a **partition and filter** appro
    |---------------|---------------------|----------------------|--------|
    | Not empty | Any (including empty) | Yes (expected — prior versions built them) | **Proceed with `new_versions` only** — filter out completed versions. Existing code is the base for version increment. |
    | Not empty | Any | No | **Proceed with all resolved versions** — no prior code, start from scratch. |
-   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} were already developed (recorded in CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing IMPLEMENTATION_MASTER.md and source code, then re-run this skill."` |
+   | Empty | Not empty | Yes | **STOP**. Print: `"All requested versions ({list}) for {application} were already developed (recorded in <app_folder>/CHANGELOG.md) and artifacts/code still exist. To redo, first delete the existing IMPLEMENTATION_MASTER.md and source code, then re-run this skill."` |
    | Empty | Not empty | No | **Proceed with all resolved versions** — code was cleaned up, this is a legitimate redo. |
 
    **Artifacts/code exist check**: `<app_folder>/context/develop/IMPLEMENTATION_MASTER.md`
@@ -1036,8 +1036,8 @@ See the [k8s/](k8s/) folder for per-environment Kubernetes manifests.
 1. Update IMPLEMENTATION_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Add a note: `README.md generated at <source-code-path>/README.md`
-2. Append entries to `CHANGELOG.md` in the project root — **one entry per version processed**:
-   - Read `CHANGELOG.md` from the project root. If it does not exist, create it with context header.
+2. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) — **one entry per version processed**:
+   - Read `<app_folder>/CHANGELOG.md`. If it does not exist, create it with context header.
    - For EACH version in the resolved version list (ascending order):
      - Search for a `## {version}` heading matching this version.
      - If the section **exists**: append a new row to its table.
