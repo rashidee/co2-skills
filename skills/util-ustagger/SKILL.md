@@ -51,7 +51,7 @@ This skill requires two mandatory arguments: `<application>` and `<version>`.
 
 | File | Resolved Path |
 |------|---------------|
-| PRD.md | `<matched_app_folder>/context/PRD.md` |
+| PRD.md | `<app_folder>/context/PRD.md` |
 
 Example invocations:
 - `/util-ustagger hub_middleware v1.0.3`

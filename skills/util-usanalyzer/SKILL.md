@@ -42,7 +42,7 @@ This skill requires one mandatory argument: `<application>`.
 
 | File | Resolved Path |
 |------|---------------|
-| PRD.md | `<matched_app_folder>/context/PRD.md` |
+| PRD.md | `<app_folder>/context/PRD.md` |
 
 Example invocations:
 - `/util-usanalyzer mainapp`

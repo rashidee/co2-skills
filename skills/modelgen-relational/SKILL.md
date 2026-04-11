@@ -72,8 +72,8 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 
 | File | Resolved Path |
 |------|---------------|
-| PRD.md | `<matched_app_folder>/context/PRD.md` |
-| Output directory | `<matched_app_folder>/context/model/` |
+| PRD.md | `<app_folder>/context/PRD.md` |
+| Output directory | `<app_folder>/context/model/` |
 
 ### Module Matching Rules
 
@@ -275,7 +275,7 @@ shared-database deployment. The prefix is auto-generated but can be overridden b
 3. **Version tag is mandatory.** Every user story must be associated with a version. If stories are provided without version tags, stop and ask the user to assign them.
 4. **Story format check.** Each story should follow "As [role], I want to [action] [object] so that [purpose]". Flag stories that deviate and ask for clarification, but attempt to parse them.
 5. **At least one NFR per module.** If no NFRs are provided for a module, prompt the user to confirm whether standard conventions (audit trail, soft delete, optimistic locking) should apply as defaults.
-6. **Output directory is auto-resolved.** The output directory is automatically resolved to `<matched_app_folder>/context/model/`. Auto-create if the path doesn't exist (including any intermediate parent directories).
+6. **Output directory is auto-resolved.** The output directory is automatically resolved to `<app_folder>/context/model/`. Auto-create if the path doesn't exist (including any intermediate parent directories).
 
 ---
 

@@ -78,8 +78,8 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 
 | File | Resolved Path |
 |------|---------------|
-| PRD.md | `<matched_app_folder>/context/PRD.md` |
-| Output directory | `<matched_app_folder>/context/model/` |
+| PRD.md | `<app_folder>/context/PRD.md` |
+| Output directory | `<app_folder>/context/model/` |
 
 ### Module Matching Rules
 
@@ -288,7 +288,7 @@ letters or numeric suffix.
 3. **Version tag is mandatory.** Stop and ask if stories lack version tags.
 4. **Story format check.** Flag deviations but attempt to parse.
 5. **At least one NFR per module.** Prompt for confirmation of defaults if missing.
-6. **Output directory is auto-resolved.** The output directory is automatically resolved to `<matched_app_folder>/context/model/`. Auto-create if the path doesn't exist.
+6. **Output directory is auto-resolved.** The output directory is automatically resolved to `<app_folder>/context/model/`. Auto-create if the path doesn't exist.
 
 ---
 
