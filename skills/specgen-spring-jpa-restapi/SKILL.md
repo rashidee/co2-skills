@@ -530,25 +530,114 @@ profiles or profile-specific YAML files — environment differences are handled 
 through environment variables (e.g., via `.env` file locally or system environment
 variables in deployment).
 
-#### 3a. Application Version Configuration
-The `application.yml` MUST include an `app.version` property set via environment variable
-with a default derived from the version argument provided during skill invocation. If
-multiple versions were provided, use the highest one.
+#### 3a. Application-Specific Configuration (`app:` namespace)
+
+All application-owned configuration — any config specific to THIS application, as
+opposed to the Spring/Java ecosystem — MUST live under the top-level `app:` key in
+`application.yml`. NEVER place application-specific keys under Spring framework
+namespaces (`spring.*`, `server.*`, `management.*`, `logging.*`, `springdoc.*`) —
+those are reserved for framework configuration.
+
+**Grouping rule.** Organise the `app:` tree by module:
+- **Cross-cutting values** (version, shared feature flags, shared timeouts, CORS,
+  shared security settings, shared messaging infrastructure, shared object-storage
+  settings) sit directly under `app.*` with no module prefix.
+- **Per-module values** are grouped under `app.<module-kebab-case>.*`, one block
+  per module that needs runtime config. A module with a single config value still
+  gets its own block — do not flatten.
+- **NEVER place module-specific keys at the YAML root** (e.g., top-level
+  `notification:`, `batch-job:`, `audit-trail:`). They MUST be nested under `app:`.
+
+**Naming rule.** YAML keys use **kebab-case** (`from-address`, `retry-limit`,
+`max-retry`). Spring Boot's relaxed binding maps them to camelCase Java fields
+automatically. Do NOT use camelCase or snake_case in YAML.
+
+**Binding rule.** For every `app.*` subtree (cross-cutting OR per-module), bind once
+via `@ConfigurationProperties` on a **record** in the corresponding module's `config`
+subpackage — or, for cross-cutting values, in the application-level `config`
+subpackage. **Do NOT** inject individual values via `@Value("${app....}")` scattered
+across beans. Bind once at the module boundary and inject the typed record.
+
+**Environment-override rule.** Every `app.*` leaf value MUST use Spring's
+`${ENV_VAR:default}` syntax so it can be overridden per environment without editing
+YAML. Every referenced `${ENV_VAR}` MUST appear in the `.env` file generated in
+section 3b.
+
+**Example structure:**
 
 ```yaml
 app:
+  # Cross-cutting (no module prefix)
   version: ${APP_VERSION:1.0.0}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  security:
+    public-paths:
+      - /actuator/health
+      - /api/v1/info
+
+  # Per-module blocks — one per module with runtime config
+  notification:
+    email:
+      from-address: ${NOTIFICATION_FROM_ADDRESS:noreply@example.com}
+      retry-limit: ${NOTIFICATION_RETRY_LIMIT:3}
+    cleanup:
+      retention-days: ${NOTIFICATION_RETENTION_DAYS:30}
+  batch-job:
+    cleanup:
+      retention-days: ${BATCH_JOB_RETENTION_DAYS:90}
+  audit-trail:
+    cleanup:
+      retention-days: ${AUDIT_TRAIL_RETENTION_DAYS:365}
 ```
 
-The REST API MUST expose the application version in:
-1. **A health/info endpoint** (e.g., `GET /api/v1/info` or Spring Actuator `/actuator/info`)
-   returning `{"version": "1.0.3", ...}`.
-2. **Every API response envelope** — if the API uses a standard response wrapper, include
-   a `version` field (e.g., `{"version": "1.0.3", "data": {...}}`).
+**Example cross-cutting record (`app.*`):**
 
-The `.env` file must include `APP_VERSION={version}` with the actual version value.
+```java
+@ConfigurationProperties(prefix = "app")
+public record AppProperties(String version, Cors cors, Security security) {
+    public record Cors(List<String> allowedOrigins) {}
+    public record Security(List<String> publicPaths) {}
+}
+```
 
-The `pom.xml` `<version>` element MUST also be set to the version value (e.g., `1.0.3`).
+**Example per-module record (`app.<module>.*`):**
+
+```java
+@ConfigurationProperties(prefix = "app.notification")
+public record NotificationProperties(
+    Email email,
+    Cleanup cleanup
+) {
+    public record Email(String fromAddress, int retryLimit) {}
+    public record Cleanup(int retentionDays) {}
+}
+```
+
+Enable binding at the application root with `@ConfigurationPropertiesScan` on the
+main application class, or register each record individually via
+`@EnableConfigurationProperties` on a `@Configuration` class in the owning module.
+
+**Mandatory cross-cutting values:**
+
+| Key | Purpose | Binding |
+|-----|---------|---------|
+| `app.version` | Current application version; must match `pom.xml` `<version>` | `AppProperties.version()` |
+
+Additional cross-cutting keys may be added as the application grows, but
+`app.version` is always present.
+
+**`app.version` specifics.** The `.env` file must include `APP_VERSION={version}`
+with the actual version value. The `pom.xml` `<version>` element MUST also be set to
+the same version value (e.g., `1.0.3`). When multiple versions were provided during
+skill invocation, use the highest one. The REST API MUST expose the application
+version in:
+
+1. **A health/info endpoint** (e.g., `GET /api/v1/info` or Spring Actuator
+   `/actuator/info`) returning `{"version": "1.0.3", ...}`. Inject `AppProperties`
+   into the controller and read the version via `appProperties.version()`.
+2. **Every API response envelope** — if the API uses a standard response wrapper,
+   include a `version` field (e.g., `{"version": "1.0.3", "data": {...}}`).
 
 #### 3b. `.env` File Generation from SECRET.md
 Generate a `.env` file at the project root by reading `SECRET.md` from the project root.

@@ -1281,3 +1281,24 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     commands, or architecture descriptions. The README must include a Deployment section
     with Docker build commands and a link to the application's `k8s/` folder
     if deployment artifacts were generated.
+
+18. **Spring Boot `app:` namespace for application-specific configuration (CRITICAL)** —
+    When the application stack is Spring Boot, ALL application-owned configuration in
+    `application.yml` MUST be placed under the top-level `app:` key. NEVER place
+    application-specific keys at the YAML root (e.g., top-level `notification:`,
+    `batch-job:`, `audit-trail:`) and NEVER place them under Spring framework namespaces
+    (`spring.*`, `server.*`, `management.*`, `logging.*`, `springdoc.*`).
+
+    **Grouping:**
+    - Cross-cutting values (version, CORS, shared security, shared messaging, shared
+      object-storage) sit directly under `app.*` with no module prefix.
+    - Per-module values MUST be grouped under `app.<module-kebab-case>.*`, one block
+      per module. A single config value per module still gets its own block.
+
+    **Binding:** every `app.*` subtree MUST be bound once via a `@ConfigurationProperties`
+    record in the owning module's `config` subpackage (or in the application-level
+    `config` subpackage for cross-cutting values). NEVER inject individual values via
+    `@Value("${app....}")` scattered across beans. Use kebab-case in YAML; Spring Boot's
+    relaxed binding maps to camelCase Java fields automatically. See SPECIFICATION.md
+    section "Application-Specific Configuration (`app:` namespace)" for the authoritative
+    rules and examples.

@@ -841,3 +841,28 @@ After all bugs have been processed (every bug has a terminal status):
     calls. NEVER save screenshots in the application source folder, Playwright's default test-results
     directory, or any other location. The Playwright script files themselves should also be saved in
     the bug folder, not in the source tree.
+
+14. **Spring Boot `app:` namespace for new configuration (CRITICAL)** — When a bug fix
+    introduces a new configuration value in a Spring Boot application, that value MUST be
+    added under the top-level `app:` key in `application.yml`. NEVER place new
+    application-specific keys at the YAML root (e.g., top-level `notification:`,
+    `batch-job:`, `audit-trail:`) and NEVER place them under Spring framework namespaces
+    (`spring.*`, `server.*`, `management.*`, `logging.*`, `springdoc.*`).
+
+    **Grouping:**
+    - Cross-cutting values (version, CORS, shared security, shared messaging, shared
+      object-storage) sit directly under `app.*` with no module prefix.
+    - Per-module values MUST be grouped under `app.<module-kebab-case>.*`, one block
+      per module. If the module does not yet have an `app.<module>` block, create one.
+
+    **Binding:** bind every new `app.*` value via a `@ConfigurationProperties` record in
+    the owning module's `config` subpackage. If a record already exists for that module,
+    extend it rather than creating a second one. NEVER introduce `@Value("${app....}")`
+    injections as a shortcut. Use kebab-case in YAML.
+
+    **If the bug fix touches code that currently reads configuration from a root-level
+    YAML key or a framework namespace, relocate the config under `app:` as part of the
+    fix** — do not leave the violation in place. Update the `application.yml`, the Java
+    `@ConfigurationProperties` prefix, any `@Value` references, and any tests that use
+    `@TestPropertySource` or `@SpringBootTest(properties = ...)`. See SPECIFICATION.md
+    section "Application-Specific Configuration (`app:` namespace)" for the rules.
