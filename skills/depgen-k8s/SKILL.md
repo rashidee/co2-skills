@@ -404,6 +404,26 @@ Include a comment block at the top of `deployment.yaml` in each environment fold
 ---
 ```
 
+#### 3g. Update `.gitignore`
+
+The `k8s/` folder contains environment-specific manifests with ConfigMap values,
+base64-encoded Secrets, hostnames, and credentials that MUST NOT be committed to
+version control. After generating or updating the K8s manifests, ensure the
+application's `.gitignore` excludes the `k8s/` folder:
+
+1. Read `<app_folder>/.gitignore`. If it does not exist, create it.
+2. Check if `k8s/` (or an equivalent pattern like `k8s/**`) is already listed.
+3. If **not already present**, append the following block:
+
+```gitignore
+
+# Kubernetes manifests — environment-specific configs and secrets
+k8s/
+```
+
+4. If already present, do nothing — do not duplicate the entry.
+5. Do NOT remove or modify any other entries in `.gitignore`.
+
 ## Constraints
 
 These constraints are non-negotiable:
