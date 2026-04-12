@@ -4,26 +4,44 @@ model: claude-sonnet-4-6
 effort: medium
 description: >
   Prepare Kubernetes environment infrastructure by generating K8s manifests for all 3rd party
-  supporting applications across all environments defined in CLAUDE.md. Creates/updates
+  supporting applications for a single target environment defined in CLAUDE.md. Creates/updates
   ENVIRONMENT.md with per-environment configs and credentials, then generates persistent
   StatefulSet-based K8s manifests for each 3rd party application (databases, message queues,
-  caches, SSO, API gateways, etc.) in environment/<env>/ folders. Ensures all services are
-  remotely accessible using tools from DEVTOOL.md.
+  caches, SSO, API gateways, etc.) directly in the `environment/` folder. Since the
+  `environment/` folder is gitignored, each machine maintains its own independent copy.
+  Ensures all services are remotely accessible using tools from DEVTOOL.md.
   Trigger on keywords: "prepare k8s environment", "prepare kubernetes", "setup k8s infra",
   "generate k8s manifests for 3rd party", "prepare environment", "setup infrastructure",
   "prepare k8s", "init k8s environment", "scaffold k8s environment".
-  Accepts no arguments — reads all configuration from CLAUDE.md, ENVIRONMENT.md, and DEVTOOL.md.
+  Accepts an optional environment argument to select which Kubernetes environment to generate for.
 ---
 
 # Util Prepare K8s Environment
 
 Prepare Kubernetes infrastructure by generating K8s manifests for all 3rd party supporting
-applications. One set of manifests per environment defined in CLAUDE.md. This skill creates
-the infrastructure layer that custom applications depend on.
+applications for a **single target environment**. Manifests are generated directly in the
+`environment/` folder (no per-environment subfolders). Since the `environment/` folder is
+gitignored, each machine maintains its own independent copy of the manifests.
 
 ## Input Resolution
 
-This skill requires no arguments. All configuration is read from the project root:
+This skill accepts an optional `<environment>` argument:
+
+```
+/util-preparek8senv [environment]
+```
+
+| Argument | Required | Example | Description |
+|----------|----------|---------|-------------|
+| `<environment>` | No | `home_server` | Target environment name — must match a Kubernetes environment in CLAUDE.md |
+
+If omitted:
+- If CLAUDE.md defines exactly **one** Kubernetes environment → auto-select it.
+- If CLAUDE.md defines **multiple** Kubernetes environments → list them and ask the user to specify.
+
+The environment name is matched **case-insensitively** against the environment headings in CLAUDE.md, accepting snake_case, kebab-case, or title-case input (e.g., `home_server`, `home-server`, `Home Server` all match `## Home Server`).
+
+All other configuration is read from the project root:
 
 | File | Purpose | Required |
 |------|---------|----------|
@@ -59,25 +77,19 @@ Read CLAUDE.md from the project root and extract:
 - If `DEVTOOL.md` does not exist → stop with error
 - If no environment has `Deployment Type: Kubernetes` → stop with error: "No Kubernetes environments found in CLAUDE.md. This skill only generates manifests for environments with Deployment Type: Kubernetes."
 
-### 1b. Environment Deployment Type Decision Tree
+### 1b. Target Environment Selection
 
-After parsing all environments, classify each by its `Deployment Type` field:
+After parsing all environments, identify Kubernetes environments and select the target:
 
-```
-For each environment in CLAUDE.md:
-  ├── Deployment Type = "Kubernetes"
-  │     → INCLUDE: Generate K8s manifests (Step 3) and sync ENVIRONMENT.md (Step 2)
-  │
-  ├── Deployment Type = any other value (e.g., "Manual", "Docker Compose", etc.)
-  │     → SKIP: Do not generate K8s manifests for this environment
-  │       Log: "Skipping <Environment Name> — Deployment Type: <type> (not Kubernetes)"
-  │
-  └── Deployment Type field is missing
-        → SKIP: Do not generate K8s manifests for this environment
-          Log: "Skipping <Environment Name> — no Deployment Type specified"
-```
+1. Filter environments to those with `Deployment Type: Kubernetes`.
+2. If the user provided an `<environment>` argument, match it against the Kubernetes environments (case-insensitively, accepting snake_case, kebab-case, or title-case).
+   - If matched → use it as the target environment.
+   - If not matched → list available Kubernetes environments and stop.
+3. If no argument was provided:
+   - If exactly **one** Kubernetes environment exists → auto-select it.
+   - If **multiple** exist → list them and ask the user to specify.
 
-Only environments marked `Deployment Type: Kubernetes` proceed to Step 2 (ENVIRONMENT.md sync) and Step 3 (K8s manifest generation). All other environments are skipped entirely and reported in the output summary (Step 4).
+The selected environment is the **target environment** used for Step 2 (ENVIRONMENT.md sync) and Step 3 (K8s manifest generation). Only this one environment is processed.
 
 ### 2. Sync ENVIRONMENT.md
 
@@ -153,10 +165,10 @@ field:
 When the `Docker Image` field is not present, the skill falls back to the **official Docker Hub
 image** with the exact version from CLAUDE.md (default behavior).
 
-This field is **per-environment** — one environment may use a custom image while another uses the
-official image. The skill must check each environment's service section independently.
+This field is **per-environment** in ENVIRONMENT.md — one environment may use a custom image
+while another uses the official image. The skill reads the target environment's section.
 
-**Default values for all environments:**
+**Default values:**
 - Host: use the **Domain** from the environment's `- Domain:` field in CLAUDE.md (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments. If neither is available, use `TODO`.
 - Ports: technology defaults (MongoDB: `27017`, MySQL: `3306`, Redis: `6379`, RabbitMQ AMQP: `5672`, RabbitMQ Admin: `15672`, Keycloak: `8180`, Meilisearch: `7700`, Kong Proxy: `8000`, Kong Admin: `8001`, Mailcatcher SMTP: `1025`, Mailcatcher HTTP: `1080`)
 - Username/Password: from CLAUDE.md rules section (default: `bestrnd` / `B3st1n3t@2025`), or technology defaults (e.g., RabbitMQ: `guest`/`guest`, MongoDB: no auth)
@@ -166,39 +178,29 @@ official image. The skill must check each environment's service section independ
 #### 3a. Ensure Folder Structure
 
 1. Check if `environment/` folder exists at the project root. If not, create it.
-2. For each environment from CLAUDE.md, check if `environment/<env_snake_case>/` exists. If not, create it.
 
-Resulting structure:
+Resulting structure (all manifests directly in `environment/`):
 ```
 environment/
-  localhost/
-    namespace.yaml
-    smtp_server.yaml
-    hub_cache_pvc.yaml
-    hub_cache.yaml
-    hub_core_database_pvc.yaml
-    hub_core_database.yaml
-    ...
-  home_server/
-    namespace.yaml
-    smtp_server.yaml
-    hub_cache_pvc.yaml
-    hub_cache.yaml
-    hub_core_database_pvc.yaml
-    hub_core_database.yaml
-    ...
+  namespace.yaml
+  smtp_server.yaml
+  hub_cache_pvc.yaml
+  hub_cache.yaml
+  hub_core_database_pvc.yaml
+  hub_core_database.yaml
+  ...
 ```
 
 #### 3b. Generate Namespace Manifest
 
-For each environment, create `environment/<env>/namespace.yaml`:
+Create `environment/namespace.yaml`:
 - Namespace name: project code in lowercase (e.g., `urp`)
-- Identical across all environments
+- Identical regardless of environment
 
 #### 3c. Generate PVC Manifests (Separate Files)
 
 For each 3rd party application that requires data persistence (databases, message queues, caches),
-generate a **separate** PVC file: `environment/<env>/<service_snake_case>_pvc.yaml`.
+generate a **separate** PVC file: `environment/<service_snake_case>_pvc.yaml`.
 
 **Why separate files:** If the PVC is bundled inside the service manifest, running
 `kubectl delete -f <service>.yaml` followed by `kubectl apply -f <service>.yaml` would delete
@@ -232,12 +234,12 @@ spec:
 
 #### 3d-svc. Generate Per-Service Manifests
 
-For each 3rd party application, generate `environment/<env>/<service_snake_case>.yaml` containing a multi-document YAML (separated by `---`) with:
+For each 3rd party application, generate `environment/<service_snake_case>.yaml` containing a multi-document YAML (separated by `---`) with:
 
 1. **ConfigMap** — non-sensitive configuration (hostnames, ports, database names, vhosts)
 2. **Secret** — sensitive configuration (passwords, admin credentials), base64-encoded. Read actual values from ENVIRONMENT.md for the matching environment.
 3. **StatefulSet** (NOT Deployment) — ensures persistent identity, stable network IDs, and ordered scaling:
-   - **Image resolution** (checked per-environment in ENVIRONMENT.md — see Section 2e):
+   - **Image resolution** (checked in ENVIRONMENT.md for the target environment — see Section 2e):
      1. If `Docker Image` is specified → use the exact image reference as-is. Set `imagePullPolicy: IfNotPresent`. Do NOT include `args` or `command` — the custom image's `ENTRYPOINT`/`CMD` handles startup.
      2. Otherwise → use the official Docker Hub image with the exact version from CLAUDE.md (e.g., `mongo:7.0.6`, `mysql:8.4`). Include `args`/`command` as needed by the technology.
    - `volumeMounts` referencing the PVC (defined in the separate `_pvc.yaml` file) for data persistence
@@ -319,7 +321,7 @@ For each 3rd party application, generate `environment/<env>/<service_snake_case>
 
 #### 3e. Create or Update Logic
 
-For each service in each environment, there are up to two files to manage:
+For each service, there are up to two files to manage in `environment/`:
 - `<service_snake_case>_pvc.yaml` — PVC file (only for services that require persistence)
 - `<service_snake_case>.yaml` — service manifest (ConfigMap, Secret, StatefulSet, Services)
 
@@ -328,7 +330,7 @@ For each file:
 1. **If the file does not exist** (CREATE mode): Generate and write the manifest.
 2. **If it already exists** (UPDATE mode):
    - Read the existing manifest
-   - Compare against current CLAUDE.md/ENVIRONMENT.md values:
+   - Compare against current CLAUDE.md/ENVIRONMENT.md values for the target environment:
      - Version changed → update image tag
      - New databases added → update init scripts
      - Credentials changed in ENVIRONMENT.md → update Secret values
@@ -359,7 +361,7 @@ connection instructions:
 ---
 ```
 
-For **all** environments: use the **Domain** from the environment's `- Domain:` field in CLAUDE.md as host with NodePort (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments.
+Use the **Domain** from the target environment's `- Domain:` field in CLAUDE.md as host with NodePort (e.g., `localhost`, `home.server`). If no Domain is specified, fall back to `localhost` for localhost environments or the SSH IP for remote environments.
 
 ### 4. Output Summary
 
@@ -368,26 +370,25 @@ Print a summary of all actions taken:
 ```
 ## K8s Environment Preparation Summary
 
-### Environments
-| Environment | Deployment Type | Folder | Status |
-|-------------|----------------|--------|--------|
-| Localhost | Manual | — | Skipped (not Kubernetes) |
-| Home Server | Kubernetes | environment/home_server | Created |
+### Target Environment
+| Environment | Deployment Type | Output Folder |
+|-------------|----------------|---------------|
+| Home Server | Kubernetes | environment/ |
 
 ### ENVIRONMENT.md
 | Action | Details |
 |--------|---------|
-| Created/Updated | Added 1 Kubernetes environment, 11 services |
+| Created/Updated | Synced Home Server environment, 11 services |
 
 ### K8s Manifests Generated
-| Environment | Service | File | Status |
-|-------------|---------|------|--------|
-| home_server | SMTP Server | environment/home_server/smtp_server.yaml | Created |
-| home_server | Hub Cache (PVC) | environment/home_server/hub_cache_pvc.yaml | Created |
-| home_server | Hub Cache | environment/home_server/hub_cache.yaml | Created |
-| home_server | Hub Core Database (PVC) | environment/home_server/hub_core_database_pvc.yaml | Created |
-| home_server | Hub Core Database | environment/home_server/hub_core_database.yaml | Created |
-| ... | ... | ... | ... |
+| Service | File | Status |
+|---------|------|--------|
+| SMTP Server | environment/smtp_server.yaml | Created |
+| Hub Cache (PVC) | environment/hub_cache_pvc.yaml | Created |
+| Hub Cache | environment/hub_cache.yaml | Created |
+| Hub Core Database (PVC) | environment/hub_core_database_pvc.yaml | Created |
+| Hub Core Database | environment/hub_core_database.yaml | Created |
+| ... | ... | ... |
 
 ### NodePort Assignments
 | Service | Primary Port | NodePort |
@@ -413,8 +414,8 @@ Print a summary of all actions taken:
 - **NodePort for remote access** — every service must have a NodePort Service so developers can connect using local CLI tools from DEVTOOL.md.
 - **Deterministic NodePort assignment** — use alphabetical ordering of service names to assign NodePorts starting from 30000 with interval of 10. This ensures consistent ports across environments and avoids conflicts.
 - **Init containers for dependencies** — if a 3rd party app depends on another (e.g., Keycloak → MySQL), add an init container that waits for the dependency to be ready.
-- **Image resolution precedence** — for each service in each environment, check ENVIRONMENT.md for the `Docker Image` field first (see Section 2e). If present, use the exact image reference with `imagePullPolicy: IfNotPresent` and do not add `args`/`command`. If absent, fall back to the official Docker Hub image with the exact version from CLAUDE.md (never use `latest`).
-- **Namespace isolation** — all manifests use the project namespace (project code lowercase). The namespace manifest is generated once per environment.
+- **Image resolution precedence** — for each service, check ENVIRONMENT.md for the target environment's `Docker Image` field first (see Section 2e). If present, use the exact image reference with `imagePullPolicy: IfNotPresent` and do not add `args`/`command`. If absent, fall back to the official Docker Hub image with the exact version from CLAUDE.md (never use `latest`).
+- **Namespace isolation** — all manifests use the project namespace (project code lowercase). The namespace manifest is generated once.
 - **Credential rules from CLAUDE.md** — when generating default credentials for new services, follow the `# Rules` section in CLAUDE.md for standard username/password format.
 - **Idempotent execution** — safe to re-run. Existing manifests are updated only where values changed. Manual customizations marked with `# CUSTOM:` are preserved.
 - **ENVIRONMENT.md is the credential source** — K8s Secret values come from ENVIRONMENT.md, not hardcoded. If a value is `TODO` in ENVIRONMENT.md, use `TODO` (base64-encoded) in the Secret and log a warning.
