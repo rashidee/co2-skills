@@ -109,7 +109,7 @@ following promise tag to signal the Ralph Loop that the version upgrade is done:
 **CRITICAL**: Only output this promise when:
 - ALL versions in the Version Processing Order table have status `COMPLETED`
 - For each version: Phase A is `COMPLETED` and Phase B has terminal status (`COMPLETED` or `SKIPPED`)
-- Deployment artifacts (Phase 4) have been generated after the last version
+- All versions have been processed and completion tracking is finalized
 
 Do NOT output the promise prematurely. Do NOT output it to escape the loop.
 
@@ -390,7 +390,7 @@ a **partition and filter** approach.
        - If BOTH phases for this version are `COMPLETED` (or Phase B is `SKIPPED`) → mark this version as
          `COMPLETED` in the Version Processing Order table, advance to the NEXT version
          (update `## Current Version`), and go to Phase 1.5 (Version Initialization) for it
-     - If ALL versions are `COMPLETED` → go to Phase 4 (deployment artifacts), then Phase 5 (completion)
+     - If ALL versions are `COMPLETED` → go to Phase 4 (completion)
    - **If NO**: Proceed to Phase 1 (fresh start)
 
 ### Phase 1: Initialization
@@ -480,41 +480,14 @@ so that code exists before bug reproduction and fixing is attempted.
      - Log the completion event
      - **Check if there are MORE versions** in the Version Processing Order table:
        - If YES → go to Phase 1.5 (Version Initialization) for the NEXT version. Do NOT
-         proceed to Phase 4 yet — deployment artifacts are generated only after the LAST version.
-       - If NO (this was the last version) → proceed to Phase 4
+         proceed to Phase 4 yet — completion runs only after the LAST version.
+       - If NO (this was the last version) → proceed to Phase 4 (completion)
    - If bugs remain unresolved for the current version:
      - UPGRADE_MASTER.md remains Phase B = `IN_PROGRESS`
      - Ralph Loop will re-feed the prompt, and Phase 0 will resume Phase B for this version
 4. **Log** progress in the Upgrade Log table (include the version column)
 
-### Phase 4: Generate Deployment Artifacts
-
-After ALL versions in the Version Processing Order are `COMPLETED` (each version's Phase A
-is `COMPLETED`, and Phase B is `COMPLETED` or `SKIPPED`), regenerate deployment artifacts
-to ensure they reflect the final state of all new features and bug fixes across all versions.
-
-#### Step 4.1: Invoke depgen-k8s
-
-Invoke the deployment artifact generator:
-```
-Skill(skill: "depgen-k8s", args: "<application>")
-```
-
-The `depgen-k8s` skill auto-detects the technology stack from the application's project files
-(pom.xml, composer.json, or package.json) and will regenerate:
-- `Dockerfile` — production-ready, multi-stage Docker build in the application folder
-- `<source-code-path>/k8s/<environment>/` — Per-environment Kubernetes manifests
-
-#### Step 4.2: Verify Deployment Artifacts
-
-Confirm that both files were generated:
-- `<source-code-path>/Dockerfile` exists
-- `<source-code-path>/k8s/` folder exists with at least one environment subfolder
-
-If either file is missing, log a warning in UPGRADE_MASTER.md and proceed to Phase 5
-(Completion) — do NOT block completion on deployment artifacts.
-
-### Phase 5: Completion
+### Phase 4: Completion
 
 1. **Verify ALL versions in the Version Processing Order table are `COMPLETED`**:
    - For each version: Phase A is `COMPLETED`, AND Phase B is `COMPLETED` or `SKIPPED`

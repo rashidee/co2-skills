@@ -747,33 +747,7 @@ If the bug fix is NOT already documented in PRD.md:
 3. Update the Summary table counts
 4. Move to the next bug with status `NEW`
 
-### Phase 3: Generate Deployment Artifacts
-
-After ALL bugs have been processed (every bug has a terminal status), regenerate deployment
-artifacts (Dockerfile and Kubernetes manifests) to reflect any code changes from bug fixes.
-
-#### Step 3.1: Invoke depgen-k8s
-
-Invoke the deployment artifact generator:
-```
-Skill(skill: "depgen-k8s", args: "<application>")
-```
-
-The `depgen-k8s` skill auto-detects the technology stack from the application's project files
-(pom.xml, composer.json, or package.json) and will regenerate:
-- `Dockerfile` — production-ready, multi-stage Docker build in the application folder
-- `<source-code-path>/k8s/<environment>/` — Per-environment Kubernetes manifests
-
-#### Step 3.2: Verify Deployment Artifacts
-
-Confirm that both files were generated:
-- `<source-code-path>/Dockerfile` exists
-- `<source-code-path>/k8s/` folder exists with at least one environment subfolder
-
-If either file is missing, log a warning in BUG_MASTER.md and proceed to Phase 4
-(Completion) — do NOT block completion on deployment artifacts.
-
-### Phase 4: Completion
+### Phase 3: Completion
 
 After all bugs have been processed (every bug has a terminal status):
 
