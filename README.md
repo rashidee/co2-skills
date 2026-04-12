@@ -324,7 +324,7 @@ _The skill goal is to generate deployment artifacts (Dockerfile and deployment s
 
 Example skill invocation for deployment artifact generation:
 ~~~bash
-/depgen-k8s <app_name> ## For generating Dockerfile and Kubernetes manifests
+/depgen-k8s <app_name> [environment] ## For generating Dockerfile and Kubernetes manifests
 ~~~
 
 - Input:
@@ -333,11 +333,10 @@ Example skill invocation for deployment artifact generation:
   - Application source code (to detect stack via pom.xml, composer.json, or package.json)
 - Output:
   - **Dockerfile** — Production-ready, multi-stage Docker build file in the application folder
-  - **Kubernetes manifests** — Per-environment manifests in `<app_folder>/k8s/<environment>/` containing:
+  - **Kubernetes manifests** — Manifests directly in `<app_folder>/k8s/` (gitignored, each machine maintains its own copy) containing:
     - Namespace, ConfigMap, Secret, Deployment, Service, Ingress (separate YAML files)
     - Environment variable mapping from `.env` to Kubernetes ConfigMap/Secret
     - Health check and readiness probe configuration
-    - One folder per environment defined in CLAUDE.md
 
 Example of the deployment artifact output:
 ~~~markdown

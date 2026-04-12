@@ -70,7 +70,7 @@
     - specgen-react-mui: Generates React 19 SPA technical specification with TypeScript 5, Vite 6, Material UI v6, React Router v7, TanStack Query v5, Zustand v5. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-ts-cli: Generates Node.js CLI application technical specification with TypeScript, Commander.js, tsup, and @yao-pkg/pkg. (Prerequisite: PRD.md, modelgen-*)
     - testgen-functional: Generates Playwright E2E test plan and per-module test specifications as Markdown blueprints. (Prerequisite: PRD.md, modelgen-*, specgen-*, mockgen-tailwind)
-    - depgen-k8s: Generates Dockerfile and per-environment Kubernetes manifests (in <app_folder>/k8s/<environment>/) for each environment defined in CLAUDE.md. Supports Spring Boot, Laravel, and Node.js stacks. (Prerequisite: SPECIFICATION.md, CLAUDE.md)
+    - depgen-k8s: Generates Dockerfile and Kubernetes manifests directly in <app_folder>/k8s/ for a single target environment. No per-environment subfolders — the k8s/ folder is gitignored, each machine maintains its own copy. Supports Spring Boot, Laravel, and Node.js stacks. (Prerequisite: SPECIFICATION.md, CLAUDE.md)
     - conductor-feature-prepare: Orchestrates the full artifact preparation pipeline — runs util-ustagger, modelgen-*, mockgen-tailwind, specgen-* and testgen-functional in sequence. (Prerequisite: PRD.md, CLAUDE.md)
     - conductor-feature-develop: Orchestrates full-stack application development module-by-module using all generated artifacts. (Prerequisite: conductor-feature-prepare output — model/, mockup/, specification/, test/)
     - conductor-defect: Orchestrates bug fixing from BUG.md — reproduces, fixes and verifies bugs and updates affected artifacts. (Prerequisite: BUG.md, conductor-feature-prepare output)
