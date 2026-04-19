@@ -45,8 +45,8 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 
 ### External Services Detection
 
-1. Read the `## External Services` sub-section in CLAUDE.md (typically located under `# Supporting 3rd Party Applications` or as a standalone section)
-2. Each external service is listed as a `## <Service Name>` heading under the section
+1. Read the `## External Services` sub-section in CLAUDE.md. It may appear under `# Environment`, under `# Supporting 3rd Party Applications`, or as a standalone section — search the whole document.
+2. Services are listed as heading entries that follow `## External Services` until the next top-level (`#`) heading. They typically appear at `## <Service Name>` level (siblings of `## External Services`), but may also appear at `### <Service Name>` level — accept either.
 3. Extract the service name from each heading
 4. If the section does not exist or contains no services, treat as having zero external services
 
@@ -54,8 +54,32 @@ This skill requires no arguments. All configuration is read from CLAUDE.md in th
 
 1. Read the `# Modules` section in CLAUDE.md
 2. Modules are organized under `## System Module` and `## Business Module` subsections
-3. Each module is listed as a `### <Module Name>` heading under its parent section
-4. If a module section contains `**There is no System Module**` or `**There is no Business Module**` or similar "none" indicator, treat that category as having zero modules
+3. **Each module is listed as a `### <Module Name>` heading (three hashes) under its parent `## <tier>` heading.** This is critical: modules in CLAUDE.md are nested one level deeper than in PRD.md/BUG.md because of the extra `# Modules` wrapper. Do not skip modules just because they use `###` — `###` is the correct and expected level.
+4. Collect **every** `### <Name>` heading that appears between a `## System Module` / `## Business Module` heading and the next `##` or `#` heading. Treat siblings to the tier heading (not just immediate children in an outline sense) as in-scope. A module may be the first, last, or any-position heading in the list.
+5. If a module section contains `**There is no System Module**` or `**There is no Business Module**` or similar "none" indicator, treat that category as having zero modules.
+
+#### Heading-Level Mapping Reference
+
+Modules live at **different heading levels in different files**. Match them by name, not heading level:
+
+| File | Parent heading | Module heading | Example |
+|------|----------------|----------------|---------|
+| CLAUDE.md | `## System Module` / `## Business Module` (nested under `# Modules`) | `### <Module>` — **three hashes** | `### Support Ticket` |
+| PRD.md | `# System Module` / `# Business Module` (top-level) | `## <Module>` — **two hashes** | `## Support Ticket` |
+| BUG.md | `# System Module` / `# Business Module` (top-level) | `## <Module>` — **two hashes** | `## Support Ticket` |
+
+When comparing module names across files, strip heading hashes and whitespace, and compare case-insensitively. A `### Support Ticket` in CLAUDE.md is the same module as `## Support Ticket` in PRD.md/BUG.md.
+
+#### Pre-Flight Module Count
+
+After parsing CLAUDE.md, print a one-line confirmation of what was detected **before** proceeding to PRD.md/BUG.md sync, so a missed module is caught immediately:
+
+```
+[Module Detection] System Modules: <count> — <comma-separated names>
+[Module Detection] Business Modules: <count> — <comma-separated names>
+```
+
+If a module the user expects to see is missing from this line, stop and investigate CLAUDE.md heading levels before continuing.
 
 ## Workflow
 
@@ -66,8 +90,10 @@ Read CLAUDE.md from the project root and extract:
 - **3rd Party Application list**: names and their full content from `## <Name>` headings under `# Supporting 3rd Party Applications`
 - **External Services list**: names from `## <Name>` headings under `## External Services`
 - **All dependency target names**: combined list of custom application names, 3rd party application names, and external service names (used as the valid dependency pool)
-- **System Modules**: names from `### <Name>` headings under `## System Module`
-- **Business Modules**: names from `### <Name>` headings under `## Business Module`
+- **System Modules**: names from every `### <Name>` heading (three hashes) appearing between `## System Module` and the next `##` or `#` heading. Do **not** look for `## <Name>` — that level is reserved for the tier heading itself.
+- **Business Modules**: names from every `### <Name>` heading (three hashes) appearing between `## Business Module` and the next `##` or `#` heading.
+
+After collecting both lists, emit the pre-flight module count line (see Module Detection → Pre-Flight Module Count). If the count is lower than expected for this project, stop and re-check heading levels before syncing — silently skipping a module that was incorrectly parsed is the primary failure mode this step guards against.
 
 ### 2. Validate Dependencies
 
@@ -169,17 +195,19 @@ Create a new `PRD.md` inside the application folder using the template below:
 
    For each section that **already exists**, do nothing — never modify existing content.
 
-2. Parse the existing PRD.md to find all module headings (`## <Module Name>`) under both `# System Module` and `# Business Module`
+2. Parse the existing PRD.md to find all module headings (`## <Module Name>`) under `# System Module`, `# Business Module`, and (if present) `# Deprecated Modules`. For deprecated headings like `## ~~<Module>~~ [DEPRECATED]`, strip the strikethrough markers and `[DEPRECATED]` tag to obtain the canonical module name for comparison.
 3. Compare against the module list from CLAUDE.md:
-   - **Module exists in both CLAUDE.md and PRD.md**: Do nothing
-   - **Module exists in CLAUDE.md but NOT in PRD.md**: Append the missing module section at the end of its parent section (`# System Module` or `# Business Module`) using the template structure with empty versioned subsections `[v1.0.0]`
-   - **Module exists in PRD.md but NOT in CLAUDE.md**: Do nothing to the file. Record a warning for the summary output
-4. **Check for missing `### Test` subsections in existing modules.** For each module that already exists in PRD.md, check whether it contains a `### Test` subsection. If the `### Test` subsection is **missing**, insert it after the last existing standard subsection (`### Reference`) and before the `---` separator that ends the module section, using the template:
+   - **Module exists in both CLAUDE.md and PRD.md (active section)**: Do nothing
+   - **Module exists in CLAUDE.md but is currently deprecated in PRD.md** (found under `# Deprecated Modules`): **Restore it.** Remove the `~~...~~` strikethrough and `[DEPRECATED]` tag from the heading, remove the `_Was: System Module_` / `_Was: Business Module_` hint line directly below the heading, and move the entire module block (heading through its closing `---`) back to the end of its original parent section (`# System Module` or `# Business Module`, per the hint). Preserve all existing content (user stories, NFRs, versions). Record the restoration for the summary.
+   - **Module exists in CLAUDE.md but NOT in PRD.md (neither active nor deprecated)**: Append the missing module section at the end of its parent section (`# System Module` or `# Business Module`) using the template structure with empty versioned subsections `[v1.0.0]`
+   - **Module exists in PRD.md (active) but NOT in CLAUDE.md**: **Soft-deprecate it.** Rename the heading from `## <Module>` to `## ~~<Module>~~ [DEPRECATED]`, insert an italic hint line `_Was: System Module_` or `_Was: Business Module_` immediately below the heading (so the original tier is recoverable), and move the entire module block (heading through its closing `---`) to a `# Deprecated Modules` section at the end of the file. If `# Deprecated Modules` does not yet exist, create it (see Deprecated Modules Template). **Do not touch the inner subsections or version tags** — only the heading is marked, and the block is relocated. Record the deprecation for the summary output.
+   - **Module is deprecated in PRD.md AND still absent from CLAUDE.md**: Do nothing — it is already deprecated. No duplicate markers.
+4. **Check for missing `### Test` subsections in active modules.** For each module that already exists in PRD.md under `# System Module` or `# Business Module` (not under `# Deprecated Modules`), check whether it contains a `### Test` subsection. If the `### Test` subsection is **missing**, insert it after the last existing standard subsection (`### Reference`) and before the `---` separator that ends the module section, using the template:
    ```markdown
    ### Test
    [v1.0.0]
    ```
-   Record the addition for the summary output. If the `### Test` subsection already exists, do nothing — never modify existing content.
+   Record the addition for the summary output. If the `### Test` subsection already exists, do nothing — never modify existing content. Deprecated modules are skipped for this check.
 
 ### 5. Sync BUG.md for Each Application
 
@@ -195,11 +223,13 @@ Create a new `BUG.md` inside the application folder using the template below:
 
 #### 5b. BUG.md Already Exists
 
-1. Parse the existing BUG.md to find all module headings (`## <Module Name>`) under both `# System Module` and `# Business Module`
+1. Parse the existing BUG.md to find all module headings (`## <Module Name>`) under `# System Module`, `# Business Module`, and (if present) `# Deprecated Modules`. For deprecated headings like `## ~~<Module>~~ [DEPRECATED]`, strip the strikethrough markers and `[DEPRECATED]` tag to obtain the canonical module name for comparison.
 2. Compare against the module list from CLAUDE.md:
-   - **Module exists in both CLAUDE.md and BUG.md**: Do nothing
-   - **Module exists in CLAUDE.md but NOT in BUG.md**: Append the missing module section at the end of its parent section using the template structure
-   - **Module exists in BUG.md but NOT in CLAUDE.md**: Do nothing to the file. Record a warning for the summary output
+   - **Module exists in both CLAUDE.md and BUG.md (active section)**: Do nothing
+   - **Module exists in CLAUDE.md but is currently deprecated in BUG.md** (found under `# Deprecated Modules`): **Restore it.** Remove the `~~...~~` strikethrough and `[DEPRECATED]` tag from the heading, remove the `_Was: ..._` hint line, and move the block back to the end of its original parent section (`# System Module` or `# Business Module`, per the hint). Preserve all existing bug content and version tags. Record the restoration for the summary.
+   - **Module exists in CLAUDE.md but NOT in BUG.md (neither active nor deprecated)**: Append the missing module section at the end of its parent section using the template structure
+   - **Module exists in BUG.md (active) but NOT in CLAUDE.md**: **Soft-deprecate it.** Rename the heading from `## <Module>` to `## ~~<Module>~~ [DEPRECATED]`, insert an italic hint line `_Was: System Module_` or `_Was: Business Module_` immediately below the heading, and move the entire module block (heading through its closing `---`) to a `# Deprecated Modules` section at the end of the file. If `# Deprecated Modules` does not yet exist, create it (see Deprecated Modules Template). Do not alter bug entries or version tags. Record the deprecation for the summary output.
+   - **Module is deprecated in BUG.md AND still absent from CLAUDE.md**: Do nothing.
 
 ### 6. Resolve PRD.md and BUG.md Paths
 
@@ -207,7 +237,7 @@ PRD.md and BUG.md files are located inside the application folder. The exact pat
 - If `<app_folder>/context/` exists, use `<app_folder>/context/PRD.md` and `<app_folder>/context/BUG.md`
 - Otherwise, use `<app_folder>/PRD.md` and `<app_folder>/BUG.md`
 
-Follow the folder structure defined in CLAUDE.md's `# Folder structure` section to determine the correct path.
+Follow the folder structure defined in CLAUDE.md's `# Application Folder structure` section (or `# Folder structure` in older projects) to determine the correct path. When the CLAUDE.md specification lists `context/` as the home of PRD.md and BUG.md, treat the `context/` subfolder path as authoritative and create it if missing before scaffolding the files.
 
 ### 7. Output Summary
 
@@ -215,6 +245,12 @@ Print a summary of all actions taken, validation results, and warnings:
 
 ```
 ## Project Sync Summary
+
+### Modules Detected in CLAUDE.md
+| Tier | Count | Names |
+|------|-------|-------|
+| System Module | 7 | Authentication and Authorization, User, Notification, Activities, Audit Trail, Document Management, Batch Job |
+| Business Module | 14 | Dashboard, Location Information, Corridor, Recruitment Step, Employer, Recruitment Agent, Industrial Classification, Occupation Classification, Job Demand, Candidate Profile, Recruitment Agent Sync, News and Announcement, Support Ticket, ... |
 
 ### Dependency Validation
 | Check | Status | Issues |
@@ -239,19 +275,20 @@ Print a summary of all actions taken, validation results, and warnings:
 | HC Adapter | hc_adapter | Already exists |
 
 ### PRD.md Sync
-| Application | Status | Sections Added | Modules Added | Test Subsections Added | Warnings |
-|-------------|--------|----------------|---------------|----------------------|----------|
-| hub_middleware | Updated | Design System, Architecture Principle | Payment, Billing | User, Notification, Activities | Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md |
-| hc_adapter | Created | (all sections) | (all modules) | (all modules) | - |
+| Application | Status | Sections Added | Modules Added | Modules Deprecated | Modules Restored | Test Subsections Added |
+|-------------|--------|----------------|---------------|--------------------|------------------|------------------------|
+| hub_middleware | Updated | Design System, Architecture Principle | Payment, Billing | Legacy Auth | Activities | User, Notification |
+| hc_adapter | Created | (all sections) | (all modules) | - | - | (all modules) |
 
 ### BUG.md Sync
-| Application | Status | Modules Added | Warnings |
-|-------------|--------|---------------|----------|
-| hub_middleware | Updated | Payment, Billing | - |
-| hc_adapter | Created | (all modules) | - |
+| Application | Status | Modules Added | Modules Deprecated | Modules Restored |
+|-------------|--------|---------------|--------------------|------------------|
+| hub_middleware | Updated | Payment, Billing | Legacy Auth | Activities |
+| hc_adapter | Created | (all modules) | - | - |
 
-### Warnings
-- [hub_middleware/PRD.md] Module "Legacy Auth" exists in PRD.md but not in CLAUDE.md — manual review recommended
+### Deprecation Notes
+- [hub_middleware/PRD.md] Module "Legacy Auth" was removed from CLAUDE.md — soft-deprecated under `# Deprecated Modules` (content preserved).
+- [hub_middleware/PRD.md] Module "Activities" is back in CLAUDE.md — restored from `# Deprecated Modules` to `# System Module`.
 ```
 
 ## PRD.md Template
@@ -412,11 +449,50 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 ---
 ```
 
+## Deprecated Modules Template
+
+When a module is soft-deprecated (present in PRD.md/BUG.md but removed from CLAUDE.md), it is relocated under a single trailing `# Deprecated Modules` section. The original tier is preserved in an italic hint line for later restoration.
+
+**Section skeleton (created on first deprecation, appended to end of file):**
+
+```markdown
+
+---
+
+# Deprecated Modules
+- Modules in this section were present in a prior CLAUDE.md but have since been removed. Content is preserved (not deleted) so that historical user stories, NFRs, constraints, tests, or bug reports remain auditable. If a module returns to CLAUDE.md, the sync skill restores it automatically.
+
+---
+
+## ~~{{Module Name}}~~ [DEPRECATED]
+_Was: System Module_
+
+### User Story
+[v1.0.0]
+... (original content preserved verbatim) ...
+
+---
+```
+
+**Rules for the deprecation move:**
+
+- Only the `## <Module>` heading is rewritten (to `## ~~<Module>~~ [DEPRECATED]`) and a single `_Was: <tier>_` hint line is inserted directly under it. Everything else inside the module block — subsection headings, version tags, text, tables — is moved verbatim.
+- The trailing `---` separator that closes the module block moves with it.
+- If `# Deprecated Modules` already exists, append the block to its end rather than creating a second section.
+- For BUG.md, the same structure applies, but the module body is a single `[v1.0.0]` (or whatever version was already present) followed by any bug entries — move them verbatim.
+
+**Rules for restoration (module returns to CLAUDE.md):**
+
+- Locate the deprecated block by canonical name (strip `~~...~~` and `[DEPRECATED]`).
+- Rewrite the heading back to `## <Module>` and delete the `_Was: <tier>_` hint line.
+- Move the block to the end of the parent section named in the hint (`# System Module` or `# Business Module`).
+- If after restoration `# Deprecated Modules` contains no more module blocks, leave the empty `# Deprecated Modules` section in place — do not delete it (users may want to see that deprecations have historically occurred). Re-running the skill with all modules active leaves it untouched.
+
 ## Important Rules
 
-- **NEVER remove, modify, or delete existing content** in PRD.md or BUG.md. Only add new sections.
-- **NEVER modify existing version tags** (e.g., `[v1.0.0]`). These are immutable.
-- **NEVER modify existing module sections** — only append new modules that are missing.
+- **NEVER delete existing authored content** (user stories, NFRs, constraints, references, tests, bug entries) in PRD.md or BUG.md. When a module is removed from CLAUDE.md, soft-deprecate the module block — do not hard-delete it.
+- **NEVER modify existing version tags** (e.g., `[v1.0.0]`). These are immutable, including when a module is deprecated or restored.
+- **NEVER modify the inner subsections of an existing module** — only the `## <Module>` heading may be rewritten (for deprecation marking or restoration), and only the `_Was: <tier>_` hint line may be inserted or removed by this skill.
 - Preserve all existing content, formatting, and indentation exactly.
 - Application folder names must use `snake_case`.
 - Folders are only created for `# Custom Applications`, not for `# Supporting 3rd Party Applications`.
@@ -426,7 +502,10 @@ When a module exists in CLAUDE.md but not in BUG.md, append this block at the en
 - When adding modules to existing files, maintain the correct order: system modules under `# System Module`, business modules under `# Business Module`.
 - Always include separator lines (`---`) between module sections.
 - New module sections added to existing files use `[v1.0.0]` as the initial version.
-- Modules in PRD.md/BUG.md that don't exist in CLAUDE.md are **never removed** — only flagged as warnings in the summary.
+- Module synchronization is bi-directional with content preservation:
+  - Module added to CLAUDE.md → appended to PRD.md/BUG.md (or restored from `# Deprecated Modules` if a deprecated block with the same canonical name exists).
+  - Module removed from CLAUDE.md → soft-deprecated (heading marked `~~...~~ [DEPRECATED]`, block relocated under `# Deprecated Modules`). Content is never destroyed.
+- Module name matching for deprecation/restoration is by **canonical name only** — strip `~~` strikethrough, `[DEPRECATED]` tag, and surrounding whitespace before comparing against CLAUDE.md entries. Name matching is case-insensitive.
 - If CLAUDE.md has no custom applications defined, report this clearly and stop without making any changes.
 - When inserting `[TODO]` annotations in CLAUDE.md, insert them **immediately above** the `## <Application Name>` heading — never inside the application's content.
 - Do not insert duplicate `[TODO]` annotations. If re-running the skill, check for existing `[TODO]` lines above each application heading and skip if the same issue is already annotated.
