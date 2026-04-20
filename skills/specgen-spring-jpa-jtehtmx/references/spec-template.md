@@ -796,12 +796,11 @@ src/
 │   │       │   │   ├── PaginationRequest.java
 │   │       │   │   ├── PaginatedResult.java
 │   │       │   │   └── (other component view models)
-│   │       │   ├── [If Messaging = yes] messaging/
-│   │       │   │   ├── RabbitMQMessagingConfig.java
-│   │       │   │   ├── RabbitMQPublisher.java
-│   │       │   │   ├── MessageConverterConfig.java
-│   │       │   │   └── consumer/
-│   │       │   │       └── SampleEventConsumer.java
+│   │       │   ├── [If Messaging = yes] messaging/       # INFRASTRUCTURE ONLY — no @RabbitListener here
+│   │       │   │   ├── RabbitMQMessagingConfig.java      #   Exchange/queue/binding declarations
+│   │       │   │   ├── RabbitMQPublisher.java            #   Generic publisher service
+│   │       │   │   ├── MessageConverterConfig.java       #   Jackson2JsonMessageConverter bean
+│   │       │   │   └── (event/command DTOs shared across modules, e.g., OrderExportedEvent.java)
 │   │       │   └── auth/                                 # [If Auth != none]
 │   │       │       ├── [If Auth = Keycloak] AuthService.java
 │   │       │       ├── [If Auth = Keycloak] LoginController.java
@@ -827,8 +826,9 @@ src/
 │   │       │       │   ├── {{Module1}}PageController.java#     Page controller (@Controller)
 │   │       │       │   ├── {{Module1}}ListView.java      #     List page view model
 │   │       │       │   └── {{Module1}}DetailView.java    #     Detail page view model
-│   │       │       └── fragment/
-│   │       │           └── {{Module1}}FragmentController.java # Fragment controller (htmx)
+│   │       │       ├── fragment/
+│   │       │       │   └── {{Module1}}FragmentController.java # Fragment controller (htmx)
+│   │       │       └── [If Messaging = yes] {{Module1}}EventConsumer.java  #  @RabbitListener (MQ inbound adapter — ALWAYS in module's internal/)
 │   │       │
 │   │       ├── {{module2}}/                              # Another module
 │   │       │   └── (same public/internal structure)

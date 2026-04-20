@@ -63,6 +63,11 @@ com.example.app.order/                         <- PUBLIC API (visible to other m
 - `OrderController` — The REST controller is an **inbound adapter**. It accepts
   HTTP requests and delegates to the service interface. It is NOT part of the
   inter-module API.
+- `OrderEventConsumer` *(if Messaging = yes)* — The `@RabbitListener` is also an
+  **inbound adapter** (MQ instead of HTTP) and follows the same rule: it lives in
+  `internal/`, is package-private, and delegates to the module's service interface.
+  It must NEVER be placed under `shared/messaging/` — see `messaging-patterns.md`
+  for the full convention.
 
 ### Why the controller is internal
 

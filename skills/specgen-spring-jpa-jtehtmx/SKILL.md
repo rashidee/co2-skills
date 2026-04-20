@@ -998,6 +998,15 @@ the SPEC.md MUST clearly separate these into distinct sections:
    validator, ACK publisher, forward publisher, queue configuration, domain events,
    `processIncomingMessage()` service method. These are driven by NFRs (NFRHMxxxx).
 
+> **MQ listener placement (mandatory).** Every `@RabbitListener` class generated for a
+> module MUST be placed inside that module's `internal/` package
+> (`{{base}}.{{module}}.internal`), package-private, alongside the page/fragment
+> controllers. Shared messaging infrastructure (`RabbitMQMessagingConfig`,
+> `RabbitMQPublisher`, `MessageConverterConfig`, cross-module event/command DTOs)
+> lives in `shared/messaging/`, but that package must contain **no** `@RabbitListener`
+> classes. See `references/messaging-patterns.md` § "Consumer Service (module-internal)"
+> for the canonical pattern.
+
 This separation enables the implementation orchestrator to track and implement each
 concern independently. A module may have its UI layer fully implemented while its
 messaging pipeline remains pending (e.g., waiting for an upstream adapter). The

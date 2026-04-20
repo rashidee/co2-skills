@@ -113,15 +113,39 @@ spring:
 
 ## Package Structure
 
+Messaging artifacts split across two locations to honor Spring Modulith boundaries:
+
 ```
 shared/
-└── messaging/
+└── messaging/                            # Shared infrastructure ONLY (no business logic)
     ├── RabbitMQMessagingConfig.java      # Exchange, queue, binding declarations
     ├── RabbitMQPublisher.java            # Generic publisher service
-    ├── MessageConverter.java             # Jackson2JsonMessageConverter bean
-    └── consumer/
-        └── SampleEventConsumer.java      # Sample @RabbitListener consumer
+    ├── MessageConverterConfig.java       # Jackson2JsonMessageConverter bean
+    ├── OrderExportedEvent.java           # Inter-system event/command DTOs
+    └── InventorySyncCommand.java
+
+{{module}}/                               # Module — PUBLIC API
+└── internal/                             # INTERNAL — hidden from other modules
+    ├── {{Module}}ServiceImpl.java
+    ├── ...
+    └── {{Module}}EventConsumer.java      # @RabbitListener — MUST live here, NOT in shared/
 ```
+
+> **Convention — MQ listeners are module-internal.**
+> Every `@RabbitListener` (and any other inbound MQ adapter) is a module-specific
+> **inbound adapter** — it belongs inside the owning module's `internal/` package, never
+> under `shared/messaging/consumer/` or any other shared location. This mirrors how
+> page/fragment controllers are placed: inside `internal/`. The shared `messaging/`
+> package holds infrastructure beans only (config, publisher, converter, cross-module
+> DTOs) — it must contain **no** `@RabbitListener` classes.
+>
+> Reasoning:
+> - A consumer that calls `OrderService` belongs to the `order` module's bounded context.
+> - Placing it in `shared/` lets it bypass module boundaries and inject any `*ServiceImpl`,
+>   silently breaking Spring Modulith encapsulation and making `ApplicationModules.verify()`
+>   results misleading.
+> - Module-internal placement keeps the listener, the service it drives, and the entity
+>   it persists colocated and independently verifiable.
 
 ---
 
@@ -317,11 +341,16 @@ public record InventorySyncCommand(
 
 ---
 
-## Consumer Service
+## Consumer Service (module-internal)
+
+The consumer lives inside the owning module's `internal/` package — **never** in
+`shared/messaging/`. Use package-private visibility (no `public` modifier) so Spring
+Modulith treats it as internal-only.
 
 ```java
-package {{BASE_PACKAGE}}.shared.messaging.consumer;
+package {{BASE_PACKAGE}}.order.internal;
 
+import {{BASE_PACKAGE}}.order.OrderService;
 import {{BASE_PACKAGE}}.shared.messaging.OrderExportedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -331,20 +360,34 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SampleEventConsumer {
+class OrderEventConsumer {
+
+    private final OrderService orderService;
 
     /**
      * Listens to order events from the topic exchange.
      * The queue "app.events.order" is bound with routing key pattern "order.*".
+     *
+     * Inbound adapter — adapts a RabbitMQ message into a call against the module's
+     * public service interface (OrderService). Same role as a page/fragment controller,
+     * but for MQ instead of HTTP.
      */
     @RabbitListener(queues = "app.events.order")
-    public void handleOrderEvent(OrderExportedEvent event) {
+    void handleOrderEvent(OrderExportedEvent event) {
         log.info("Received order exported event: orderId={}, customerId={}",
                 event.orderId(), event.customerId());
-        // Process the event — e.g., notify downstream systems, update read models, etc.
+        // Delegate to the module's public service interface.
+        // Do NOT inject another module's *ServiceImpl or repository here.
     }
 }
 ```
+
+> **Placement rule** — for every `@RabbitListener` you generate:
+> 1. Identify the **bounded context** it serves (which module's data/logic it drives).
+> 2. Put the class in `{{BASE_PACKAGE}}.<that-module>.internal`.
+> 3. Make it package-private (drop `public`) so other modules cannot reference it.
+> 4. Inject only that module's own components or other modules' **public service interfaces** — never another module's `*ServiceImpl`, `*Repository`, or `*Entity`.
+> 5. If a single message would fan out work across multiple modules, publish a Spring Modulith `ApplicationEvent` from the listener and let each module react via `@ApplicationModuleListener` in its own `internal/` package.
 
 ---
 

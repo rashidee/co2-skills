@@ -328,12 +328,11 @@ src/
 │   │       │   │   └── AuditAwareImpl.java
 │   │       │   ├── dto/
 │   │       │   │   └── PageResponse.java                 # Optional simplified page DTO
-│   │       │   └── [If Messaging = yes] messaging/
-│   │       │       ├── RabbitMQMessagingConfig.java
-│   │       │       ├── RabbitMQPublisher.java
-│   │       │       ├── MessageConverterConfig.java
-│   │       │       └── consumer/
-│   │       │           └── SampleEventConsumer.java
+│   │       │   └── [If Messaging = yes] messaging/       # INFRASTRUCTURE ONLY — no @RabbitListener here
+│   │       │       ├── RabbitMQMessagingConfig.java      #   Exchange/queue/binding declarations
+│   │       │       ├── RabbitMQPublisher.java            #   Generic publisher service
+│   │       │       ├── MessageConverterConfig.java       #   Jackson2JsonMessageConverter bean
+│   │       │       └── (event/command DTOs shared across modules, e.g., OrderExportedEvent.java)
 │   │       │
 │   │       ├── {{module1}}/                              # Module — PUBLIC API
 │   │       │   ├── {{Module1}}Service.java               #   Public service interface
@@ -348,7 +347,8 @@ src/
 │   │       │       ├── [If Database = PostgreSQL/MySQL] {{Module1}}Repository.java
 │   │       │       ├── [If Database = PostgreSQL/MySQL] {{Module1}}Entity.java
 │   │       │       ├── {{Module1}}Mapper.java            #     MapStruct mapper
-│   │       │       └── {{Module1}}Controller.java        #     @RestController
+│   │       │       ├── {{Module1}}Controller.java        #     @RestController (HTTP inbound adapter)
+│   │       │       └── [If Messaging = yes] {{Module1}}EventConsumer.java  #  @RabbitListener (MQ inbound adapter — ALWAYS in module's internal/)
 │   │       │
 │   │       ├── {{module2}}/
 │   │       │   └── (same public/internal structure)
