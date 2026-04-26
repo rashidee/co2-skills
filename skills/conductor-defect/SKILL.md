@@ -685,11 +685,12 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 3. **Append to top-of-file traceability comment (if present)** — If the modified file
    already carries a top-of-file traceability comment (from `conductor-feature-develop`'s
    code-level traceability rule), append the `[BUG-XXX]` code to its `Bug fixes:` line,
-   creating the line if it does not yet exist:
+   creating the line if it does not yet exist. Use the `USHM#####` / `NFRHM####` /
+   `CONSHM###` / `REFHM####` codes already present in the file — do NOT change them:
    ```java
    /**
-    * Implements: US0001234, US0001237
-    * NFR: NFR000045
+    * Implements: USHM00003, USHM00006
+    * NFR: NFRHM0003
     * Bug fixes: [BUG-024]
     */
    public class CorridorService { ... }
