@@ -684,6 +684,29 @@ Follow the module SPEC.md to implement, in order:
 7. **Message listeners** — from SPEC.md messaging section (if applicable)
 8. **Scheduled jobs** — from SPEC.md scheduling section (if applicable)
 
+**Traceability comment (MANDATORY)** — Every newly created source file (entity, repository,
+service, mapper, controller, view template, listener, scheduled job, configuration class)
+MUST begin with a top-of-file comment listing the requirement codes it implements. Extract
+the codes from the module's `SPEC.md` traceability section. Include any of the following
+that apply: `USxxxxxxx` (User Stories), `NFRxxxxxx` (Non-Functional Requirements),
+`CSxxxxxxx` (Constraints), `RFxxxxxxx` (References). Use the language's native doc-comment
+style — Javadoc / PHPDoc / JSDoc (`/** ... */`) for code files, `{{-- ... --}}` for Blade,
+`@* ... *@` for JTE, `<!-- ... -->` for HTML, `# ...` for YAML / `.env` / `.properties`.
+
+Example (Java service):
+```java
+/**
+ * Implements: US0001234, US0001237
+ * NFR: NFR000045 (audit logging), NFR000051 (pagination)
+ * Constraints: CS0000012
+ */
+public class EmployerService { ... }
+```
+
+This makes `git blame`, IDE symbol search, and downstream audits trace every line back to
+PRD.md directly — IMPLEMENTATION_MODULE.md is a transient tracking file and is not the
+system of record for traceability.
+
 After each major component, update IMPLEMENTATION_MODULE.md checklist.
 
 #### Step 3.4: Implement Playwright E2E Tests
@@ -758,11 +781,21 @@ database connection for direct seeding, MQ host for publishing, mail server URL)
 import them from `helpers/config.ts` — never hardcode them inline in the spec. This applies
 to ALL spec files, not just those with dedicated helper modules.
 
+**Test naming convention (MANDATORY)** — Every test name MUST be prefixed with the
+`TCxxxxxxx` test case code from TEST_SPEC.md so test output (CI logs, reports) is traceable
+to TEST_SPEC.md without consulting IMPLEMENTATION_MODULE.md. Format:
+`'TCxxxxxxx: <scenario-name>'`. Each test MUST also carry a JSDoc traceability comment
+listing the User Stories and NFRs it covers (and any `[BUG-XXX]` regression coverage).
+
 Pattern for test file:
 ```typescript
 import { test, expect } from '@playwright/test';
 import { DB_URI, MQ_URL } from '../helpers/config';  // import what this spec needs
 
+/**
+ * Module: <Module Name>
+ * Implements tests: TC0000123, TC0000124, TC0000125
+ */
 test.describe('<Module Name>', () => {
   // Data seeding (runs once before all tests in this module)
   test.beforeAll(async () => {
@@ -772,7 +805,12 @@ test.describe('<Module Name>', () => {
 
   // DO NOT add afterAll cleanup — data persists for dependent modules
 
-  test('<scenario-id>: <scenario-name>', async ({ page }) => {
+  /**
+   * Covers: US0001234, US0001237
+   * NFR: NFR000045
+   * Bug regression: [BUG-024]   // include only if scenario covers a previously-fixed bug
+   */
+  test('TC0000123: <scenario-name>', async ({ page }) => {
     // Steps from TEST_SPEC.md scenario
   });
 });
@@ -1263,3 +1301,20 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     relaxed binding maps to camelCase Java fields automatically. See SPECIFICATION.md
     section "Application-Specific Configuration (`app:` namespace)" for the authoritative
     rules and examples.
+
+19. **Code-level traceability is MANDATORY** — Every newly created source file (entity,
+    repository, service, mapper, controller, view template, listener, scheduled job,
+    configuration class, test file) MUST carry a top-of-file comment listing the
+    requirement codes it implements: `USxxxxxxx`, `NFRxxxxxx`, `CSxxxxxxx`, `RFxxxxxxx`,
+    and (for test files) `TCxxxxxxx`. Extract the codes from the module's `SPEC.md` and
+    `TEST_SPEC.md` traceability sections. Use the language's native doc-comment style
+    (Javadoc / PHPDoc / JSDoc / `{{-- --}}` / `@* *@` / `<!-- -->` / `#`). Test names
+    MUST be prefixed with the `TCxxxxxxx` code (e.g., `'TC0000123: User can create an
+    employer'`) so test output is traceable to TEST_SPEC.md without consulting
+    IMPLEMENTATION_MODULE.md.
+
+    **Why**: `git blame`, IDE symbol search, and downstream audits must trace every line
+    of code back to a PRD.md requirement directly. IMPLEMENTATION_MODULE.md is a
+    transient tracking file and is not the system of record for traceability — the
+    source code itself must be self-describing. This rule applies to fresh creation; bug
+    fixes layer additional `[BUG-XXX]` markers as defined by `conductor-defect`.
