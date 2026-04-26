@@ -661,7 +661,41 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 #### Step 2.5: Apply the Fix
 
 1. Make the code changes as planned in BUG_FIX_PLAN.md
-2. Update BUG_FIX_PLAN.md: check off completed items, log changes in the Fix Log section
+2. **Annotate the fix in source (MANDATORY)** — On EACH method, block, or template region
+   modified by the fix, leave a `[BUG-XXX]` marker comment using the language's native
+   comment style:
+   - Java method: prepend a Javadoc line `* [BUG-XXX] <one-line description>` (or extend
+     the existing Javadoc if the method already has one)
+   - PHP / TypeScript / JavaScript: same pattern with PHPDoc / JSDoc
+   - Blade template: `{{-- [BUG-XXX] <description> --}}` immediately above the changed block
+   - JTE template: `@* [BUG-XXX] <description> *@` immediately above the changed block
+   - HTML / SQL: `<!-- [BUG-XXX] <description> -->` / `-- [BUG-XXX] <description>`
+   - YAML / `.env` / `.properties`: `# [BUG-XXX] <description>` above the changed key
+
+   Example (Java service method):
+   ```java
+   /**
+    * [BUG-024] Trim leading whitespace from corridor code before lookup.
+    */
+   public Corridor findByCode(String code) { ... }
+   ```
+
+   The marker enables `git blame` and IDE search to trace any modified line back to
+   BUG.md without consulting BUG_FIX_PLAN.md.
+3. **Append to top-of-file traceability comment (if present)** — If the modified file
+   already carries a top-of-file traceability comment (from `conductor-feature-develop`'s
+   code-level traceability rule), append the `[BUG-XXX]` code to its `Bug fixes:` line,
+   creating the line if it does not yet exist. Use the `USHM#####` / `NFRHM####` /
+   `CONSHM###` / `REFHM####` codes already present in the file — do NOT change them:
+   ```java
+   /**
+    * Implements: USHM00003, USHM00006
+    * NFR: NFRHM0003
+    * Bug fixes: [BUG-024]
+    */
+   public class CorridorService { ... }
+   ```
+4. Update BUG_FIX_PLAN.md: check off completed items, log changes in the Fix Log section
 
 #### Step 2.6: Verify the Fix
 
@@ -840,3 +874,16 @@ After all bugs have been processed (every bug has a terminal status):
     `@ConfigurationProperties` prefix, any `@Value` references, and any tests that use
     `@TestPropertySource` or `@SpringBootTest(properties = ...)`. See SPECIFICATION.md
     section "Application-Specific Configuration (`app:` namespace)" for the rules.
+
+15. **Code-level bug traceability is MANDATORY** — Every method, block, or template region
+    modified by a bug fix MUST carry a `[BUG-XXX]` marker comment using the language's
+    native comment style (Javadoc / PHPDoc / JSDoc / `{{-- --}}` / `@* *@` / `<!-- -->` /
+    `#`). When a modified file already carries a top-of-file traceability comment from
+    `conductor-feature-develop`, append the `[BUG-XXX]` code to its `Bug fixes:` line
+    (creating the line if it does not yet exist). See Step 2.5 for the exact comment
+    formats per language.
+
+    **Why**: `git blame` and IDE search must surface the originating bug for any fix line
+    directly, without consulting BUG_FIX_PLAN.md (which is a transient tracking file).
+    PRD.md's `### Bug` section captures **what** was fixed; the in-source `[BUG-XXX]`
+    marker captures **where** — both are required for end-to-end traceability.

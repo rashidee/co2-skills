@@ -684,6 +684,41 @@ Follow the module SPEC.md to implement, in order:
 7. **Message listeners** — from SPEC.md messaging section (if applicable)
 8. **Scheduled jobs** — from SPEC.md scheduling section (if applicable)
 
+**Traceability comment (MANDATORY)** — Every newly created source file (entity, repository,
+service, mapper, controller, view template, listener, scheduled job, configuration class)
+MUST begin with a top-of-file comment listing the requirement codes it implements.
+Extract the codes verbatim from the module's `SPEC.md` traceability section. Use the
+9-character codes emitted by `util-ustagger` — DO NOT invent or reformat the codes:
+
+| Category | Pattern | Example (`HM` initials) |
+|---|---|---|
+| User Story | `US<II><5-digit#>` | `USHM00003` |
+| Non-Functional Requirement | `NFR<II><4-digit#>` | `NFRHM0003` |
+| Constraint | `CONS<II><3-digit#>` | `CONSHM003` |
+| Reference | `REF<II><4-digit#>` | `REFHM0003` |
+
+Where `<II>` is the application's 2-letter initials (e.g., `HM` for Hub Middleware).
+The actual codes in any given file come from the module's `SPEC.md` traceability section,
+NOT from this template — never invent codes that do not appear in PRD.md.
+
+Use the language's native doc-comment style — Javadoc / PHPDoc / JSDoc (`/** ... */`)
+for code files, `{{-- ... --}}` for Blade, `@* ... *@` for JTE, `<!-- ... -->` for HTML,
+`# ...` for YAML / `.env` / `.properties`.
+
+Example (Java service for the Employer module of an app with initials `HM`):
+```java
+/**
+ * Implements: USHM00003, USHM00006
+ * NFR: NFRHM0003 (audit logging), NFRHM0006 (pagination)
+ * Constraints: CONSHM003
+ */
+public class EmployerService { ... }
+```
+
+This makes `git blame`, IDE symbol search, and downstream audits trace every line back to
+PRD.md directly — IMPLEMENTATION_MODULE.md is a transient tracking file and is not the
+system of record for traceability.
+
 After each major component, update IMPLEMENTATION_MODULE.md checklist.
 
 #### Step 3.4: Implement Playwright E2E Tests
@@ -758,11 +793,32 @@ database connection for direct seeding, MQ host for publishing, mail server URL)
 import them from `helpers/config.ts` — never hardcode them inline in the spec. This applies
 to ALL spec files, not just those with dedicated helper modules.
 
+**Test naming convention (MANDATORY)** — Every test name MUST be prefixed with the
+**scenario ID from TEST_SPEC.md Section 4** so test output (CI logs, reports) is traceable
+to TEST_SPEC.md without consulting IMPLEMENTATION_MODULE.md. The scenario IDs are emitted
+by `testgen-functional` and follow the pattern `<TYPE>-<MODULE-PREFIX>-<NNN>`, where
+`<TYPE>` is one of `NAV`, `SRCH`, `VIEW`, `CRUD`, `VAL`, `MAP`, `TOG`, `HIST`, `RAW`,
+`PAGE`, `REG`, or `TSTI`, and `<MODULE-PREFIX>` is the 3-letter module prefix from the
+module model (e.g., `LIN` for Location Information, `EMP` for Employer, `QUO` for Quota).
+
+Format: `'<scenario-id>: <scenario-name>'` — copied verbatim from TEST_SPEC.md Section 4.
+Do NOT invent IDs; do NOT collapse or reformat them.
+
+Each test MUST also carry a JSDoc traceability comment listing the source codes from
+the scenario's **Source** field in TEST_SPEC.md — these are the same `USHM#####`,
+`NFRHM####`, `CONSHM###`, `TSTHM####`, and `[BUG-XXX]` codes that link the scenario back
+to PRD.md. Copy them verbatim.
+
 Pattern for test file:
 ```typescript
 import { test, expect } from '@playwright/test';
 import { DB_URI, MQ_URL } from '../helpers/config';  // import what this spec needs
 
+/**
+ * Module: <Module Name>
+ * Implements scenarios: NAV-LIN-001, SRCH-LIN-001, CRUD-LIN-001, CRUD-LIN-002
+ *   (copied verbatim from TEST_SPEC.md Section 4)
+ */
 test.describe('<Module Name>', () => {
   // Data seeding (runs once before all tests in this module)
   test.beforeAll(async () => {
@@ -772,8 +828,13 @@ test.describe('<Module Name>', () => {
 
   // DO NOT add afterAll cleanup — data persists for dependent modules
 
-  test('<scenario-id>: <scenario-name>', async ({ page }) => {
-    // Steps from TEST_SPEC.md scenario
+  /**
+   * Covers: USHM00003, USHM00006
+   * NFR: NFRHM0003
+   * Bug regression: [BUG-024]   // include only if scenario covers a previously-fixed bug
+   */
+  test('NAV-LIN-001: Navigate to Location Information screen', async ({ page }) => {
+    // Steps from the matching TEST_SPEC.md Section 4 scenario
   });
 });
 ```
@@ -1263,3 +1324,36 @@ When implementing a module (Step 3.2 — Analyze Module Resources):
     relaxed binding maps to camelCase Java fields automatically. See SPECIFICATION.md
     section "Application-Specific Configuration (`app:` namespace)" for the authoritative
     rules and examples.
+
+19. **Code-level traceability is MANDATORY** — Every newly created source file (entity,
+    repository, service, mapper, controller, view template, listener, scheduled job,
+    configuration class, test file) MUST carry a top-of-file comment listing the
+    requirement codes it implements. The codes follow the formats emitted by
+    `util-ustagger` and `testgen-functional` — extract them verbatim from the module's
+    `SPEC.md` and `TEST_SPEC.md` traceability sections, never invent or reformat:
+
+    | Source | Code Pattern | Example |
+    |---|---|---|
+    | PRD.md → User Story | `US<II><5-digit#>` | `USHM00003` |
+    | PRD.md → NFR | `NFR<II><4-digit#>` | `NFRHM0003` |
+    | PRD.md → Constraint | `CONS<II><3-digit#>` | `CONSHM003` |
+    | PRD.md → Reference | `REF<II><4-digit#>` | `REFHM0003` |
+    | PRD.md → Test instruction | `TST<II><4-digit#>` | `TSTHM0003` |
+    | TEST_SPEC.md → Scenario | `<TYPE>-<MODULE-PREFIX>-<NNN>` | `NAV-LIN-001`, `CRUD-EMP-002`, `REG-QUO-001` |
+
+    `<II>` is the application's 2-letter initials. `<TYPE>` is one of `NAV`, `SRCH`,
+    `VIEW`, `CRUD`, `VAL`, `MAP`, `TOG`, `HIST`, `RAW`, `PAGE`, `REG`, `TSTI`.
+    `<MODULE-PREFIX>` is the 3-letter module prefix from the module model.
+
+    Use the language's native doc-comment style (Javadoc / PHPDoc / JSDoc / `{{-- --}}` /
+    `@* *@` / `<!-- -->` / `#`). Test names MUST be prefixed with the scenario ID copied
+    verbatim from TEST_SPEC.md Section 4 (e.g., `'NAV-LIN-001: Navigate to Location
+    Information screen'`) so test output is traceable to TEST_SPEC.md without consulting
+    IMPLEMENTATION_MODULE.md.
+
+    **Why**: `git blame`, IDE symbol search, and downstream audits must trace every line
+    of code back to a PRD.md requirement or a TEST_SPEC.md scenario directly.
+    IMPLEMENTATION_MODULE.md is a transient tracking file and is not the system of record
+    for traceability — the source code itself must be self-describing. This rule applies
+    to fresh creation; bug fixes layer additional `[BUG-XXX]` markers as defined by
+    `conductor-defect`.
