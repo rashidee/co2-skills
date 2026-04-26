@@ -235,6 +235,20 @@ developer's machine. Every shell command MUST use the values from CLAUDE.md.
 
 ## PRD.md Extended Sections
 
+### Design System Awareness
+
+If PRD.md contains a `# Design System` section (or references a `DESIGN_SYSTEM.md` file), be aware that design system changes between versions may affect both phases:
+- **Phase A (Feature Development)**: The design system is the **authoritative source** for any new UI implemented in the target version (color tokens, typography, spacing, components, accessibility rules). conductor-feature-develop uses it when generating Blade/JTE/React UI code for new modules and features.
+- **Phase B (Bug Fixing)**: The design system serves as the **visual oracle** when fixing UI bugs — expected colors, spacing, focus states, and component variants are validated against the design system, not just the mockups. conductor-defect uses it to determine whether a reported visual deviation is in fact a bug.
+- If the design system has changed between the previous version and the target version (e.g., new color palette, updated typography scale, revised component variants), flag affected modules — existing UI may need refactoring even if its functional behavior is unchanged. Note these design system changes in the Phase A pre-flight summary.
+
+### Architecture Principle Awareness
+
+If PRD.md contains an `# Architecture Principle` section, be aware that architecture principle changes between versions may affect both phases and are **potentially breaking**:
+- **Phase A (Feature Development)**: Architecture principles act as **implementation constraints** for new modules and features. conductor-feature-develop uses them to choose database type (relational vs nosql), framework stack, communication patterns (event-driven, message-driven), and module boundaries (stateless, monolithic-modular, etc.).
+- **Phase B (Bug Fixing)**: Architecture principles act as a **validation oracle** — bug fixes must not violate them. For example, a fix that introduces direct cross-module repository access violates a "monolithic with modular architecture" principle and must be reworked. conductor-defect uses them to assess fix correctness beyond just "the symptom is gone".
+- If architecture principles have changed between the previous version and the target version (e.g., a new "stateless" requirement, a switch from synchronous to event-driven inter-module communication), treat this as a **potentially breaking change**. Affected modules may require refactoring during Phase A, and Phase B fixes must align with the **new** principles, not the old ones.
+
 ### High Level Process Flow Awareness
 
 If PRD.md contains a `# High Level Process Flow` section, be aware that process flow changes between versions may affect both bug fixing and feature development:

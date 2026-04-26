@@ -283,6 +283,40 @@ entries as supplementary requirements:
 This ensures that when an application is redeveloped from scratch, previously reported bugs
 do not reappear in the new implementation.
 
+#### PRD.md Extended Sections Awareness
+
+PRD.md may contain three extended sections that influence how downstream skills are invoked
+and what context they receive. Detect each section's presence at the **start of Phase 1** and
+record the result for use throughout the version loop:
+
+- **`# Design System`** — Already consumed by Step 1.5 (Infer Design System) for routing
+  decisions and resolved-file-path propagation to mockgen-* and specgen-*. No additional action
+  needed; Step 1.5 is the canonical handler.
+- **`# Architecture Principle`** — Already consumed by Step 1.3 (Infer Database Type) and
+  Step 1.7 (Infer Technology Stack) as the **primary signal** for routing decisions. Sub-skills
+  (modelgen-*, specgen-*) read it directly from PRD.md.
+- **`# High Level Process Flow`** — **Detect presence here** so all downstream skills are aware:
+  1. Check PRD.md for a `# High Level Process Flow` section. If present, record:
+     - The list of named flows (e.g., "Country submission flow", "Worker registration flow")
+     - Any external file references (e.g., `[FLOW_DIAGRAM.md](reference/FLOW_DIAGRAM.md)`)
+     - Resolve any referenced file paths relative to PRD.md
+  2. When invoking sub-skills in subsequent steps, pass this awareness as context so each skill
+     knows process flows are available and should be consulted:
+     - **modelgen-\*** uses flows to identify entities/documents that participate in messaging
+     - **specgen-\*** uses flows as the blueprint for service-layer methods, queue topology, and
+       message consumer/publisher design
+     - **mockgen-\*** uses flows to determine screen-to-screen navigation and async UI states
+     - **testgen-functional** uses flows to design end-to-end test scenarios that exercise each
+       flow step in order
+  3. If absent, sub-skills fall back to deriving messaging behavior from individual user stories
+     (existing behavior).
+
+Record the detection result (Design System: yes/no, Architecture Principle: yes/no, Process
+Flow: yes/no + flow names) in your working memory for the duration of the run. This awareness
+does NOT replace each sub-skill's own reading of PRD.md — every sub-skill reads PRD.md directly,
+but knowing which sections are present helps the orchestrator detect missing pre-requisites
+early and surface them to the user.
+
 #### Step 1.1: Resolve Application Folder
 
 1. Match the `<application>` argument against root-level folders (same logic as Input Resolution)

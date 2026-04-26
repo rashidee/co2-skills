@@ -259,6 +259,19 @@ from CLAUDE.md.
 
 During implementation, check PRD.md for the following extended sections and use them as high-level context:
 
+### Design System
+
+If PRD.md contains a `# Design System` section, read it and any file it references (e.g., `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`) before implementing **any UI module** (Blade views, JTE templates, React components, etc.). Treat the design system as the **authoritative source** for code-level styling:
+
+- **Color tokens, typography, spacing, radii, shadows** — apply directly in Tailwind config, CSS variables, or MUI theme. Do not invent new values.
+- **Component patterns** — buttons, forms, tables, dialogs, alerts must match the design system's visual rules and accessibility behavior.
+- **Branding** — logos, favicons, and brand voice must be applied consistently across all rendered views.
+- **Accessibility rules** — WCAG level, contrast ratios, focus states, keyboard navigation requirements declared in the design system are non-negotiable.
+
+**Conflict resolution**: If `SPECIFICATION.md`'s "Design System Integration" subsection contradicts the PRD.md design system file (e.g., different color values, different component variants), the **PRD.md design system file wins**. Flag the discrepancy for human review and proceed with the design system file.
+
+If absent, fall back to `SPECIFICATION.md`'s design system guidance and CLAUDE.md's CSS framework declaration (existing behavior).
+
 ### Architecture Principle
 
 If PRD.md contains an `# Architecture Principle` section, read it and use as implementation constraints:
