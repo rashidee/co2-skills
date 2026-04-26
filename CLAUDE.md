@@ -67,6 +67,7 @@
     - specgen-spring-jpa-jtehtmx: Generates Spring Boot 3 web application technical specification with JTE, Tailwind and htmx. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-spring-jpa-restapi: Generates Spring Boot 3 REST API technical specification. (Prerequisite: PRD.md, modelgen-*)
     - specgen-ts-cli: Generates Node.js CLI application technical specification with TypeScript, Commander.js, tsup, and @yao-pkg/pkg for cross-platform binary packaging. (Prerequisite: PRD.md)
+    - specgen-sdk-java: Generates Java SDK library technical specification packaged as a Multi-Release fat JAR via Maven, supporting JDK 8 baseline plus JDK 11+ overlay. Uses OkHttp as the sole runtime third-party dependency; JSON, retry, and builders are hand-coded against the JDK. Scans PRD.md for the upstream Swagger UI URL or OpenAPI spec to drive method names, models, and URL constants. (Prerequisite: PRD.md)
     - specgen-react-mui: Generates React 19 SPA technical specification with TypeScript 5, Vite 6, Material UI v6, React Router v7, TanStack Query v5, Zustand v5. (Prerequisite: PRD.md, modelgen-*, mockgen-tailwind)
     - specgen-ts-cli: Generates Node.js CLI application technical specification with TypeScript, Commander.js, tsup, and @yao-pkg/pkg. (Prerequisite: PRD.md, modelgen-*)
     - testgen-functional: Generates Playwright E2E test plan and per-module test specifications as Markdown blueprints. (Prerequisite: PRD.md, modelgen-*, specgen-*, mockgen-tailwind)
