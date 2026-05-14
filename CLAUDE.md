@@ -54,6 +54,7 @@
 - The project folder structure is as follows:
   - .claude: Folder containing all the skills and tools for the compound-context workflow
   - skills: Folder containing Claude skills for compound-context methodology
+    - util-projectinit: Bootstraps a new CO2 project from a free-form prompt or markdown brief by generating root-level CLAUDE.md, DEVTOOL.md and ENVIRONMENT.md skeletons. Infers infrastructure, custom applications, system/business modules and the local toolchain. Non-destructive — refuses to overwrite if CLAUDE.md already exists. (Prerequisite: prompt OR markdown brief)
     - util-ustagger: Tags untagged User Stories, NFRs, Constraints and References in PRD.md with unique 9-character ID codes. (Prerequisite: PRD.md)
     - util-usanalyzer: Analyzes PRD.md for quality issues such as incomplete stories, bad references, contradictions and duplicates. (Prerequisite: PRD.md)
     - util-projectsync: Validates dependencies and deployment environments, then syncs project folder structure, PRD.md, and BUG.md files based on applications and modules defined in CLAUDE.md. (Prerequisite: CLAUDE.md)
