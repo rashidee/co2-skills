@@ -185,9 +185,8 @@ Example skill invocation for technical specification generation:
 /specgen-spring-jpa-restapi <app_name> ## For generating Spring Boot 3 REST API technical specification.
 /specgen-laravel-eloquent-bladehtmx <app_name> ## For generating Laravel 12 web application technical specification with Blade, Tailwind and htmx
 /specgen-react-mui <app_name> ## For generating React 19 SPA technical specification with TypeScript, Vite, Material UI and more.
+/specgen-flutter-riverpod <app_name> ## For generating Flutter 3 mobile application technical specification with Riverpod, Hive, Dio, go_router and Firebase Messaging.
 /specgen-ts-cli <app_name> ## For generating Node.js CLI application technical specification with TypeScript, Commander.js and tsup.
-/specgen-react-mui <app_name> ## For generating React 19 SPA technical specification with TypeScript, Vite, Material UI.
-/specgen-ts-cli <app_name> ## For generating Node.js CLI application technical specification with TypeScript, Commander.js.
 ~~~
 
 - Input:
@@ -498,13 +497,14 @@ This is the **highest impact area** for contribution. The CO2 workflow is design
 | `specgen-spring-jpa-restapi` | Spring Boot 3 REST API |
 | `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
 | `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
+| `specgen-flutter-riverpod` | Flutter 3 + Dart 3 + Riverpod 2 + Hive 2 + Dio 5 + go_router 14 + Firebase Messaging |
 | `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
 
 We are looking for contributors to create new `specgen-*` skills for other technology stacks, such as:
 
 - **Backend**: Django, FastAPI, Express.js, NestJS, ASP.NET Core, Ruby on Rails, Phoenix (Elixir), Go (Gin/Echo/Fiber)
 - **Frontend**: Next.js, Nuxt.js, SvelteKit, Remix, Astro
-- **Mobile**: Flutter, React Native, Swift (iOS), Kotlin (Android)
+- **Mobile**: React Native, Swift (iOS), Kotlin (Android)
 - **Full-stack**: T3 Stack, RedwoodJS, Adonis.js, Meteor
 
 Each `specgen-*` skill takes the same inputs (PRD.md, data models, HTML mockups) and produces a `SPECIFICATION.md` summary and per-module `SPEC.md` files tailored to the target stack. If you are experienced in a technology stack not listed above, your contribution would help the community generate specifications for that stack.
