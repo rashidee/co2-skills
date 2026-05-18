@@ -39,22 +39,25 @@ co2-skills/
 │       └── ...              # All installed skills mirror skills/ structure
 ├── .claude-plugin/          # Plugin manifest for /plugin install
 ├── skills/                  # Canonical source for all CO2 skills
-│   ├── util-ustagger/
-│   ├── util-usanalyzer/
+│   ├── util-projectinit/
 │   ├── util-projectsync/
 │   ├── util-preparek8senv/
-│   ├── util-modulesync/
+│   ├── util-ustagger/
+│   ├── util-usanalyzer/
 │   ├── modelgen-relational/
 │   ├── modelgen-nosql/
 │   ├── mockgen-tailwind/
+│   ├── mockgen-shadcn/
 │   ├── specgen-spring-jpa-jtehtmx/
 │   ├── specgen-spring-jpa-restapi/
 │   ├── specgen-laravel-eloquent-bladehtmx/
 │   ├── specgen-react-mui/
+│   ├── specgen-flutter-riverpod/
 │   ├── specgen-ts-cli/
+│   ├── specgen-sdk-java/
 │   ├── testgen-functional/
-│   ├── conductor-feature-prepare/
 │   ├── depgen-k8s/
+│   ├── conductor-feature-prepare/
 │   ├── conductor-feature-develop/
 │   ├── conductor-defect/
 │   └── conductor-upgrade-version/
@@ -80,7 +83,7 @@ Every skill belongs to one of the following families. If your contribution does 
 
 | Prefix | CO2 Phase | Purpose | Example Invocation |
 |---|---|---|---|
-| `util-` | Setup & Validation | Validate, tag, sync context files, and prepare infrastructure | `/util-projectsync`, `/util-preparek8senv` |
+| `util-` | Setup & Validation | Bootstrap, validate, tag, sync context files, and prepare infrastructure | `/util-projectinit`, `/util-projectsync`, `/util-preparek8senv` |
 | `modelgen-` | Artifact Generation | Generate domain data models from PRD.md | `/modelgen-relational <app_name>` |
 | `mockgen-` | Artifact Generation | Generate HTML UI mockup screens | `/mockgen-tailwind <app_name>` |
 | `specgen-` | Artifact Generation | Generate stack-specific technical specifications | `/specgen-spring-jpa-jtehtmx <app_name>` |
@@ -186,7 +189,9 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 | `specgen-spring-jpa-restapi` | Spring Boot 3 REST API |
 | `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
 | `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
+| `specgen-flutter-riverpod` | Flutter 3 + Dart 3 + Riverpod 2 + Hive 2 + Dio 5 + go_router 14 + Firebase Messaging |
 | `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
+| `specgen-sdk-java` | Java SDK library — Maven Multi-Release fat JAR (JDK 8 baseline + JDK 11+ overlay) + OkHttp |
 
 **Priority gaps — PRs welcome:**
 
@@ -201,7 +206,7 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 | Family | Priority Gaps |
 |---|---|
 | `modelgen-*` | Neo4j (graph), InfluxDB (time-series), Cassandra |
-| `mockgen-*` | Bootstrap 5, Material UI, Ant Design, shadcn/ui |
+| `mockgen-*` | Bootstrap 5, Material UI, Ant Design (`mockgen-tailwind` and `mockgen-shadcn` already supported) |
 | `testgen-*` | Cypress, Selenium, JUnit 5 + Mockito |
 | `depgen-*` | Docker Compose, Terraform, AWS ECS/Fargate, Google Cloud Run, Serverless |
 

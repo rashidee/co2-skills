@@ -50,6 +50,8 @@ To install the plugin:
 
 _This is the initial step where you want to ensure the AI coding agent has all the information needed to work._
 
+> 💡 **Bootstrapping a brand-new project?** Use `/util-projectinit "<one-paragraph brief>"` or `/util-projectinit <brief.md>` to auto-generate skeleton `CLAUDE.md`, `DEVTOOL.md` and `ENVIRONMENT.md` from a free-form prompt or markdown brief. The skill infers 3rd-party infrastructure, custom applications, system/business modules and the local toolchain. It is **non-destructive** — it refuses to overwrite an existing `CLAUDE.md`.
+
 ### CLAUDE.md
 ⚠️ **Shared by the team - Checked in the repository**
   - Project detail
@@ -107,6 +109,7 @@ The skills to invoke the `clean-up` process are:
 
 | Skill            | Example Skill Invocation     | Objective                                       | Output                                                                                                                                                                                                                                                                                                                                                                                     |
 |------------------|------------------------------|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| util-projectinit | /util-projectinit "brief"    | New Project Bootstrap                            | Generates root-level CLAUDE.md, DEVTOOL.md and ENVIRONMENT.md skeletons from a free-form prompt or markdown brief. Infers 3rd-party infrastructure, custom applications, system/business modules and the local toolchain. Non-destructive — refuses to overwrite an existing CLAUDE.md. |
 | util-projectsync | /util-projectsync            | Project Structure Sync & Validation              | Validates dependencies (circular, missing, logical) across all applications in CLAUDE.md. Creates missing application folders, scaffolds PRD.md and BUG.md from templates, and adds missing module sections. Inserts [TODO] annotations in CLAUDE.md for validation failures. |
 | util-usanalyzer  | /util-usanalyzer app1        | Quality Check                                    | Identify any quality issues in the PRD.md such as incomplete stories, bad references, contradictions and duplicates. Output a report with the identified issues and suggestions for improvement. Example: "User Story 1 is incomplete because it does not have the acceptance criteria."                                                                                                    |
 | util-ustagger    | /util-ustagger app1 v1.0.3   | Traceability                                     | Each newly added point in PRD.md will be tagged with a unique 9-character ID code, which can be used for traceability in the later stages of the development. Example: [USL000009], [NFRL000009], [CONL000009], [REFL000009]                                                                                                                                                                |
@@ -150,7 +153,8 @@ _The skill goal is to generate the HTML mockup for each screen for you to **revi
 
 Example skill invocation for HTML mockup generation:
 ~~~bash
-/mockgen-tailwind <app_name> ## For generating HTML mockup using Tailwind CSS
+/mockgen-tailwind <app_name>  ## For generating HTML mockup using Node.js + Express + Tailwind CSS + HTMX
+/mockgen-shadcn <app_name>    ## For generating React + shadcn/ui mockups served via Vite + React Router
 ~~~
 
 - Input:
@@ -499,6 +503,7 @@ This is the **highest impact area** for contribution. The CO2 workflow is design
 | `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
 | `specgen-flutter-riverpod` | Flutter 3 + Dart 3 + Riverpod 2 + Hive 2 + Dio 5 + go_router 14 + Firebase Messaging |
 | `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
+| `specgen-sdk-java` | Java SDK library — Maven Multi-Release fat JAR (JDK 8 baseline + JDK 11+ overlay) + OkHttp |
 
 We are looking for contributors to create new `specgen-*` skills for other technology stacks, such as:
 
@@ -530,7 +535,7 @@ Each `depgen-*` skill takes the same inputs (SPECIFICATION.md, CLAUDE.md, applic
 ## Other Contribution Areas
 
 - **Data Model Skills (`modelgen-*`)** — Support for additional database types (e.g., graph databases like Neo4j, time-series databases like InfluxDB)
-- **Mockup Generator Skills (`mockgen-*`)** — Alternative UI frameworks or design systems (e.g., Bootstrap, Material UI, Ant Design)
+- **Mockup Generator Skills (`mockgen-*`)** — Currently supports `mockgen-tailwind` (Node.js + Express + HTMX) and `mockgen-shadcn` (React + Vite + shadcn/ui). Contributions welcome for alternative UI frameworks or design systems (e.g., Bootstrap, Material UI, Ant Design)
 - **Test Generator Skills (`testgen-*`)** — Support for additional testing frameworks (e.g., Cypress, Selenium)
 - **Bug reports and feature requests** — Open an issue at https://github.com/rashidee/co2-skills/issues
 - **Documentation improvements** — Help improve the README, skill documentation, or examples
