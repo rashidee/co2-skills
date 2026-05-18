@@ -182,16 +182,15 @@ Create a new `PRD.md` inside the application folder using the template below:
 - Populate the `# System Module` section with all system modules from CLAUDE.md
 - Populate the `# Business Module` section with all business modules from CLAUDE.md
 - Each module gets the standard subsections: `### User Story`, `### Non Functional Requirement`, `### Constraint`, `### Reference`, `### Test` — all versioned with `[v1.0.0]`
-- The `# Standards` section is included with placeholder text
 
 #### 4b. PRD.md Already Exists
 
-1. **Check for top-level extended sections.** Verify that the following three top-level sections exist in PRD.md. These sections sit between `# Standards` and `# System Module`:
+1. **Check for top-level extended sections.** Verify that the following three top-level sections exist in PRD.md. These sections sit between `# Context` and `# System Module`:
    - `# Design System`
    - `# Architecture Principle`
    - `# High Level Process Flow`
 
-   For each section that is **missing**, insert it at the correct position (after `# Standards` and before `# System Module`, in the order listed above) using the placeholder content from the PRD.md template. Record the addition for the summary output.
+   For each section that is **missing**, insert it at the correct position (after `# Context` and before `# System Module`, in the order listed above) using the placeholder content from the PRD.md template. Record the addition for the summary output.
 
    For each section that **already exists**, do nothing — never modify existing content.
 
@@ -304,17 +303,6 @@ When creating a new PRD.md or adding module sections, use this structure:
   - Minor version will be updated when there is a minor change in the content that may affect some details but not the overall understanding of the module or the system.
   - Patch version will be updated when there is a small change in the content that does not affect the overall understanding of the module or the system, such as fixing typos or formatting issues.
 - For user any item which is no longer valid or applicable, it will be marked with strikethrough and indicated in the new version.
-
----
-
-# Standards
-- Technical standards which should be referenced all the time in the development of the system.
-
-## UI/UX
-- No UI/UX standard for now
-
-## Coding
-- No coding standard for now
 
 ---
 
