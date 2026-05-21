@@ -1,7 +1,7 @@
 ---
 name: modelgen-relational
-model: claude-opus-4-6
-effort: high
+model: claude-opus-4-7
+effort: xhigh
 description: >
   Extract module models from Agile user stories using Domain-Driven Design (DDD) principles.
   Produces ERD diagrams (Mermaid) and detailed model documentation per module. Use this skill

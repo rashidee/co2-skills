@@ -1,7 +1,7 @@
 ---
 name: mockgen-shadcn
-model: claude-sonnet-4-6
-effort: medium
+model: claude-opus-4-7
+effort: high
 description: >
   Generate React + shadcn/ui mockup screens from PRD.md files for UI/UX human designer review.
   Creates a Vite + React 19 + TypeScript + shadcn/ui mockup application with admin dashboard layout

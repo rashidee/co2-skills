@@ -1,6 +1,6 @@
 ---
 name: specgen-flutter-riverpod
-model: claude-opus-4-6
+model: claude-opus-4-7
 effort: high
 description: >
   Generate a detailed specification document for building a Flutter mobile application

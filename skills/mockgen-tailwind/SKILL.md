@@ -1,7 +1,7 @@
 ---
 name: mockgen-tailwind
-model: claude-sonnet-4-6
-effort: medium
+model: claude-opus-4-7
+effort: high
 description: >
   Generate HTML mockup screens from PRD.md files for UI/UX human designer review.
   Creates a Node.js + Alpine.js + HTMX mockup server with admin dashboard layout
