@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-sdk-java
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a distributable Java SDK
@@ -10,7 +10,7 @@ description: >
   (and any additional protocols extracted from the PRD's Architecture Principle
   section). REST communication is implemented with OkHttp; everything else
   (JSON parsing, models, builders, retry, logging) is implemented with the JDK and
-  in-house code — third-party dependencies are kept to the absolute minimum.
+  in-house code â€” third-party dependencies are kept to the absolute minimum.
   Standardized input: application name (mandatory), version (mandatory), module (optional).
   Use this skill whenever the user asks to create a spec, specification, blueprint, or
   technical design document for a new Java SDK, Java client library, or REST API
@@ -20,7 +20,7 @@ description: >
   describing a Java library that wraps a REST/HTTP API for downstream consumers.
   Even if the user only mentions a subset (e.g., "Java wrapper around my API",
   "client library for our microservice", "SDK that supports JDK 8 and 11"), this
-  skill likely applies — ask and confirm.
+  skill likely applies â€” ask and confirm.
 ---
 
 # Java SDK (Multi-Release Fat JAR) Specification Generator
@@ -32,9 +32,9 @@ JDK 11+ overlays where modern APIs are beneficial, and wraps a remote REST API
 (plus any additional protocols defined in the PRD's Architecture Principle section).
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the library — from the `pom.xml` Multi-Release
+document describing every layer of the library â€” from the `pom.xml` Multi-Release
 configuration, to the OkHttp transport, to the model classes and high-level service
-facade — so that implementation becomes a mechanical exercise.
+facade â€” so that implementation becomes a mechanical exercise.
 
 ## Library-First Mindset
 
@@ -64,8 +64,8 @@ These versions are fixed unless the user explicitly overrides them.
 | Java overlay (`release`) | 11       | Sources under `src/main/java11` target JDK 11 |
 | Maven                    | 3.9.x    | Build tool                                    |
 | OkHttp                   | 4.12.0   | The ONLY runtime third-party dependency       |
-| Okio                     | 3.9.x    | Transitive of OkHttp — not declared directly  |
-| Kotlin stdlib (OkHttp)   | 1.9.x    | Transitive of OkHttp — not declared directly  |
+| Okio                     | 3.9.x    | Transitive of OkHttp â€” not declared directly  |
+| Kotlin stdlib (OkHttp)   | 1.9.x    | Transitive of OkHttp â€” not declared directly  |
 
 > **Note on OkHttp 4.x vs 5.x:** OkHttp 4.x runs on JDK 8 and is the safe default for an
 > SDK that must support legacy consumers. Move to 5.x only if the user explicitly
@@ -81,7 +81,7 @@ These versions are fixed unless the user explicitly overrides them.
 
 These are scoped to `test` and never bundled into the fat JAR.
 
-### Optional Runtime Dependencies (rare — only if PRD strictly requires)
+### Optional Runtime Dependencies (rare â€” only if PRD strictly requires)
 
 The skill MUST default to **NO additional dependencies**. Add a row below ONLY when the
 PRD explicitly requires the protocol/format and the JDK has no reasonable equivalent.
@@ -95,14 +95,14 @@ PRD explicitly requires the protocol/format and the JDK has no reasonable equiva
 > **JSON is handled in-house.** Do NOT add Jackson, Gson, Moshi, or org.json. The spec
 > describes a tiny hand-written JSON serializer/deserializer (or, if the OpenAPI spec is
 > trivial, simple `Map<String, Object>` round-tripping) that operates on the SDK's own
-> immutable model classes. This is intentional — JSON is one of the largest sources of
+> immutable model classes. This is intentional â€” JSON is one of the largest sources of
 > SDK dependency bloat and downstream version conflicts.
 
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the SDK libraries defined in `CLAUDE.md`. The skill reads all
-required inputs from the project's context files — no interactive Q&A is needed for the
+required inputs from the project's context files â€” no interactive Q&A is needed for the
 core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -137,7 +137,7 @@ This skill uses standardized input resolution. Provide:
 
 The application name is matched against root-level application folders:
 
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_my_sdk` → `my_sdk`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_my_sdk` â†’ `my_sdk`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -165,14 +165,14 @@ When `module:<name>` is provided:
 
 - Only generate the `SPEC.md` for that specific module
 - Other existing module spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that module's TOC entry is
+- `SPECIFICATION.md` (root) gets a partial update â€” only that module's TOC entry is
   added or updated; all other entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **six input sources** that are read from the project's
 context files. The skill does NOT ask the user for protocol, packaging, or model
-choices — it **determines** these automatically from the context.
+choices â€” it **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
 
@@ -181,8 +181,8 @@ From CLAUDE.md (already loaded in context), locate the target SDK under the
 
 - **Application name**: The section heading (e.g., "My SDK", "Hub Client SDK")
 - **Application description**: The description paragraph below the heading
-- **Target consumers**: The "Used by" or "Consumers" list — informs API surface design
-- **Dependencies**: The "Depends on" list — primary source for identifying the remote
+- **Target consumers**: The "Used by" or "Consumers" list â€” informs API surface design
+- **Dependencies**: The "Depends on" list â€” primary source for identifying the remote
   API (its base URL, auth scheme, etc.)
 
 The application name is used to derive:
@@ -193,10 +193,10 @@ The application name is used to derive:
 - **Main facade class name**: PascalCase of the application name with `Client` suffix
   (e.g., `MySdkClient`, `HubClient`)
 
-### Input 2: User Stories (from PRD.md — "Library User Stories")
+### Input 2: User Stories (from PRD.md â€” "Library User Stories")
 
 Read `<app_folder>/context/PRD.md`. For an SDK library, user stories describe what
-**downstream Java applications** want to do with the SDK — NOT what an end user wants to
+**downstream Java applications** want to do with the SDK â€” NOT what an end user wants to
 do with a UI. Phrasing examples:
 
 - "As a consumer application, I want to fetch a paginated list of orders by status."
@@ -225,7 +225,7 @@ with tagged items like `[NFRSDK0120]`. NFRs typical for an SDK:
 - "All HTTP calls timeout after 30 seconds by default, configurable per call."
 - "Connection pool reuses up to 10 keep-alive connections."
 - "All retryable errors retry with exponential backoff up to 3 attempts."
-- "Logging is opt-in via SLF4J — the SDK ships no SLF4J binding."
+- "Logging is opt-in via SLF4J â€” the SDK ships no SLF4J binding."
 
 These NFRs map directly to the `OkHttpClient` builder configuration, the retry
 interceptor design, and the logging strategy in the generated spec.
@@ -246,9 +246,9 @@ explicit rules in the spec's "Constraints" section.
 
 Each module's `### Test` and `### References` sections feed:
 
-- **Test**: The test plan section of the module SPEC.md — what scenarios MockWebServer
+- **Test**: The test plan section of the module SPEC.md â€” what scenarios MockWebServer
   must cover, what fixtures are needed.
-- **References**: The "External Documentation" subsection of the module SPEC.md — links
+- **References**: The "External Documentation" subsection of the module SPEC.md â€” links
   back to the upstream API docs, RFCs, vendor SDK comparisons, etc. Carry version tags
   through.
 
@@ -258,7 +258,7 @@ Read `<app_folder>/context/model/MODEL.md` first as the index, then read individ
 module files in each module subfolder.
 
 For an SDK, "models" are the request/response Java classes that mirror the remote API's
-schema — NOT database entities. Per-module model files (e.g.,
+schema â€” NOT database entities. Per-module model files (e.g.,
 `model/auth/model.md`) define:
 
 - The fields, types, and JSON property names for each model class
@@ -278,10 +278,10 @@ user stories.
 ## PRD.md Extended Sections
 
 Before determining optional components, check PRD.md for the following extended sections.
-**These are critical for SDK generation** — they define the protocols the SDK must
+**These are critical for SDK generation** â€” they define the protocols the SDK must
 support and the design patterns it must follow.
 
-### Input 7: API Surface Source — Swagger UI URL or OpenAPI Spec (CRITICAL)
+### Input 7: API Surface Source â€” Swagger UI URL or OpenAPI Spec (CRITICAL)
 
 **This is the highest-priority input for the SDK spec.** Before any other determination,
 scan the entire `PRD.md` for one of:
@@ -293,8 +293,8 @@ scan the entire `PRD.md` for one of:
 | A relative path to an `openapi.yaml` / `openapi.json` / `swagger.yaml` / `swagger.json` file inside the application folder | Record as `openApiSpecPath` |
 | A heading "## Swagger UI", "## OpenAPI Spec", "## API Reference" with a URL/path beneath it | Same as above based on the URL form     |
 
-Scanning order: Architecture Principle section first → "API Reference" / "External APIs"
-sections next → fall back to a project-wide grep for `swagger` / `openapi` / `api-docs`.
+Scanning order: Architecture Principle section first â†’ "API Reference" / "External APIs"
+sections next â†’ fall back to a project-wide grep for `swagger` / `openapi` / `api-docs`.
 
 **Resolution behaviour:**
 
@@ -303,7 +303,7 @@ sections next → fall back to a project-wide grep for `swagger` / `openapi` / `
    generate one model class per schema, one facade method per operation, and one URL
    constant per path. The skill should attempt to fetch the spec at generation time (if
    the URL is reachable) so that the generated SPEC.md can list real operation IDs,
-   paths, and schema names — NOT placeholders.
+   paths, and schema names â€” NOT placeholders.
 2. **Only `swaggerUiUrl` found:** Treat the underlying `/v3/api-docs` (or `/api-docs`)
    as the spec endpoint. Note in the spec that the implementer must derive the spec URL
    by inspecting the Swagger UI page.
@@ -311,7 +311,7 @@ sections next → fall back to a project-wide grep for `swagger` / `openapi` / `
    authoritative API surface; mark a `[TODO]` reminding the team to publish an OpenAPI
    document.
 4. **Nothing found:** Insert a `[TODO]` at the top of the generated SPECIFICATION.md
-   reading: `[TODO] No Swagger UI URL or OpenAPI spec found in PRD.md — the SDK API
+   reading: `[TODO] No Swagger UI URL or OpenAPI spec found in PRD.md â€” the SDK API
    surface is inferred from user stories only and may drift from the real API.` Then
    proceed using user stories alone.
 
@@ -331,7 +331,7 @@ patterns**:
 | "REST" / "RESTful API"                         | Confirm OkHttp transport (default)                                                                                |
 | "WebSocket" / "real-time"                      | Add WebSocket subsection. Use OkHttp's built-in WebSocket on JDK 8; document JDK 11 `HttpClient` WebSocket option |
 | "Server-Sent Events" / "SSE"                   | Add SSE subsection backed by OkHttp `EventSource`                                                                 |
-| "gRPC"                                         | Add a `[TODO]` — OkHttp does not support gRPC natively. Confirm with user before adding `grpc-java`               |
+| "gRPC"                                         | Add a `[TODO]` â€” OkHttp does not support gRPC natively. Confirm with user before adding `grpc-java`               |
 | "AMQP" / "RabbitMQ" / "message queue"          | Add AMQP subsection backed by `com.rabbitmq:amqp-client` only if user confirms                                    |
 | "MQTT"                                         | Add MQTT subsection backed by `paho-mqtt-client` only if user confirms                                            |
 | "Stateless"                                    | Confirm no client-side session state; every call carries credentials in headers                                   |
@@ -342,7 +342,7 @@ patterns**:
 | "Builder pattern"                              | Confirm builder pattern on the client and every request DTO                                                       |
 | "Fluent API" / "fluent interface"              | Confirm method chaining on the facade (e.g., `client.orders().forCustomer(id).list()`)                            |
 | "Strategy pattern" / "pluggable"               | Add a strategy interface (e.g., `RetryStrategy`, `BackoffStrategy`, `CredentialProvider`) that consumers override |
-| "Adapter pattern"                              | Confirm the SDK adapts the remote HTTP API to a typed Java API — already the default; document it explicitly     |
+| "Adapter pattern"                              | Confirm the SDK adapts the remote HTTP API to a typed Java API â€” already the default; document it explicitly     |
 | "Decorator pattern"                            | Add a decorator section showing how consumers wrap the facade (e.g., for caching, metrics)                        |
 | "Observer pattern" / "event listener"          | Add a listener interface (e.g., `RequestLifecycleListener`) consumers can register                                |
 | "Reactive" / "non-blocking"                    | Add an async API surface using `CompletableFuture` (JDK 8+, no extra dep)                                         |
@@ -375,7 +375,7 @@ If absent, derive the API surface from user stories + OpenAPI alone (no flow hel
 ## Determining Optional Components
 
 After reading all inputs above, produce a determination summary BEFORE generating the
-spec. The defaults are aggressively minimal — the skill must justify every "yes".
+spec. The defaults are aggressively minimal â€” the skill must justify every "yes".
 
 ### Protocol Selection
 
@@ -398,14 +398,14 @@ spec. The defaults are aggressively minimal — the skill must justify every "ye
 
 | Signal                                                       | Async Selection          |
 |--------------------------------------------------------------|--------------------------|
-| Architecture Principle mentions "reactive", "non-blocking", "async-first" | Yes — every method has both sync and `CompletableFuture` overloads |
-| User stories mention long-running operations (`upload`, `export`, `report`) | Yes — long ops only      |
-| Default                                                       | No — synchronous only    |
+| Architecture Principle mentions "reactive", "non-blocking", "async-first" | Yes â€” every method has both sync and `CompletableFuture` overloads |
+| User stories mention long-running operations (`upload`, `export`, `report`) | Yes â€” long ops only      |
+| Default                                                       | No â€” synchronous only    |
 
 ### Logging Strategy
 
 The default is **SLF4J facade only, no binding**. Consumers add their own SLF4J binding.
-Override only if the PRD explicitly forbids SLF4J — in which case fall back to JUL
+Override only if the PRD explicitly forbids SLF4J â€” in which case fall back to JUL
 (`java.util.logging`) which is in the JDK and adds zero dependencies.
 
 ### Model Style
@@ -452,7 +452,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Base package**: `com.bestinet.urp.<artifactid_no_hyphens>`
 - **Application description**: From CLAUDE.md
 - **Modules**: From PRD.md module headings + `model/MODEL.md`
-- **API surface source**: Swagger UI URL or OpenAPI spec (Input 7) — MANDATORY summary
+- **API surface source**: Swagger UI URL or OpenAPI spec (Input 7) â€” MANDATORY summary
 - **Default base URL**: From the OpenAPI `servers[0].url`, or from the `# Reference`
   section of CLAUDE.md, or `https://api.example.com` placeholder if neither is present
   (with a `[TODO]`)
@@ -461,7 +461,7 @@ After determination, these values are needed. Most are derived automatically:
 
 **From SECRET.md (if present, for the demo/diagnostics `main()`):**
 
-- API host, port, default credential — used as default values for the diagnostic
+- API host, port, default credential â€” used as default values for the diagnostic
   smoke-test only. Never bundle into the JAR; load from environment at runtime.
 
 ## Generating the Specification
@@ -469,15 +469,15 @@ After determination, these values are needed. Most are derived automatically:
 Once inputs are gathered and optional components are determined, generate the
 specification as a **multi-file output split by module**. Read the spec template at
 `references/spec-template.md` for the exact structure and content of each section. The
-template is the authoritative guide — follow it closely.
+template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Shared infrastructure: Maven config (with
+1. **Root `SPECIFICATION.md`** â€” Shared infrastructure: Maven config (with
    Multi-Release + Shade plugins), source layout, `OkHttpClient` setup, transport
    utilities, JSON support, error model, retry strategy, the top-level `Client` facade,
    and packaging.
-2. **Per-module `<module-name>/SPEC.md`** — Each module gets its own folder with a
+2. **Per-module `<module-name>/SPEC.md`** â€” Each module gets its own folder with a
    self-contained specification covering its model classes, service facade,
    request/response payloads, OpenAPI operation mapping, error mapping, and tests.
 
@@ -486,7 +486,7 @@ files:
 
 - **Modules** must use the actual module names from PRD.md / MODEL.md
 - **Operation IDs and paths** must come from the OpenAPI spec when available
-- **Model fields** must match the OpenAPI schemas (or MODEL.md) — never placeholders
+- **Model fields** must match the OpenAPI schemas (or MODEL.md) â€” never placeholders
 - **Public methods** must map to real user stories
 - **Version tags** on every user story ID, NFR ID, constraint ID
 - **Removed / Replaced items** listed for deprecated items
@@ -495,12 +495,12 @@ files:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md              ← Shared infrastructure + TOC
-├── auth/
-│   └── SPEC.md                   ← Module blueprint for 'auth'
-├── orders/
-│   └── SPEC.md                   ← Module blueprint for 'orders'
-└── ...                           ← One folder per module from PRD.md
+â”œâ”€â”€ SPECIFICATION.md              â† Shared infrastructure + TOC
+â”œâ”€â”€ auth/
+â”‚   â””â”€â”€ SPEC.md                   â† Module blueprint for 'auth'
+â”œâ”€â”€ orders/
+â”‚   â””â”€â”€ SPEC.md                   â† Module blueprint for 'orders'
+â””â”€â”€ ...                           â† One folder per module from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -541,31 +541,31 @@ See `references/packaging-patterns.md` for the canonical configuration.
 
 ```
 src/
-├── main/
-│   ├── java/                                  ← JDK 8 baseline — ALL public API lives here
-│   │   └── com/bestinet/urp/{{artifactid}}/
-│   │       ├── {{ClientName}}.java            ← Top-level facade + Builder
-│   │       ├── {{ClientName}}Config.java      ← Immutable config (timeouts, baseUrl, auth)
-│   │       ├── auth/                          ← Auth interceptor + credential provider
-│   │       ├── http/                          ← OkHttp wiring, interceptors, retry
-│   │       ├── json/                          ← Hand-written minimal JSON utility
-│   │       ├── error/                         ← Exception hierarchy
-│   │       ├── util/                          ← Internal helpers (no public API)
-│   │       └── {{module1}}/                   ← One package per module
-│   │           ├── {{Module1}}Service.java    ← Module facade (public)
-│   │           ├── model/                     ← Request/response models (public)
-│   │           └── internal/                  ← Internals (package-private)
-│   ├── java11/                                ← JDK 11 overlay — same package paths only
-│   │   └── com/bestinet/urp/{{artifactid}}/
-│   │       └── util/
-│   │           └── HttpUtil.java              ← e.g., uses java.net.http.HttpClient
-│   └── resources/
-│       └── META-INF/
-│           └── services/                      ← (only if SPI is exposed)
-└── test/
-    └── java/
-        └── com/bestinet/urp/{{artifactid}}/
-            └── ...                            ← MockWebServer-based tests
+â”œâ”€â”€ main/
+â”‚   â”œâ”€â”€ java/                                  â† JDK 8 baseline â€” ALL public API lives here
+â”‚   â”‚   â””â”€â”€ com/bestinet/urp/{{artifactid}}/
+â”‚   â”‚       â”œâ”€â”€ {{ClientName}}.java            â† Top-level facade + Builder
+â”‚   â”‚       â”œâ”€â”€ {{ClientName}}Config.java      â† Immutable config (timeouts, baseUrl, auth)
+â”‚   â”‚       â”œâ”€â”€ auth/                          â† Auth interceptor + credential provider
+â”‚   â”‚       â”œâ”€â”€ http/                          â† OkHttp wiring, interceptors, retry
+â”‚   â”‚       â”œâ”€â”€ json/                          â† Hand-written minimal JSON utility
+â”‚   â”‚       â”œâ”€â”€ error/                         â† Exception hierarchy
+â”‚   â”‚       â”œâ”€â”€ util/                          â† Internal helpers (no public API)
+â”‚   â”‚       â””â”€â”€ {{module1}}/                   â† One package per module
+â”‚   â”‚           â”œâ”€â”€ {{Module1}}Service.java    â† Module facade (public)
+â”‚   â”‚           â”œâ”€â”€ model/                     â† Request/response models (public)
+â”‚   â”‚           â””â”€â”€ internal/                  â† Internals (package-private)
+â”‚   â”œâ”€â”€ java11/                                â† JDK 11 overlay â€” same package paths only
+â”‚   â”‚   â””â”€â”€ com/bestinet/urp/{{artifactid}}/
+â”‚   â”‚       â””â”€â”€ util/
+â”‚   â”‚           â””â”€â”€ HttpUtil.java              â† e.g., uses java.net.http.HttpClient
+â”‚   â””â”€â”€ resources/
+â”‚       â””â”€â”€ META-INF/
+â”‚           â””â”€â”€ services/                      â† (only if SPI is exposed)
+â””â”€â”€ test/
+    â””â”€â”€ java/
+        â””â”€â”€ com/bestinet/urp/{{artifactid}}/
+            â””â”€â”€ ...                            â† MockWebServer-based tests
 ```
 
 **Multi-Release JAR rules:**
@@ -581,7 +581,7 @@ src/
 
 #### 4. OkHttpClient Setup
 
-`http/HttpClientFactory.java` — builds a single shared `OkHttpClient` with:
+`http/HttpClientFactory.java` â€” builds a single shared `OkHttpClient` with:
 
 - Connection pool: max idle = 10, keep-alive = 5 min (configurable via `Config`)
 - Connect / read / write timeout (default 30 s, configurable)
@@ -592,13 +592,13 @@ src/
 
 The factory is package-private; the `Client.Builder` is the only entry point.
 Document thread-safety: a single `OkHttpClient` is safe to share across threads and
-must be reused by consumers — never create one per request.
+must be reused by consumers â€” never create one per request.
 
 See `references/http-client-patterns.md` for the full configuration.
 
 #### 5. JSON Support (Hand-written)
 
-`json/Json.java` — a minimal, hand-written JSON parser/writer that handles only what
+`json/Json.java` â€” a minimal, hand-written JSON parser/writer that handles only what
 the SDK's models need: objects, arrays, strings, numbers, booleans, null. No reflection,
 no annotations. Each model class implements `toJson(JsonWriter)` and provides a static
 `fromJson(JsonReader)`.
@@ -607,7 +607,7 @@ This is intentional. JSON is the largest source of dependency conflicts in Java 
 and hand-coded read/write methods make every wire-format change a deliberate, reviewable
 edit. If the OpenAPI spec is large enough that hand-writing becomes onerous, document a
 codegen step (e.g., a small `JsonModelGenerator` invoked at build time from the OpenAPI
-spec) — but still emit hand-written-style code, not Jackson annotations.
+spec) â€” but still emit hand-written-style code, not Jackson annotations.
 
 See `references/spec-template.md` for the exact `Json` class shape and per-model
 serializer pattern.
@@ -616,19 +616,19 @@ serializer pattern.
 
 `error/SdkException.java` (base, unchecked) with subclasses:
 
-- `SdkApiException` — non-2xx HTTP response. Carries `int statusCode`, `String body`,
+- `SdkApiException` â€” non-2xx HTTP response. Carries `int statusCode`, `String body`,
   optional parsed error model, and the original `Request` URL/method.
-- `SdkAuthException extends SdkApiException` — 401/403.
-- `SdkClientException extends SdkException` — local I/O, JSON, or validation failure.
-- `SdkTimeoutException extends SdkClientException` — wraps OkHttp timeout exceptions.
-- `SdkRetryExhaustedException extends SdkClientException` — retry budget consumed.
+- `SdkAuthException extends SdkApiException` â€” 401/403.
+- `SdkClientException extends SdkException` â€” local I/O, JSON, or validation failure.
+- `SdkTimeoutException extends SdkClientException` â€” wraps OkHttp timeout exceptions.
+- `SdkRetryExhaustedException extends SdkClientException` â€” retry budget consumed.
 
-All exceptions are `RuntimeException` subclasses — checked exceptions in a public Java
+All exceptions are `RuntimeException` subclasses â€” checked exceptions in a public Java
 SDK API are widely considered an anti-pattern.
 
 #### 7. Retry Strategy
 
-`http/RetryInterceptor.java` invokes `RetryStrategy` (interface) — default
+`http/RetryInterceptor.java` invokes `RetryStrategy` (interface) â€” default
 implementation `ExponentialBackoffRetryStrategy` retries on connection failure, 502, 503,
 504 with `min(maxBackoff, base * 2^attempt + jitter)` delays. The strategy is pluggable
 via `Client.Builder#retryStrategy(...)` so consumers can supply their own.
@@ -649,7 +649,7 @@ If Auth = Basic: simple `Credentials.basic(user, pass)` injection.
 
 #### 9. Top-Level Client Facade
 
-`{{ClientName}}.java` — the main entry point consumers use:
+`{{ClientName}}.java` â€” the main entry point consumers use:
 
 ```java
 {{ClientName}} client = {{ClientName}}.builder()
@@ -678,7 +678,7 @@ this class. Otherwise, omit `Main-Class` so the JAR is library-only.
 If Logging = SLF4J facade: declare `org.slf4j:slf4j-api` as `<scope>provided</scope>` in
 Maven so it is NOT bundled into the fat JAR. The SDK uses `LoggerFactory.getLogger(...)`
 internally. If no SLF4J binding is on the consumer's classpath, the no-op binding ships
-silently — this is the standard SLF4J behaviour.
+silently â€” this is the standard SLF4J behaviour.
 
 If Logging = JUL: zero dependencies; the SDK uses `java.util.logging.Logger` directly.
 
@@ -694,17 +694,17 @@ See `references/spec-template.md` for the canonical test pattern.
 
 Two artifacts are produced:
 
-1. **Thin JAR** (`target/{{artifactId}}-{{version}}.jar`) — for Maven consumers. Has
+1. **Thin JAR** (`target/{{artifactId}}-{{version}}.jar`) â€” for Maven consumers. Has
    declared dependencies in `pom.xml`.
-2. **Fat JAR** (`target/{{artifactId}}-{{version}}-shaded.jar` — but Shade is
-   configured with `<finalName>` to overwrite the thin JAR's name when desired) — for
+2. **Fat JAR** (`target/{{artifactId}}-{{version}}-shaded.jar` â€” but Shade is
+   configured with `<finalName>` to overwrite the thin JAR's name when desired) â€” for
    classpath drop-in. Contains all runtime dependencies relocated under
    `com.bestinet.urp.{{artifactid}}.shaded.*` to avoid collisions.
 
 Both artifacts are Multi-Release JARs (MR-JAR layout preserved through Shade).
 
 `mvn package` produces both. The Shade plugin's `Multi-Release: true` manifest entry
-is the easiest thing to lose during shading — the spec MUST include the explicit
+is the easiest thing to lose during shading â€” the spec MUST include the explicit
 `ManifestResourceTransformer` and `<resource>true</resource>` configuration that
 preserves it.
 
@@ -734,7 +734,7 @@ unzip -p target/{{artifactId}}-{{version}}.jar META-INF/MANIFEST.MF
 jar tf target/{{artifactId}}-{{version}}.jar | grep META-INF/versions/11/
 ```
 
-…and to verify:
+â€¦and to verify:
 
 - `META-INF/MANIFEST.MF` contains `Multi-Release: true`
 - `META-INF/versions/11/` contains every overlay class
@@ -746,7 +746,7 @@ jar tf target/{{artifactId}}-{{version}}.jar | grep META-INF/versions/11/
 ### What Goes in Each `<module-name>/SPEC.md` (Per-Module)
 
 For EACH module from PRD.md, create a folder named after the module (kebab-case) and
-generate a `SPEC.md` inside it. Each file is **self-contained** — a coding agent can
+generate a `SPEC.md` inside it. Each file is **self-contained** â€” a coding agent can
 implement the module after the shared infrastructure is in place.
 
 Each module SPEC.md must include:
@@ -754,7 +754,7 @@ Each module SPEC.md must include:
 - **Header** with module name and back-reference to root `SPECIFICATION.md`
 - **Traceability**: user story IDs, NFR IDs, constraint IDs, test IDs, reference IDs,
   with version tags
-- **OpenAPI Operation Mapping** — table mapping each user story to the upstream
+- **OpenAPI Operation Mapping** â€” table mapping each user story to the upstream
   operation ID, HTTP method, path, and OpenAPI schemas (request body, response body)
 - **Public API**:
   - Module facade interface and class (`{{Module}}Service`)
@@ -765,9 +765,9 @@ Each module SPEC.md must include:
   - Service implementation (`internal/{{Module}}ServiceImpl`)
   - URL constants
   - JSON serializer methods per model
-- **Error Mapping** — table mapping HTTP status codes to specific exception subclasses
-- **Test Plan** — derived from PRD `### Test` section, expressed as MockWebServer scenarios
-- **External References** — derived from PRD `### References` section
+- **Error Mapping** â€” table mapping HTTP status codes to specific exception subclasses
+- **Test Plan** â€” derived from PRD `### Test` section, expressed as MockWebServer scenarios
+- **External References** â€” derived from PRD `### References` section
 - **Complete code samples** for every component
 
 See `references/spec-template.md` for the canonical module SPEC.md structure and
@@ -801,13 +801,13 @@ After all specification files are successfully generated, append an entry to
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md              ← Root: TOC + shared infrastructure
-├── <module-1>/
-│   └── SPEC.md                   ← Self-contained module blueprint
-├── <module-2>/
-│   └── SPEC.md
-└── <module-N>/
-    └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md              â† Root: TOC + shared infrastructure
+â”œâ”€â”€ <module-1>/
+â”‚   â””â”€â”€ SPEC.md                   â† Self-contained module blueprint
+â”œâ”€â”€ <module-2>/
+â”‚   â””â”€â”€ SPEC.md
+â””â”€â”€ <module-N>/
+    â””â”€â”€ SPEC.md
 ```
 
 **Sample code is mandatory.** Every component described in any spec file must include a
@@ -831,7 +831,7 @@ include a one-paragraph justification explaining why the JDK + OkHttp cannot do 
 
 **Multi-Release JAR.** Sources under `src/main/java` MUST compile with `--release 8`.
 Sources under `src/main/java11` MUST compile with `--release 11` and MUST NOT introduce
-new public API — they are performance/feature overlays only. The fat JAR's
+new public API â€” they are performance/feature overlays only. The fat JAR's
 `META-INF/MANIFEST.MF` MUST contain `Multi-Release: true` and `META-INF/versions/11/`
 MUST contain the overlay classes.
 
@@ -839,14 +839,14 @@ MUST contain the overlay classes.
 with relocated transitive dependencies. The thin JAR with declared dependencies is
 also produced for Maven consumers.
 
-**Constructor injection — no setters on services.** The facade and every service take
+**Constructor injection â€” no setters on services.** The facade and every service take
 their collaborators (HTTP client, config, JSON utility) via the constructor and store
 them in `private final` fields. Builders mutate state during construction but the
 resulting object is immutable.
 
 **Immutable models.** Model classes are `final`, all fields are `private final`, no
 setters, only a Builder. `equals`, `hashCode`, and `toString` are explicit (or generated
-via `Objects.hash` / `String.format`) — no Lombok.
+via `Objects.hash` / `String.format`) â€” no Lombok.
 
 **Thread-safe by design.** A single `{{ClientName}}` instance is safe to share across
 threads. The shared `OkHttpClient` is the only HTTP transport instance. Services hold
@@ -870,7 +870,7 @@ booleans serialize as `true`/`false`, numbers without unnecessary trailing zeros
 
 - Tokens are NEVER logged. The `LoggingInterceptor` MUST redact `Authorization`
   header values to `Bearer ***`.
-- Tokens are stored only in the `BearerCredentialProvider` — never in `Config` itself.
+- Tokens are stored only in the `BearerCredentialProvider` â€” never in `Config` itself.
 
 **If Auth = mTLS:**
 
@@ -881,7 +881,7 @@ booleans serialize as `true`/`false`, numbers without unnecessary trailing zeros
 
 - Every async method returns `CompletableFuture<T>` and never blocks the calling
   thread. Internal blocking calls are dispatched to OkHttp's dispatcher (which already
-  uses its own executor) — the SDK never spins up its own thread pool unless the user
+  uses its own executor) â€” the SDK never spins up its own thread pool unless the user
   supplies one.
 
 **If WebSocket protocol is selected:**
@@ -897,7 +897,7 @@ booleans serialize as `true`/`false`, numbers without unnecessary trailing zeros
 
 **If a `main()` (diagnostic) is included:**
 
-- It reads `BASE_URL`, `API_TOKEN`, etc. from environment variables only — never
+- It reads `BASE_URL`, `API_TOKEN`, etc. from environment variables only â€” never
   hardcoded.
 - The fat JAR's `Main-Class` manifest entry points to `cli.Diagnose`; otherwise omit
   `Main-Class` entirely.
@@ -909,7 +909,7 @@ booleans serialize as `true`/`false`, numbers without unnecessary trailing zeros
 - Java 8 source baseline, Multi-Release JDK 11 overlay
 - One runtime third-party dependency: OkHttp
 - One artifact: a Multi-Release fat JAR; a thin JAR is a side effect of `mvn package`
-- Hand-written JSON for every model — no reflection-based JSON libraries
+- Hand-written JSON for every model â€” no reflection-based JSON libraries
 - Builder pattern on the client and every request DTO
 - Strategy pattern for retry / backoff / credential provider
 - Adapter pattern: the SDK adapts the remote HTTP API to a typed Java API
@@ -918,14 +918,14 @@ booleans serialize as `true`/`false`, numbers without unnecessary trailing zeros
 - All modules share one `OkHttpClient`
 - Every request goes through the same interceptor chain (auth, retry, correlation, logging)
 - OpenAPI is the source of truth for endpoint paths, schemas, and operation IDs
-- MockWebServer drives every test — no live calls
+- MockWebServer drives every test â€” no live calls
 - Javadoc on every public type and method
 - Public API is binary-compatible within a major version (japicmp / revapi enforced)
 
 ### Conditional Principles
 
 - **If Auth = Bearer:** 401 triggers a single transparent refresh-and-retry; never two.
-- **If Async = yes:** sync methods are convenience wrappers around the async ones —
+- **If Async = yes:** sync methods are convenience wrappers around the async ones â€”
   `Service.foo(...)` calls `Service.fooAsync(...).join()`, not the other way around.
 - **If WebSocket:** the public WebSocket API exposes only `connect`, `send`, `close`,
   and a listener interface. No raw `okhttp3.WebSocket` ever escapes the package.

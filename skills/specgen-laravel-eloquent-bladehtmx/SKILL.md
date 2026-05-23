@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-laravel-eloquent-bladehtmx
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a monolith Laravel 12 web
@@ -17,7 +17,7 @@ description: >
   "scaffold spec for a monolith Laravel app", or any request for a specification document
   describing a Laravel + Blade + Tailwind application. Even if the user only mentions
   a subset of the stack (e.g., "Laravel web app" or "Laravel with Mongo" or
-  "Laravel with Keycloak"), this skill likely applies — ask and confirm.
+  "Laravel with Keycloak"), this skill likely applies â€” ask and confirm.
 ---
 
 # Laravel Web Application Specification Generator
@@ -28,8 +28,8 @@ views. The spec is intended to be followed by a developer or a coding agent to p
 a fully functional project scaffold.
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the application — from Composer configuration to Blade
-layouts to middleware chains — so that implementation becomes a mechanical exercise.
+document describing every layer of the application â€” from Composer configuration to Blade
+layouts to middleware chains â€” so that implementation becomes a mechanical exercise.
 
 ## Technology Stack
 
@@ -66,26 +66,26 @@ Include in the version table only when the corresponding integration is selected
 
 The spec must include these in the Composer configuration section (always):
 
-- `laravel/framework` — Core framework
-- `nwidart/laravel-modules` — Modular architecture
-- `spatie/laravel-data` — Typed DTOs with transformation and validation
-- `laravel-vite-plugin` — Vite integration (npm)
+- `laravel/framework` â€” Core framework
+- `nwidart/laravel-modules` â€” Modular architecture
+- `spatie/laravel-data` â€” Typed DTOs with transformation and validation
+- `laravel-vite-plugin` â€” Vite integration (npm)
 
 ### Conditional Dependencies
 
 **If Database = MongoDB:**
-- `mongodb/laravel-mongodb` — Official MongoDB Eloquent driver
+- `mongodb/laravel-mongodb` â€” Official MongoDB Eloquent driver
 
 **If Database = PostgreSQL or MySQL:**
 - Built-in Eloquent ORM + PDO driver (no extra package needed)
 - Laravel Migrations (built-in) for schema management
 
 **If Auth = Keycloak:**
-- `laravel/socialite` — OAuth2 abstraction
-- `socialiteproviders/keycloak` — Keycloak OAuth2 provider
+- `laravel/socialite` â€” OAuth2 abstraction
+- `socialiteproviders/keycloak` â€” Keycloak OAuth2 provider
 
 **If Auth = Laravel Breeze (form login):**
-- `laravel/breeze` — Simple authentication scaffolding
+- `laravel/breeze` â€” Simple authentication scaffolding
 
 **If Scheduling = yes:**
 - Built-in Laravel Task Scheduling (`Illuminate\Console\Scheduling`)
@@ -94,25 +94,25 @@ The spec must include these in the Composer configuration section (always):
 - Built-in `Illuminate\Bus\Batch` (Bus::batch())
 
 **If Messaging = yes:**
-- `vladimir-yuldashev/laravel-queue-rabbitmq` — RabbitMQ queue driver
-- `php-amqplib/php-amqplib` — Low-level AMQP for advanced exchange patterns
+- `vladimir-yuldashev/laravel-queue-rabbitmq` â€” RabbitMQ queue driver
+- `php-amqplib/php-amqplib` â€” Low-level AMQP for advanced exchange patterns
 
 **If Reporting = yes:**
-- `spatie/browsershot` — PDF generation via Puppeteer (headless Chrome) with full CSS support
-- `maatwebsite/excel` — XLSX and CSV export
+- `spatie/browsershot` â€” PDF generation via Puppeteer (headless Chrome) with full CSS support
+- `maatwebsite/excel` â€” XLSX and CSV export
 - Requires `npm install puppeteer` on the server (Node.js + headless Chrome binary)
 
 **Additional cross-cutting packages:**
-- `spatie/laravel-permission` — RBAC (roles and permissions)
-- `owen-it/laravel-auditing` — Audit trail (created_by, updated_by, field change history)
-- `spatie/laravel-health` — Health check endpoints
-- `spatie/laravel-view-models` — Typed view models for Blade templates
+- `spatie/laravel-permission` â€” RBAC (roles and permissions)
+- `owen-it/laravel-auditing` â€” Audit trail (created_by, updated_by, field change history)
+- `spatie/laravel-health` â€” Health check endpoints
+- `spatie/laravel-view-models` â€” Typed view models for Blade templates
 
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the custom applications defined in `CLAUDE.md`. The skill
-reads all required inputs from the project's context files — no interactive Q&A is needed
+reads all required inputs from the project's context files â€” no interactive Q&A is needed
 for the core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -145,7 +145,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` → `hub_middleware`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` â†’ `hub_middleware`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -178,14 +178,14 @@ When a version is provided, only include user stories, NFRs, and constraints fro
 When `module:<name>` is provided:
 - Only generate the `SPEC.md` for that specific module
 - Other existing module spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that module's entry in the TOC
+- `SPECIFICATION.md` (root) gets a partial update â€” only that module's entry in the TOC
   is added or updated; all other TOC entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **six input sources** that are read from the project's
 context files. The skill does NOT ask the user for database, authentication, scheduling,
-or messaging choices — it **determines** these automatically from the context.
+or messaging choices â€” it **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
 
@@ -194,7 +194,7 @@ section. Extract:
 
 - **Application name**: The section heading (e.g., "Hub Middleware", "HC Adapter")
 - **Application description**: The description paragraph below the heading
-- **Dependencies**: The "Depends on" list — this is the primary source for determining
+- **Dependencies**: The "Depends on" list â€” this is the primary source for determining
   optional components (see [Determining Optional Components](#determining-optional-components))
 
 The application name is used to derive:
@@ -219,7 +219,7 @@ The user stories directly inform:
 - Which controllers and Blade views are needed
 - Which form fields and validation rules apply
 
-**Important:** Items with strikethrough (`~~text~~`) are deprecated — do NOT include them
+**Important:** Items with strikethrough (`~~text~~`) are deprecated â€” do NOT include them
 as active requirements. Instead, list them in the "Removed / Replaced" subsection of the
 traceability table (see spec-template.md) so that developers can see what was removed and
 which version removed it. If a deprecated item has a replacement (e.g., `USHM00015` replaced
@@ -243,7 +243,7 @@ with tagged items like `[NFRHM0120]`. These inform:
 - Performance constraints (e.g., "automatically deleted after 30 days")
 - Security requirements (e.g., "require user to relogin")
 
-NFRs should be mapped to specific technical decisions in the spec — for example, an NFR
+NFRs should be mapped to specific technical decisions in the spec â€” for example, an NFR
 stating "stored in JWT token" confirms stateless auth, while "sent asynchronously" confirms
 event-driven processing.
 
@@ -256,7 +256,7 @@ items like `[CONSHM042]`. These define hard boundaries that the spec must enforc
 - Feature boundaries (e.g., "only 2 delivery channels supported")
 - Scope limitations (e.g., "does not manage any user, permissions and roles")
 
-Constraints are embedded directly into the relevant module blueprint — they inform
+Constraints are embedded directly into the relevant module blueprint â€” they inform
 service interface contracts, validation rules, and UI form configurations.
 
 ### Input 5: Module Model (from model/ folder)
@@ -310,19 +310,19 @@ read the HTML files organized by role in subfolders.
 - Navigation structure from sidebar HTML files
 - Data display patterns (list pages, detail pages, create/edit forms)
 
-**IMPORTANT — Role folders inform access control, NOT URL paths.** The role-specific
+**IMPORTANT â€” Role folders inform access control, NOT URL paths.** The role-specific
 folder structure (e.g., `mockup/hub_administrator/content/corridor.html`) determines:
-1. Which role can access the page → `middleware('role:hub_administrator')`
+1. Which role can access the page â†’ `middleware('role:hub_administrator')`
 2. Which sidebar navigation items appear for each role
 It does NOT determine the URL path. The URL path is always module-based:
-- `Route::get('/corridor', ...)` — NOT `Route::get('/hub_administrator/corridor', ...)`
-- Fragment URL: `Route::get('/corridor/fragments/...', ...)` — NOT role-prefixed
+- `Route::get('/corridor', ...)` â€” NOT `Route::get('/hub_administrator/corridor', ...)`
+- Fragment URL: `Route::get('/corridor/fragments/...', ...)` â€” NOT role-prefixed
 
 **Shared partials** (e.g., `mockup/partials/`):
-- `header.html` — Header bar layout and elements
-- `footer.html` — Footer layout
-- `sidebar-<role>.html` — Per-role navigation menus
-- `shell.html` — Page shell/wrapper structure
+- `header.html` â€” Header bar layout and elements
+- `footer.html` â€” Footer layout
+- `sidebar-<role>.html` â€” Per-role navigation menus
+- `shell.html` â€” Page shell/wrapper structure
 
 The mockup screens directly map to:
 - Blade page templates (one per HTML screen)
@@ -350,7 +350,7 @@ If PRD.md contains an `# Architecture Principle` section, read it and extract ar
 |---|---|
 | Framework mention (e.g., "Laravel") | Validates technology stack choice |
 | "Monolithic" / "modular architecture" | Validates nwidart/laravel-modules structure; inter-module via Laravel events |
-| "Stateless" | Confirms no server-side session — JWT/OAuth2 token-based auth |
+| "Stateless" | Confirms no server-side session â€” JWT/OAuth2 token-based auth |
 | "Event-driven" | Map to Laravel Event Broadcasting and Event Listeners; include event catalog |
 | "Message driven" / "message queue" | Map to Laravel Queue Jobs; validate RabbitMQ integration |
 | "Document based database" / "MongoDB" | Primary signal for Database = MongoDB |
@@ -422,7 +422,7 @@ If Auth = Keycloak, also extract from CLAUDE.md:
 - Keycloak realm: Default derived from project name
 - Keycloak client ID: Default `<project-slug>-web`
 - Keycloak issuer URI: Default `http://localhost:8180/realms/<realm>`
-- Keycloak roles: Infer from mockup sidebar roles (e.g., `hub_administrator` → `HUB_ADMINISTRATOR`)
+- Keycloak roles: Infer from mockup sidebar roles (e.g., `hub_administrator` â†’ `HUB_ADMINISTRATOR`)
 
 ### Messaging Detection
 
@@ -463,7 +463,7 @@ Reporting is determined from PRD.md content:
 - Puppeteer via Browsershot for PDF generation from Blade templates (full CSS/Tailwind support)
 - Laravel Excel for XLSX and CSV export
 - `ReportDefinition` interface for modules to implement
-- `ReportService` orchestrating render → export
+- `ReportService` orchestrating render â†’ export
 - Report registry persisted in the database
 - Report controller with parameter form and download endpoint
 - Blade templates for report list, parameter form, and PDF report layouts (Tailwind-styled)
@@ -475,12 +475,12 @@ Present it to the user for confirmation:
 
 ```
 Optional Component Determination:
-- Database:      MongoDB (from CLAUDE.md → depends on Hub Database)
-- Authentication: Keycloak (from CLAUDE.md → depends on Hub Single Sign On)
-- Scheduling:    yes (from PRD.md → NFR mentions automatic deletion)
+- Database:      MongoDB (from CLAUDE.md â†’ depends on Hub Database)
+- Authentication: Keycloak (from CLAUDE.md â†’ depends on Hub Single Sign On)
+- Scheduling:    yes (from PRD.md â†’ NFR mentions automatic deletion)
   - Batch Processing: no
-- Messaging:     yes (from CLAUDE.md → depends on Hub to HC/SC Adapter Message Queue)
-- Reporting:     yes (from PRD.md → Report module with Report interface NFR)
+- Messaging:     yes (from CLAUDE.md â†’ depends on Hub to HC/SC Adapter Message Queue)
+- Reporting:     yes (from PRD.md â†’ Report module with Report interface NFR)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -504,7 +504,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Design tokens**: From MOCKUP.html Tailwind config
 
 **Auto-derived from CLAUDE.md (Port Allocation table):**
-- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default — the port MUST match the allocated port for this application.
+- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default â€” the port MUST match the allocated port for this application.
 
 **Optional (use sensible defaults if not found in context):**
 - **Default theme**: Default `light` (supports `light`/`dark`)
@@ -515,13 +515,13 @@ After determination, these values are needed. Most are derived automatically:
 Once inputs are gathered from context files and optional components are determined,
 generate the specification as a **multi-file output split by module**. Read the spec
 template at `references/spec-template.md` for the exact structure and content of each
-section. The template is the authoritative guide — follow it closely.
+section. The template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Contains the Table of Contents, shared infrastructure,
+1. **Root `SPECIFICATION.md`** â€” Contains the Table of Contents, shared infrastructure,
    and application-level sections that apply across all modules.
-2. **Per-module `<module-name>/SPEC.md`** — Each module gets its own folder with
+2. **Per-module `<module-name>/SPEC.md`** â€” Each module gets its own folder with
    a self-contained specification file covering that module's complete blueprint.
 
 This split enables a coding agent to:
@@ -532,7 +532,7 @@ This split enables a coding agent to:
 not generic placeholders. Specifically:
 
 - **Modules** must use the actual module names from PRD.md and MODEL.md
-  (e.g., `LocationInformation`, `Corridor`, `Employer` — not `Module1`, `Module2`)
+  (e.g., `LocationInformation`, `Corridor`, `Employer` â€” not `Module1`, `Module2`)
 - **Model fields** must match the actual fields defined in the module model
   files (e.g., `model/location-information/model.md`), not placeholder `field_one`/`field_two`
 - **Service interfaces** must expose methods matching the actual user stories (e.g., if
@@ -543,7 +543,7 @@ not generic placeholders. Specifically:
   `/location-information`), NOT role-prefixed (e.g., NOT `/hub_administrator/location-information`).
   The mockup's role folder determines `middleware('role:...')` annotations, not URL structure.
 - **Sidebar navigation** must match the mockup sidebar files per role. Sidebar hrefs use
-  module-based paths (e.g., `/corridor`, `/quota`) — the role determines which items
+  module-based paths (e.g., `/corridor`, `/quota`) â€” the role determines which items
   appear in the sidebar, not the URL prefix
 - **Form fields** must match what the mockup screens display
 - **Design tokens** (colors, fonts) must match the MOCKUP.html Tailwind configuration
@@ -551,9 +551,9 @@ not generic placeholders. Specifically:
   the traceability section must include its version tag (e.g., `USHM00228 [v1.0.3]`).
   This enables incremental implementation by version. **ALL traceability sub-tables
   (User Stories, NFRs, AND Constraints) MUST include the `| Version |` column.** Do not
-  omit the Version column from any table — even if a module only has v1.0.0 items.
+  omit the Version column from any table â€” even if a module only has v1.0.0 items.
 - **Removed / Replaced items**: The traceability section must include a "Removed / Replaced"
-  subsection listing any deprecated items from previous versions — showing the removed ID,
+  subsection listing any deprecated items from previous versions â€” showing the removed ID,
   the version that removed it, the replacement ID (if any), and a brief reason. This
   ensures developers can see what was removed and understand the evolution of requirements.
   If a module has no removed items, include the subsection with `_None._` to make it
@@ -563,14 +563,14 @@ not generic placeholders. Specifically:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← TOC + shared/application-level specs
-├── location-information/
-│   └── SPEC.md                         ← Module blueprint for Location Information
-├── corridor/
-│   └── SPEC.md                         ← Module blueprint for Corridor
-├── employer/
-│   └── SPEC.md                         ← Module blueprint for Employer
-├── ...                                 ← One folder per module from PRD.md
+â”œâ”€â”€ SPECIFICATION.md                    â† TOC + shared/application-level specs
+â”œâ”€â”€ location-information/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Location Information
+â”œâ”€â”€ corridor/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Corridor
+â”œâ”€â”€ employer/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Employer
+â”œâ”€â”€ ...                                 â† One folder per module from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -580,7 +580,7 @@ sections that a coding agent implements **first** before any module work:
 
 #### 1. Project Overview
 Project metadata, application description, technology stack summary, the complete
-list of user roles extracted from mockup sidebar files, and the **Module Index** —
+list of user roles extracted from mockup sidebar files, and the **Module Index** â€”
 a table listing every module with a link to its `<module>/SPEC.md` file.
 
 #### 2. Composer & npm Configuration
@@ -664,7 +664,7 @@ RABBITMQ_PASSWORD=guest
 
 **Rules:**
 - Only include variables that are actually referenced in `config/` files via `env()` calls
-- Use actual values from SECRET.md — never use placeholders or `TODO`
+- Use actual values from SECRET.md â€” never use placeholders or `TODO`
 - If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file is gitignored (already covered in `.gitignore`)
@@ -724,7 +724,7 @@ web with page and fragment separation. Use actual module names from the context.
 Read `references/modulith-patterns.md` for the detailed module layout and inter-module
 communication rules.
 
-#### 6. Security Configuration *(conditional — include only if Auth != none)*
+#### 6. Security Configuration *(conditional â€” include only if Auth != none)*
 **If Auth = Keycloak:** OAuth2 Client setup with Keycloak OIDC via Laravel Socialite,
 custom `KeycloakGuard`, middleware for role extraction from OIDC ID token claims, CSP
 nonce middleware, automatic redirect to Keycloak login, and public route configuration.
@@ -760,7 +760,7 @@ tables, modals, navigation), layouts (sidebar, navbar, footer responsive), theme
 (light/dark CSS custom properties). Use the actual design tokens (colors, fonts) from
 MOCKUP.html.
 
-#### 12. Authentication Pages *(conditional — include only if Auth != none)*
+#### 12. Authentication Pages *(conditional â€” include only if Auth != none)*
 **If Auth = Keycloak:** No custom login page needed. Middleware automatically redirects
 unauthenticated users to Keycloak login. Keycloak handles the login form, social login
 providers, and credential management. After successful authentication, Keycloak redirects
@@ -802,7 +802,7 @@ Laravel Log (Monolog) configuration, correlation ID middleware (from JWT if auth
 enabled, or request-scoped UUID otherwise), contextual logging via `Log::withContext()`,
 per-channel log levels.
 
-#### 18. Scheduling and Batch Processing *(conditional — include only if Scheduling = yes)*
+#### 18. Scheduling and Batch Processing *(conditional â€” include only if Scheduling = yes)*
 Laravel Task Scheduling via `routes/console.php` with `Schedule` facade. If Batch
 Processing = yes, includes `Bus::batch()` patterns with `Batchable` trait on jobs for
 chunk-oriented processing. Read `references/batch-patterns.md` for the full
@@ -814,29 +814,29 @@ public namespace, listeners in internal namespace. `ShouldQueue` for async proce
 `$afterCommit = true` for post-transaction delivery. Read
 `references/modulith-patterns.md` for details.
 
-#### 20. Messaging (RabbitMQ Pub/Sub) *(conditional — include only if Messaging = yes)*
+#### 20. Messaging (RabbitMQ Pub/Sub) *(conditional â€” include only if Messaging = yes)*
 Standalone RabbitMQ publisher/consumer services for inter-system communication.
 Topic exchange for event broadcasting, direct exchange for point-to-point commands.
 Read `references/messaging-patterns.md` for the full messaging architecture.
 
 #### 21. DTO & Data Transformation
-Per-module `spatie/laravel-data` DTO conventions and mapping flow patterns (Model → DTO
-→ View, Request → DTO → Model).
+Per-module `spatie/laravel-data` DTO conventions and mapping flow patterns (Model â†’ DTO
+â†’ View, Request â†’ DTO â†’ Model).
 
 #### 22. Testing Strategy
-Overview of testing approach — unit tests (PHPUnit), feature tests (Laravel HTTP tests),
+Overview of testing approach â€” unit tests (PHPUnit), feature tests (Laravel HTTP tests),
 module isolation tests, security test utilities (Socialite fake for Keycloak, `actingAs()`
 for form login), view model tests.
 
-#### 23. Reporting (Puppeteer / Browsershot) *(conditional — include only if Reporting = yes)*
+#### 23. Reporting (Puppeteer / Browsershot) *(conditional â€” include only if Reporting = yes)*
 Puppeteer via `spatie/browsershot` for PDF generation from Blade templates with full
 CSS/Tailwind support (headless Chrome rendering), Laravel Excel for XLSX/CSV export.
 Includes `ReportDefinition` interface for modules to implement, `ReportService`
-orchestrating HTML render → Browsershot PDF conversion → export, `ReportRegistry` for
+orchestrating HTML render â†’ Browsershot PDF conversion â†’ export, `ReportRegistry` for
 auto-discovering and persisting report definitions at startup, report controller with
 parameter form and download endpoint, Blade templates for report list, parameter form,
 and self-contained PDF report layouts (including Tailwind CDN for standalone rendering),
-multi-format export. Report Blade templates are fully AI-agent-developed — no visual
+multi-format export. Report Blade templates are fully AI-agent-developed â€” no visual
 designers needed. Read `references/reporting-patterns.md` for the full reporting
 architecture.
 
@@ -864,7 +864,7 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **View models** (spatie/laravel-view-models) with fields matching what mockup screens display
 - **Blade templates** (list, detail, create, edit, row fragments)
 - **Form Request** classes for validation
-- **Complete code samples** for every component — continuous and copy-pasteable
+- **Complete code samples** for every component â€” continuous and copy-pasteable
 
 **Separating UI Layer from Messaging/Async Pipeline:**
 
@@ -872,10 +872,10 @@ When a module has BOTH user-facing screens (user stories) AND async processing N
 (e.g., RabbitMQ message consumption, message validation, ACK publishing, forwarding),
 the SPEC.md MUST clearly separate these into distinct sections:
 
-1. **UI Layer sections** — service methods for read-only queries (search, getById,
+1. **UI Layer sections** â€” service methods for read-only queries (search, getById,
    getHistory), page controllers, fragment controllers, Blade templates. These are driven
    by user stories (USHMxxxxx).
-2. **Messaging Pipeline sections** — message consumer (queue job), message validator,
+2. **Messaging Pipeline sections** â€” message consumer (queue job), message validator,
    ACK publisher, forward publisher, queue configuration, domain events,
    `processIncomingMessage()` service method. These are driven by NFRs (NFRHMxxxx).
 
@@ -911,20 +911,20 @@ The generated specification is a **folder of files**, not a single document:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← Root: TOC + shared/application-level specs
-├── <module-1>/
-│   └── SPEC.md                         ← Module blueprint (self-contained)
-├── <module-2>/
-│   └── SPEC.md
-├── <module-N>/
-│   └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md                    â† Root: TOC + shared/application-level specs
+â”œâ”€â”€ <module-1>/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint (self-contained)
+â”œâ”€â”€ <module-2>/
+â”‚   â””â”€â”€ SPEC.md
+â”œâ”€â”€ <module-N>/
+â”‚   â””â”€â”€ SPEC.md
 ```
 
 - **Root folder**: `<app_folder>/context/specification/`
-- **Root file**: `SPECIFICATION.md` — contains the Table of Contents (with links to
-  each module's `SPEC.md`), all shared infrastructure sections (1–9), and all
-  application-level cross-cutting sections (10–23, excluding module blueprints)
+- **Root file**: `SPECIFICATION.md` â€” contains the Table of Contents (with links to
+  each module's `SPEC.md`), all shared infrastructure sections (1â€“9), and all
+  application-level cross-cutting sections (10â€“23, excluding module blueprints)
 - **Module folders**: One folder per module from PRD.md, named in kebab-case
   (e.g., `location-information/`, `corridor/`, `employer/`)
 - **Module files**: Each `SPEC.md` is self-contained with full code samples for that
-  module's module — service, DTOs, model, migration, controller, views, and Blade templates
+  module's module â€” service, DTOs, model, migration, controller, views, and Blade templates

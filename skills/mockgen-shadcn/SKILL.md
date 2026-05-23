@@ -1,6 +1,6 @@
----
+﻿---
 name: mockgen-shadcn
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate React + shadcn/ui mockup screens from PRD.md files for UI/UX human designer review.
@@ -56,7 +56,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` → `hub_middleware`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` â†’ `hub_middleware`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -82,13 +82,13 @@ The application name is matched against root-level application folders:
 - If a module is provided (e.g., `module:Location Information`), only generate/update pages
   for that specific module. All other modules are skipped. Common pages (home, profile,
   account, notifications), layout components (header, footer, sidebars), and config files are
-  NOT regenerated when a module filter is active — only the module's own page components
+  NOT regenerated when a module filter is active â€” only the module's own page components
   are written (and MOCKUP.html is updated for only that module's cards).
 - If no module is provided, process all modules (default behavior)
 
 **Argument parsing**: The `module:` prefix is the canonical form. Also accept:
 - `module:"Location Information"` (quoted, with space)
-- `module:location_information` (snake_case — convert to title-case for matching)
+- `module:location_information` (snake_case â€” convert to title-case for matching)
 - Natural language: `for Location Information module`, `only Location Information`
 
 ## Version Gate
@@ -135,7 +135,7 @@ Items may also be marked with strikethrough (`~~`) to indicate they are deprecat
 **Strikethrough exclusion** (always applied, regardless of version parameter):
 - Any line wrapped in `~~strikethrough~~` markup MUST be excluded from processing
 - This includes user stories, NFRs, constraints, and references
-- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` → **SKIP**
+- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` â†’ **SKIP**
 - Partially strikethrough lines (where only part is struck) should still be excluded
   if the tag identifier is within the strikethrough
 
@@ -163,14 +163,14 @@ Example parsing of a section with multiple versions:
 ```
 
 With target version `v1.0.0`:
-- USHM00006 → EXCLUDED (strikethrough)
-- USHM00009 → INCLUDED (v1.0.0 <= v1.0.0, not strikethrough)
-- USHM00012 → EXCLUDED (v1.0.1 > v1.0.0)
+- USHM00006 â†’ EXCLUDED (strikethrough)
+- USHM00009 â†’ INCLUDED (v1.0.0 <= v1.0.0, not strikethrough)
+- USHM00012 â†’ EXCLUDED (v1.0.1 > v1.0.0)
 
 With target version `v1.0.1` (or no version specified):
-- USHM00006 → EXCLUDED (strikethrough)
-- USHM00009 → INCLUDED
-- USHM00012 → INCLUDED
+- USHM00006 â†’ EXCLUDED (strikethrough)
+- USHM00009 â†’ INCLUDED
+- USHM00012 â†’ INCLUDED
 
 #### 1c: Module Filtering (applied only when a module argument is provided)
 
@@ -178,7 +178,7 @@ When a `module` argument is present, apply module filtering after version filter
 
 1. **Match the specified module** against the list of parsed modules (case-insensitive, ignoring
    leading/trailing whitespace). Also accept snake_case input by converting it to title-case
-   for comparison (e.g., `location_information` → match "Location Information").
+   for comparison (e.g., `location_information` â†’ match "Location Information").
 2. **Record the matched module name** for use in Step 3 and beyond.
 3. If no module matches, stop and report the available module names to the user before proceeding.
 4. **Module filter scope**: the filter only affects **page component generation** (Step 6e).
@@ -189,13 +189,13 @@ When a `module` argument is present, apply module filtering after version filter
 
 | Aspect | Full Generation | Module-Filtered |
 |--------|----------------|-----------------|
-| Common pages (home, profile, account, notifications) | Generate for every role | **SKIP** — already exist |
-| Layout components (header, footer, sidebar) | Generate | **SKIP** — already exist |
-| Config files (package.json, vite.config.ts, etc.) | Generate | **SKIP** — already exist |
-| shadcn/ui component files | Generate | **SKIP** — already exist |
-| Route config (App.tsx) | Generate | **Update** — add routes for new module pages |
+| Common pages (home, profile, account, notifications) | Generate for every role | **SKIP** â€” already exist |
+| Layout components (header, footer, sidebar) | Generate | **SKIP** â€” already exist |
+| Config files (package.json, vite.config.ts, etc.) | Generate | **SKIP** â€” already exist |
+| shadcn/ui component files | Generate | **SKIP** â€” already exist |
+| Route config (App.tsx) | Generate | **Update** â€” add routes for new module pages |
 | Module page components (target module) | Generate | **Generate / overwrite** |
-| Module page components (other modules) | Generate | **SKIP** — leave untouched |
+| Module page components (other modules) | Generate | **SKIP** â€” leave untouched |
 | MOCKUP.html | Generate full file | **Update only the target module's cards** |
 | Footer version string | Update | **Update** (version may have changed) |
 
@@ -218,17 +218,17 @@ For each module extracted in Step 1:
 
 1. Convert the module name to **kebab-case** to derive the model folder name:
    - Lowercase the module name and replace spaces with hyphens
-   - Examples: "Location Information" → `location-information`, "Industrial Classification" → `industrial-classification`, "Employer" → `employer`
+   - Examples: "Location Information" â†’ `location-information`, "Industrial Classification" â†’ `industrial-classification`, "Employer" â†’ `employer`
 
 2. Check for `{model_dir}/{kebab-module}/model.md`
 
 3. If the file exists, parse it and extract the following sections:
 
-   - **Section 2 – Collection Catalog**: collection names and types (Root Collection, Audit Collection, etc.)
-   - **Section 5 – Field Detail per Collection**: for each collection — field name, type, required, nullable, constraints/notes
-   - **Section 6 – Embedded Document Definitions**: embedded type name and its sub-fields
-   - **Section 7 – Enum Definitions**: enum name and all allowed values with descriptions
-   - **Section 9 – Index Recommendations**: indexed fields (used to identify search/filter parameters)
+   - **Section 2 â€“ Collection Catalog**: collection names and types (Root Collection, Audit Collection, etc.)
+   - **Section 5 â€“ Field Detail per Collection**: for each collection â€” field name, type, required, nullable, constraints/notes
+   - **Section 6 â€“ Embedded Document Definitions**: embedded type name and its sub-fields
+   - **Section 7 â€“ Enum Definitions**: enum name and all allowed values with descriptions
+   - **Section 9 â€“ Index Recommendations**: indexed fields (used to identify search/filter parameters)
 
 4. Store this as the **module model** for the module, keyed by module name
 
@@ -260,7 +260,7 @@ Check if PRD.md contains a `# Design System` section. If it does:
 1. Extract the referenced file path (e.g., from `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`)
 2. Resolve the path relative to PRD.md's location
 3. If the referenced file exists, read it and extract:
-   - Color palettes (primary, secondary, accent, neutral — hex values)
+   - Color palettes (primary, secondary, accent, neutral â€” hex values)
    - Typography (font families, font sizes, weight scale)
    - Spacing scale (if overriding Tailwind defaults)
    - Component patterns (button styles, card styles, form input styles, table styles, badge/chip styles, modal patterns)
@@ -275,9 +275,9 @@ If PRD.md does not have a `# Design System` section, or the referenced file does
 Read all files in `{app_name}/context/design/` (where `{app_name}` is the resolved application folder name from Step 1). Apply the design tokens and guidelines found there to all generated mockup pages.
 
 **Expected files** (any or all may be present):
-- `design-system.md` — Colors, typography, spacing, and visual style definitions
-- `components.md` — Reusable component patterns and Tailwind class conventions
-- `guidelines.md` — Layout rules, accessibility standards, and stack-specific guidelines
+- `design-system.md` â€” Colors, typography, spacing, and visual style definitions
+- `components.md` â€” Reusable component patterns and Tailwind class conventions
+- `guidelines.md` â€” Layout rules, accessibility standards, and stack-specific guidelines
 
 #### 2c: Default Fallback
 
@@ -285,7 +285,7 @@ If neither the PRD reference nor the `{app_name}/context/design/` folder provide
 
 #### 2d: Process Flow Status States
 
-If PRD.md contains a `# High Level Process Flow` section, scan it for entity status lifecycle descriptions (e.g., "Received → Validated → Enriched → Active"). For each status lifecycle found:
+If PRD.md contains a `# High Level Process Flow` section, scan it for entity status lifecycle descriptions (e.g., "Received â†’ Validated â†’ Enriched â†’ Active"). For each status lifecycle found:
 - Ensure list pages for the corresponding module include a status column with colored `<Badge>` variants for each state
 - Use design system color tokens for badge variants (e.g., `default` for active/completed, `secondary` for pending, `destructive` for failed/rejected)
 
@@ -319,7 +319,7 @@ For each module page, analyze the user stories and identify sub-pages needed:
 | "view history/audit of X" | `{module}-history.tsx` - History/audit log view |
 | "view associated X of Y" | `{module}-{sub}-list.tsx` - Associated records list |
 
-#### 3f: Report Layout Pages (conditional — if PRD.md contains report-related content)
+#### 3f: Report Layout Pages (conditional â€” if PRD.md contains report-related content)
 
 Scan PRD.md for report-related content:
 - NFRs mentioning "report", "Report interface", "generate report", "report generation"
@@ -381,7 +381,7 @@ Example: `employer-tab-overview.tsx`, `employer-tab-documents.tsx`, `employer-ta
 #### 3d: Page File Naming Convention
 
 Convert names to kebab-case for file names, PascalCase for component names.
-Example: "Location Information" → file: `location-information.tsx`, component: `LocationInformation`
+Example: "Location Information" â†’ file: `location-information.tsx`, component: `LocationInformation`
 
 #### 3e: Build Screen Plan
 
@@ -406,7 +406,7 @@ Build a **complete** screen plan. Every entry must map to a generated file:
 
 ### Step 4: Create Output Folder Structure
 
-**Module filter**: When a module argument is active, skip this step entirely — the folder
+**Module filter**: When a module argument is active, skip this step entirely â€” the folder
 structure already exists from a previous full generation. Only page components for the target
 module will be written in Step 6e.
 
@@ -490,24 +490,24 @@ dist/
 ```
 
 Key project setup:
-- `package.json` — Vite + React 19 + TypeScript + Tailwind CSS + shadcn/ui dependencies
-- `vite.config.ts` — Vite config with React plugin and path aliases
-- `tsconfig.json` / `tsconfig.app.json` / `tsconfig.node.json` — TypeScript configs with path aliases
-- `tailwind.config.js` — Tailwind config with shadcn/ui integration and design system tokens
-- `postcss.config.js` — PostCSS with Tailwind and autoprefixer
-- `components.json` — shadcn/ui configuration (New York style, zinc base)
-- `index.html` — Vite entry HTML with Google Fonts
-- `src/main.tsx` — React root render
-- `src/App.tsx` — React Router configuration with all role/page routes
-- `src/index.css` — Tailwind directives + shadcn/ui CSS variables (light and dark)
-- `src/lib/utils.ts` — `cn()` utility (clsx + tailwind-merge)
+- `package.json` â€” Vite + React 19 + TypeScript + Tailwind CSS + shadcn/ui dependencies
+- `vite.config.ts` â€” Vite config with React plugin and path aliases
+- `tsconfig.json` / `tsconfig.app.json` / `tsconfig.node.json` â€” TypeScript configs with path aliases
+- `tailwind.config.js` â€” Tailwind config with shadcn/ui integration and design system tokens
+- `postcss.config.js` â€” PostCSS with Tailwind and autoprefixer
+- `components.json` â€” shadcn/ui configuration (New York style, zinc base)
+- `index.html` â€” Vite entry HTML with Google Fonts
+- `src/main.tsx` â€” React root render
+- `src/App.tsx` â€” React Router configuration with all role/page routes
+- `src/index.css` â€” Tailwind directives + shadcn/ui CSS variables (light and dark)
+- `src/lib/utils.ts` â€” `cn()` utility (clsx + tailwind-merge)
 
 ### Step 4c: Generate shadcn/ui Component Files
 
 **Module filter**: When a module argument is active, skip this step entirely.
 
 Generate the shadcn/ui component files directly into `src/components/ui/`. These follow the
-standard shadcn/ui "New York" style patterns. The components are owned by the project — they
+standard shadcn/ui "New York" style patterns. The components are owned by the project â€” they
 are NOT imported from npm.
 
 **Required components** (generate all of these):
@@ -565,7 +565,7 @@ Use templates from [references/admin-layout-template.md](references/admin-layout
 **Apply the design system** from Step 2 (colors, typography, spacing) to all components via
 the CSS variables in `src/index.css` and the Tailwind config.
 
-**Module filter**: When a module argument is active, skip steps 6a–6d (layout components).
+**Module filter**: When a module argument is active, skip steps 6aâ€“6d (layout components).
 Proceed directly to **6e** for the target module's page components only. Also update the
 footer version string in `app-footer.tsx` if the version changed.
 
@@ -582,7 +582,7 @@ Shared layout component using React Router `<Outlet>`. Contains:
 #### 6b: Generate src/components/layout/app-header.tsx
 
 Header component containing:
-- Logo + App Name (left) — `<Link>` to home
+- Logo + App Name (left) â€” `<Link>` to home
 - Notification bell with shadcn/ui `<DropdownMenu>` and `<Badge>` count
 - Globe/locale selector with shadcn/ui `<DropdownMenu>`
 - Dark mode toggle button using next-themes `useTheme()`
@@ -648,9 +648,9 @@ For each module page, analyze the user stories and generate appropriate UI mocku
 
 #### Model-Driven Field Usage (MANDATORY when model file exists)
 
-When a module model was loaded in Step 1b, use its actual field definitions — not generic placeholders — to populate every page. Generic field names like "Field 1" or "Description" are not acceptable when a model is available.
+When a module model was loaded in Step 1b, use its actual field definitions â€” not generic placeholders â€” to populate every page. Generic field names like "Field 1" or "Description" are not acceptable when a model is available.
 
-**Field type → shadcn/ui component mapping:**
+**Field type â†’ shadcn/ui component mapping:**
 
 | Model Type | Form Component | Notes |
 |------------|---------------|-------|
@@ -665,11 +665,11 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 
 **List / Search pages** (`{module}.tsx`):
 - **Filter section**: `<Card>` with filter inputs only for fields in Index Recommendations (Section 9). Use the correct component per the mapping above. Enum-indexed fields use `<Select>`. Date-indexed fields use date range pickers.
-- **Results table**: shadcn/ui `<Table>` with 5–7 most identifying non-system fields as columns. For embedded objects, show as a single column (e.g., "Company Name"). Null/optional fields shown with a dash (`—`).
-- **Table row actions**: View → `<Link>` to `{module}-detail`, Edit → `<Link>` to `{module}-edit`, Delete → shadcn/ui `<Dialog>` confirm
+- **Results table**: shadcn/ui `<Table>` with 5â€“7 most identifying non-system fields as columns. For embedded objects, show as a single column (e.g., "Company Name"). Null/optional fields shown with a dash (`â€”`).
+- **Table row actions**: View â†’ `<Link>` to `{module}-detail`, Edit â†’ `<Link>` to `{module}-edit`, Delete â†’ shadcn/ui `<Dialog>` confirm
 - **Pagination** (MANDATORY): Every results table MUST include shadcn/ui `<Pagination>` directly below the table. Requirements:
   - Default page size: **10 items per page**
-  - Show "Showing X–Y of Z results" summary text on the left
+  - Show "Showing Xâ€“Y of Z results" summary text on the left
   - Show page size `<Select>` with options 10, 25, 50 on the right (default 10)
   - Show Previous / Next and page number buttons using `<Pagination>` component
   - Page state managed via React `useState` (`currentPage`, `pageSize`, `totalItems`)
@@ -700,19 +700,19 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 
 **History / Audit pages** (`{module}-history.tsx`):
 - Use fields from the **audit/history collection** (the non-root collection in the Collection Catalog):
-  - `changeType` → `<Badge>` using enum values from Section 7 with variant mapping
-  - `fieldChanged` → `<code>` styled text
-  - `previousValue` / `newValue` → inline diff or truncated display
-  - `changedAt` → formatted timestamp
-  - `changedBy` → plain text (e.g., "SYSTEM" or username)
+  - `changeType` â†’ `<Badge>` using enum values from Section 7 with variant mapping
+  - `fieldChanged` â†’ `<code>` styled text
+  - `previousValue` / `newValue` â†’ inline diff or truncated display
+  - `changedAt` â†’ formatted timestamp
+  - `changedBy` â†’ plain text (e.g., "SYSTEM" or username)
 - Render as a `<Table>`, newest first
 - **Pagination** (MANDATORY): Include `<Pagination>` below the history table. Default 10 items per page.
 
 **Sample data alignment**: Placeholder values in pages must be consistent with field constraints:
-- `countryCode` → use actual allowed values (e.g., "MYS", "BHR", "MDV") per constraints if present
-- Enum fields → use one of the defined enum values (not arbitrary strings)
-- `companyRegistrationNumber` → e.g., "201901012345 (1234567-X)"
-- `ISODate` fields → use realistic ISO dates (e.g., "2025-08-15T10:30:00Z")
+- `countryCode` â†’ use actual allowed values (e.g., "MYS", "BHR", "MDV") per constraints if present
+- Enum fields â†’ use one of the defined enum values (not arbitrary strings)
+- `companyRegistrationNumber` â†’ e.g., "201901012345 (1234567-X)"
+- `ISODate` fields â†’ use realistic ISO dates (e.g., "2025-08-15T10:30:00Z")
 
 ---
 
@@ -721,32 +721,32 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 **Every clickable element MUST navigate to a real route. No dead-end links allowed.**
 
 1. **Table row actions** (View, Edit, Delete):
-   - "View" / "Details" → React Router `<Link to="/{role}/{module}-detail">` 
-   - "Edit" → React Router `<Link to="/{role}/{module}-edit">`
-   - "Delete" → shadcn/ui `<Dialog>` confirm (no navigation, inline confirm)
-   - "Add New" / "Create" → React Router `<Link to="/{role}/{module}-create">`
+   - "View" / "Details" â†’ React Router `<Link to="/{role}/{module}-detail">` 
+   - "Edit" â†’ React Router `<Link to="/{role}/{module}-edit">`
+   - "Delete" â†’ shadcn/ui `<Dialog>` confirm (no navigation, inline confirm)
+   - "Add New" / "Create" â†’ React Router `<Link to="/{role}/{module}-create">`
 
 2. **Tabs within a page**:
    - Use shadcn/ui `<Tabs>` component with `<TabsContent>` for inline tabs
    - If tabs are separate page files, each tab header is a `<Link>` to the tab route
 
 3. **Header links**:
-   - Notification bell icon → React Router `<Link>` to `notifications`
-   - Notification dropdown "View all notifications" → React Router `<Link>` to `notifications`
-   - Locale dropdown options → no-op handler (static language switcher mockup)
-   - Dark mode toggle → `useTheme().setTheme()` (no navigation)
-   - Profile dropdown → React Router `<Link>` to `profile`
-   - Account dropdown → React Router `<Link>` to `account`
-   - Logout → React Router `<Link>` to `/` (returns to landing)
+   - Notification bell icon â†’ React Router `<Link>` to `notifications`
+   - Notification dropdown "View all notifications" â†’ React Router `<Link>` to `notifications`
+   - Locale dropdown options â†’ no-op handler (static language switcher mockup)
+   - Dark mode toggle â†’ `useTheme().setTheme()` (no navigation)
+   - Profile dropdown â†’ React Router `<Link>` to `profile`
+   - Account dropdown â†’ React Router `<Link>` to `account`
+   - Logout â†’ React Router `<Link>` to `/` (returns to landing)
 
 4. **Sidebar links**: React Router `<Link>` to correct module routes
 
 5. **Breadcrumb links**: shadcn/ui `<Breadcrumb>`
-   - Home → `<Link to="/{role}/home">`
-   - Module → `<Link to="/{role}/{module}">`
-   - Detail / current → `<BreadcrumbPage>` (non-interactive)
+   - Home â†’ `<Link to="/{role}/home">`
+   - Module â†’ `<Link to="/{role}/{module}">`
+   - Detail / current â†’ `<BreadcrumbPage>` (non-interactive)
 
-6. **Pagination links**: shadcn/ui `<Pagination>` with React `useState` for page state — navigation is in-component state, not route-based
+6. **Pagination links**: shadcn/ui `<Pagination>` with React `useState` for page state â€” navigation is in-component state, not route-based
 
 7. **Back / Cancel buttons**: React Router `useNavigate()` or `<Link>` to the parent page
 
@@ -864,10 +864,10 @@ Before finalizing output, perform a route integrity check across ALL generated f
    and `<a href="...">` references
 2. **Build a route registry**: map every route reference to the page component that handles it
 3. **Verify each React Router route** has a corresponding page component:
-   - `<Link to="/{role}/{page}">` → verify `src/pages/{role}/{page}.tsx` exists
-   - `<Link to="/">` → acceptable for logout / landing
-   - `target="_blank"` links → acceptable for images, PDFs, external resources
-   - `href="#"` or dead-end `<Link>` → **NOT ALLOWED** — must be fixed
+   - `<Link to="/{role}/{page}">` â†’ verify `src/pages/{role}/{page}.tsx` exists
+   - `<Link to="/">` â†’ acceptable for logout / landing
+   - `target="_blank"` links â†’ acceptable for images, PDFs, external resources
+   - `href="#"` or dead-end `<Link>` â†’ **NOT ALLOWED** â€” must be fixed
 4. **Verify App.tsx routes**: every page component must have a corresponding route definition
 5. **For any missing page file**, either:
    - Generate the missing page component, OR
@@ -912,14 +912,14 @@ After all mockup files are successfully generated, append an entry to `CHANGELOG
   that may grow unbounded. Use React `useState` for page state. Omitting pagination from any list
   is a generation error.
 - **Layout components for structure**: Header, footer, and sidebar are React components composed in a
-  shared layout route — NOT duplicated inline in each page
-- **Page components are content only**: Role page files return only the page content JSX — the
+  shared layout route â€” NOT duplicated inline in each page
+- **Page components are content only**: Role page files return only the page content JSX â€” the
   layout wrapper is handled by `AppLayout` via React Router `<Outlet>`
-- **React Router for navigation**: All in-app navigation uses `<Link>` or `useNavigate()` — no
+- **React Router for navigation**: All in-app navigation uses `<Link>` or `useNavigate()` â€” no
   `window.location` assignments, no `<a href>` for internal routes
 - **shadcn/ui for all UI elements**: Buttons, inputs, tables, dialogs, dropdowns, badges, tabs,
-  avatars, etc. MUST use the generated shadcn/ui components — not raw HTML elements
-- **Lucide React for all icons**: Use `import { IconName } from "lucide-react"` — no inline SVG,
+  avatars, etc. MUST use the generated shadcn/ui components â€” not raw HTML elements
+- **Lucide React for all icons**: Use `import { IconName } from "lucide-react"` â€” no inline SVG,
   no icon CDN dependencies
 - **Images open in new tab**: Any image link or image view action uses `target="_blank"`
 - **PDFs open in new tab**: Any PDF/document view link uses `target="_blank" rel="noopener noreferrer"`
@@ -937,7 +937,7 @@ After all mockup files are successfully generated, append an entry to `CHANGELOG
 - Use consistent color scheme from the design system via CSS variables and Tailwind config
 - The version displayed in footer should be the target version if specified, or the latest version
   found in PRD.md
-- **Strikethrough items MUST always be excluded** — lines wrapped in `~~` are deprecated/removed
+- **Strikethrough items MUST always be excluded** â€” lines wrapped in `~~` are deprecated/removed
 - **Version filtering**: When a target version is provided, only include items from sections
   with version tags <= target version
 - **Model-driven pages**: When a module model file exists at `model/{kebab-module}/model.md`,

@@ -1,6 +1,6 @@
----
+﻿---
 name: modelgen-nosql
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: xhigh
 description: >
   Extract NoSQL document models from Agile user stories using Domain-Driven Design (DDD) principles.
@@ -11,7 +11,7 @@ description: >
   by module and asks for NoSQL data modeling, document-oriented design, or embed-vs-reference analysis.
   Even if the user says "design my NoSQL collections" or "what documents do I need", this skill applies
   if the input contains structured Agile user stories with module groupings. Do NOT use this skill for
-  RDBMS or relational schema extraction — use the modelgen-relational skill for that.
+  RDBMS or relational schema extraction â€” use the modelgen-relational skill for that.
   Also trigger when the user says "update the model" or "upgrade the model" to
   incrementally evolve an existing NoSQL document model based on changes in PRD.md.
   Accepts an application name (mandatory), version (mandatory), and optional module argument
@@ -35,7 +35,7 @@ Trigger this skill when the user asks to:
 - Upgrade the model to a new version
 - Detect and fix outdated/invalid model elements
 
-Do NOT use for RDBMS/relational schema extraction — use the modelgen-relational skill for that.
+Do NOT use for RDBMS/relational schema extraction â€” use the modelgen-relational skill for that.
 
 ## Version Gate
 
@@ -55,7 +55,7 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `<application>` | Yes | Application name — matched against root-level application folders |
+| `<application>` | Yes | Application name â€” matched against root-level application folders |
 | `<version>` | Yes | Version label (e.g., `v1.0.3`). Used for version-filtered generation. |
 | `module:<name>` | No | Limit generation to a single module |
 
@@ -84,9 +84,9 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 ### Module Matching Rules
 
 1. Match the specified module name **case-insensitively** against modules in PRD.md
-2. Convert `snake_case` input to title-case for matching (e.g., `location_information` → `Location Information`)
+2. Convert `snake_case` input to title-case for matching (e.g., `location_information` â†’ `Location Information`)
 3. If no module matches, **stop and report available module names** before doing any file writes
-4. Exactly one module must match — partial or ambiguous matches are rejected with suggestions
+4. Exactly one module must match â€” partial or ambiguous matches are rejected with suggestions
 
 ### Module-Filtered Generation Mode
 
@@ -95,8 +95,8 @@ When a `module:` argument is provided, the skill operates in **module-filtered m
 | Aspect | Full Generation | Module-Filtered |
 |--------|-----------------|-----------------|
 | Per-module files (model.md, document-model.mermaid, schemas.json) for **target module** | Generate | Generate / overwrite |
-| Per-module files for **other modules** | Generate | **SKIP — leave untouched** |
-| Root `MODEL.md` | Generate full file | **Partial update** — only the target module's row in the Modules table, its Table of Contents section, and its Assumptions Summary row are updated. All other module sections remain untouched. |
+| Per-module files for **other modules** | Generate | **SKIP â€” leave untouched** |
+| Root `MODEL.md` | Generate full file | **Partial update** â€” only the target module's row in the Modules table, its Table of Contents section, and its Assumptions Summary row are updated. All other module sections remain untouched. |
 | Cross-Module Dependencies in MODEL.md | Generate | Update only rows where source or target is the filtered module |
 | Update History in MODEL.md | Generate | Append new entry scoped to the target module |
 
@@ -151,21 +151,21 @@ The user must provide a **new version identifier** for the update (e.g., "1.1.0"
 - Parse the updated PRD.md
 - Compare against source story references in existing model files
 - Classify changes into:
-  - **ADDED** — New stories not referenced by any existing model element
-  - **MODIFIED** — Stories whose text has changed (same tag, different content)
-  - **REMOVED** — Stories referenced in the model but no longer present in PRD.md
-  - **UNCHANGED** — Stories with no changes
+  - **ADDED** â€” New stories not referenced by any existing model element
+  - **MODIFIED** â€” Stories whose text has changed (same tag, different content)
+  - **REMOVED** â€” Stories referenced in the model but no longer present in PRD.md
+  - **UNCHANGED** â€” Stories with no changes
 
 #### Phase U3: Staleness & Validity Check
 
 For each existing model element (collection, embedded document, field, reference, enum value), check:
-- **Orphaned elements**: Source stories entirely removed → flag for removal
-- **Partially orphaned**: Some source stories removed but others remain → flag for review
-- **Stale fields**: Source story text changed such that the field inference no longer holds → flag for update
-- **Stale references**: Relationship patterns changed → flag for re-evaluation
-- **Stale embed decisions**: Access patterns or cardinality changed → flag embed-vs-reference re-evaluation
-- **Stale enums**: Qualifier terms changed or removed → flag for update
-- **Contradictions**: New stories contradict existing model assumptions → flag
+- **Orphaned elements**: Source stories entirely removed â†’ flag for removal
+- **Partially orphaned**: Some source stories removed but others remain â†’ flag for review
+- **Stale fields**: Source story text changed such that the field inference no longer holds â†’ flag for update
+- **Stale references**: Relationship patterns changed â†’ flag for re-evaluation
+- **Stale embed decisions**: Access patterns or cardinality changed â†’ flag embed-vs-reference re-evaluation
+- **Stale enums**: Qualifier terms changed or removed â†’ flag for update
+- **Contradictions**: New stories contradict existing model assumptions â†’ flag
 
 Produce a **Staleness Report** table:
 
@@ -180,7 +180,7 @@ Action values: `REMOVE`, `UPDATE`, `REVIEW`, `KEEP`
 
 #### Phase U4: Incremental Extraction
 
-- For ADDED stories: run the full 8-phase extraction pipeline (existing Phases 1–8)
+- For ADDED stories: run the full 8-phase extraction pipeline (existing Phases 1â€“8)
 - For MODIFIED stories: re-extract affected model elements, compare with existing, merge
 - Re-evaluate embed-vs-reference decisions for any affected collections
 - Apply new version tag to all new/modified elements
@@ -209,10 +209,10 @@ Read references/model-extraction-methodology.md
 Read references/nosql-design-guide.md
 ```
 
-- **model-extraction-methodology.md** — Defines Phases 1–4 (linguistic analysis, entity
+- **model-extraction-methodology.md** â€” Defines Phases 1â€“4 (linguistic analysis, entity
   identification, attribute extraction, relationship detection) and appendices (verb heuristics,
   NFR impact map). Reused from the RDBMS skill.
-- **nosql-design-guide.md** — Defines the document-specific design principles: embed-vs-reference
+- **nosql-design-guide.md** â€” Defines the document-specific design principles: embed-vs-reference
   decision framework, DDD-to-document classification, access pattern analysis matrix, field
   conventions, NFR adaptations, and all output format conventions with examples.
 
@@ -272,8 +272,8 @@ The version tag is freeform (e.g., `1.0`, `v2`, `Sprint-3`). Preserved exactly a
 
 Each module gets a 3-character uppercase prefix for collection names in shared-database deployment.
 
-**Auto-generation:** Multi-word → first letter of each word ("User Management" → `USM`).
-Single-word → first 3 characters ("Billing" → `BIL`). Collisions resolved by alternate
+**Auto-generation:** Multi-word â†’ first letter of each word ("User Management" â†’ `USM`).
+Single-word â†’ first 3 characters ("Billing" â†’ `BIL`). Collisions resolved by alternate
 letters or numeric suffix.
 
 **Scope:** Prefix appears in **collection names in diagrams and JSON schemas** only
@@ -295,8 +295,8 @@ letters or numeric suffix.
 ## Processing Workflow
 
 When no `module:` argument is provided, process ALL modules in a single pass. When a
-`module:` argument is provided, process ONLY the target module — skip all other modules
-entirely. Each module is independent — do not model cross-module references. Flag
+`module:` argument is provided, process ONLY the target module â€” skip all other modules
+entirely. Each module is independent â€” do not model cross-module references. Flag
 potential cross-module dependencies in assumptions.
 
 ### Version Tracking
@@ -307,7 +307,7 @@ retains its original version.
 
 ### Pre-Processing: External Reference Files
 
-If provided, read external files before Phase 1. They supplement — not replace — user stories.
+If provided, read external files before Phase 1. They supplement â€” not replace â€” user stories.
 Every collection must trace to a user story. Reference-only entities go in assumptions.
 Set Source to `REFERENCE` with filename in Source Story when a field comes from a reference file.
 On conflicts, prefer user stories and flag the discrepancy.
@@ -317,7 +317,7 @@ On conflicts, prefer user stories and flag the discrepancy.
 Parse each user story per the methodology reference (Section 3). Extract subjects, verbs,
 direct/indirect objects, purpose clauses, qualifiers. Decompose compound stories.
 
-### Phase 2: Entity Identification → Document Classification
+### Phase 2: Entity Identification â†’ Document Classification
 
 Classify extracted nouns using the methodology reference (Section 4.2), then apply the
 **DDD-to-document classification** from the NoSQL design guide. Key principle: aggregate
@@ -352,8 +352,8 @@ Map NFRs to document model impact using the **NFR Adaptation** table in the NoSQ
 
 If PRD.md contains an `# Architecture Principle` section, read it and apply to model decisions:
 
-- **Document DB confirmation**: If architecture explicitly confirms "document based database" or "MongoDB", gain higher confidence in embed-vs-reference decisions — favor embedding more aggressively for frequently co-read data.
-- **Consistency model**: If architecture mentions "eventual consistency", flag denormalization assumptions with lower severity in the Assumptions table. Rationale entries in the Document Design Decisions table (Section 4) should reference the architecture principle (e.g., "DENORMALIZE: architecture allows eventual consistency — stale reads acceptable").
+- **Document DB confirmation**: If architecture explicitly confirms "document based database" or "MongoDB", gain higher confidence in embed-vs-reference decisions â€” favor embedding more aggressively for frequently co-read data.
+- **Consistency model**: If architecture mentions "eventual consistency", flag denormalization assumptions with lower severity in the Assumptions table. Rationale entries in the Document Design Decisions table (Section 4) should reference the architecture principle (e.g., "DENORMALIZE: architecture allows eventual consistency â€” stale reads acceptable").
 - **Event-driven**: If architecture mentions "event-driven" or "domain events", generate event collection schemas alongside data collections. Add event payload document types and event store collection if applicable.
 - **CQRS hints**: If architecture mentions "CQRS" or "command query separation", consider separate read/write collection patterns and note them in the Collection Catalog.
 - **Monolithic**: If "monolithic" with "modular architecture", model cross-module references as soft references (ObjectId fields without formal FK enforcement) and note this in Cross-Module Dependencies.
@@ -364,7 +364,7 @@ If the `# Architecture Principle` section is absent, skip this sub-phase and pro
 
 If PRD.md contains a `# High Level Process Flow` section, read it and apply to model decisions:
 
-- **Entity lifecycle states**: If a process flow describes status transitions (e.g., "Received → Validated → Enriched → Active"), cross-reference with enum extraction from Phase 2. Ensure all states from flows appear in the corresponding collection's status enum. Add any missing states.
+- **Entity lifecycle states**: If a process flow describes status transitions (e.g., "Received â†’ Validated â†’ Enriched â†’ Active"), cross-reference with enum extraction from Phase 2. Ensure all states from flows appear in the corresponding collection's status enum. Add any missing states.
 - **Access patterns from flows**: Process flow steps that describe queries (e.g., "system queries job demands by corridor and status") directly inform the Access Pattern Analysis (Phase 3) and index recommendations (Section 9). Record each flow-derived access pattern.
 - **Intermediate collections**: If a flow describes staging or temporary data (e.g., "incoming message stored before validation"), verify that corresponding staging collections exist. If not, create them.
 - **Domain events from flows**: Each "publishes", "sends", or "triggers" step should be checked against the Domain Events table (Section 10). Add any flow-derived events not already captured.
@@ -408,11 +408,11 @@ For each module, produce exactly **three files** in a kebab-case subdirectory, p
 
 ```
 /output-dir/
-├── MODEL.md                          # Root summary and table of contents
-└── {module-name}/
-    ├── document-model.mermaid        # Mermaid class diagram
-    ├── schemas.json                  # JSON schema examples with sample documents
-    └── model.md                      # Full model documentation
+â”œâ”€â”€ MODEL.md                          # Root summary and table of contents
+â””â”€â”€ {module-name}/
+    â”œâ”€â”€ document-model.mermaid        # Mermaid class diagram
+    â”œâ”€â”€ schemas.json                  # JSON schema examples with sample documents
+    â””â”€â”€ model.md                      # Full model documentation
 ```
 
 ### 1. Document Structure Diagram: `document-model.mermaid`
@@ -447,7 +447,7 @@ access patterns). Include `_meta` block with domain, prefix, and versions.
 ## 4. Document Design Decisions
 | Parent | Child | Decision | Rationale | Access Pattern | Source Story | Version |
 (Decision: EMBED, EMBED_ARRAY, REFERENCE, DENORMALIZE_AND_REFERENCE)
-This is the most critical table — records every embed-vs-reference decision with reasoning.
+This is the most critical table â€” records every embed-vs-reference decision with reasoning.
 
 ## 5. Field Detail (one subsection per collection)
 ### 5.x {Collection Name}
@@ -531,7 +531,7 @@ comma-separated list of versions included. Stories = count of source stories for
 - **Document Structure Diagram:** [{module-kebab}/document-model.mermaid](./{module-kebab}/document-model.mermaid)
 - **JSON Schemas:** [{module-kebab}/schemas.json](./{module-kebab}/schemas.json)
 - **Collections:** {comma-separated collection names in lower_snake_case with prefix}
-- **Key Design Decisions:** {2–3 most significant embed-vs-reference decisions in natural language}
+- **Key Design Decisions:** {2â€“3 most significant embed-vs-reference decisions in natural language}
 
 (Repeat for each module, in the same order as the Modules table.)
 
@@ -563,7 +563,7 @@ needing clarification. Links to the respective module's Assumptions and Ambiguit
 
 1. **No module inference.** Module-to-story mapping must be provided by the user.
 2. **Modules are independent.** No cross-module references. Flag dependencies in assumptions.
-3. **Concise output.** Final consolidated output only — no intermediate analysis.
+3. **Concise output.** Final consolidated output only â€” no intermediate analysis.
 4. **Traceability.** Every element must reference its originating user story or NFR.
 5. **Ambiguity transparency.** Record all assumptions, especially around access patterns
    and embed-vs-reference decisions.

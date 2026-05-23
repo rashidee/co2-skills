@@ -1,13 +1,13 @@
----
+﻿---
 name: conductor-defect
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Fix bugs reported by humans from a BUG.md file. Takes an application name (mandatory),
-  version (optional — supports single version, comma-separated list, "all", or omit for all),
+  version (optional â€” supports single version, comma-separated list, "all", or omit for all),
   and module (optional), resolves the context folder automatically from root-level application
   folders. When multiple versions are provided (or "all"/omitted), versions are processed
-  SEQUENTIALLY in ascending semver order — all bugs from version N are fully resolved before
+  SEQUENTIALLY in ascending semver order â€” all bugs from version N are fully resolved before
   version N+1 begins. Tags untagged bugs, creates a BUG_MASTER.md tracking checklist, then
   fixes each bug one at a time: reproduce with Playwright, write a test spec, plan the fix,
   apply the fix, verify, and update related artifacts (mockups, specifications, module models,
@@ -22,7 +22,7 @@ description: >
 
 Fix bugs reported by humans one at a time, tracked via BUG_MASTER.md and per-bug BUG_FIX_PLAN.md.
 
-## Ralph Loop Integration (INTERNAL — FULLY AUTOMATIC)
+## Ralph Loop Integration (INTERNAL â€” FULLY AUTOMATIC)
 
 This skill internally manages Ralph Loop. The user does NOT need to invoke `/ralph-loop` or know
 about Ralph Loop at all. The skill handles starting, iterating, and completing the loop transparently.
@@ -30,7 +30,7 @@ about Ralph Loop at all. The skill handles starting, iterating, and completing t
 ### Internal Auto-Start Mechanism
 
 When this skill is invoked (e.g., `/conductor-defect hub_middleware version:v1.0.4`), the
-**very first action** — before reading any files, before Phase 0, before ANYTHING — is to
+**very first action** â€” before reading any files, before Phase 0, before ANYTHING â€” is to
 silently start Ralph Loop by invoking the Skill tool internally:
 
 ```
@@ -50,21 +50,21 @@ version:v1.0.4 module:location-information`) and pass it as the `args` value, ap
 | `/conductor-defect hub_middleware version:v1.0.4 module:location-information` | `/conductor-defect hub_middleware version:v1.0.4 module:location-information --completion-promise "ALL BUGS RESOLVED" --max-iterations 50` |
 
 **Skip if already active**: If `.claude/ralph-loop.local.md` already exists, Ralph Loop is
-already running (this is a resumed iteration). Do NOT re-invoke — proceed directly to Phase 0.
+already running (this is a resumed iteration). Do NOT re-invoke â€” proceed directly to Phase 0.
 
 **BLOCKING**: Do NOT proceed with ANY work until Ralph Loop is confirmed active (either freshly
 started or already running from a previous iteration).
 
 ### How It Works (Transparent to User)
 
-1. User invokes `/conductor-defect` with their arguments — they never see or interact with Ralph Loop
+1. User invokes `/conductor-defect` with their arguments â€” they never see or interact with Ralph Loop
 2. This skill silently starts Ralph Loop with the conductor-defect prompt as the loop body
 3. On each iteration, the agent reads BUG_MASTER.md to find the next unresolved bug
 4. The agent fixes one or more bugs until context runs out or all bugs are resolved
 5. When the agent tries to exit, Ralph Loop re-feeds the same prompt automatically
 6. The next iteration resumes from where the last one left off (tracked in BUG_MASTER.md)
 7. When ALL bugs are resolved, the agent outputs the completion promise to exit the loop
-8. The user only sees bug-fixing progress — Ralph Loop is an invisible persistence layer
+8. The user only sees bug-fixing progress â€” Ralph Loop is an invisible persistence layer
 
 ### Completion Promise
 
@@ -86,7 +86,7 @@ At the START of every iteration (including the first), the agent MUST:
 3. Read BUG_MASTER.md to determine what is already resolved
 4. Find the FIRST bug with status `NEW` or `IN_PROGRESS`
 5. If that bug has a BUG_FIX_PLAN.md, read it to find the last incomplete step
-6. Resume from exactly that point — do NOT re-fix already-resolved bugs
+6. Resume from exactly that point â€” do NOT re-fix already-resolved bugs
 7. If ALL bugs have terminal status, output the completion promise and stop
 
 ## Inputs
@@ -182,16 +182,16 @@ before ANY bug from version N+1 is started. This ensures:
 
 **CLAUDE.md is automatically loaded into context** at the start of every session. It contains
 project details, infrastructure paths, credentials, and configuration. You do NOT need to read
-it manually — the information is already available in your context.
+it manually â€” the information is already available in your context.
 
 **Before executing ANY tool command** (Maven build, Spring Boot run, database CLI, Keycloak CLI,
 Playwright test, npm start, etc.), use the following from CLAUDE.md (already in context):
 
-- **JDK path** — Use the exact `JAVA_HOME` path specified in CLAUDE.md
-- **Maven path** — Use the exact Maven binary path specified in CLAUDE.md
-- **Database credentials** — Host, port, username, password
-- **Keycloak configuration** — Host, admin credentials, CLI path
-- **Any other infrastructure details** — Ports, URLs, connection strings
+- **JDK path** â€” Use the exact `JAVA_HOME` path specified in CLAUDE.md
+- **Maven path** â€” Use the exact Maven binary path specified in CLAUDE.md
+- **Database credentials** â€” Host, port, username, password
+- **Keycloak configuration** â€” Host, admin credentials, CLI path
+- **Any other infrastructure details** â€” Ports, URLs, connection strings
 
 **WHY**: CLAUDE.md contains the actual system paths, credentials, and configuration for the
 developer's machine. Every shell command MUST use the values from CLAUDE.md.
@@ -303,7 +303,7 @@ The BUG.md file follows a hierarchical structure mirroring the module structure 
 
 - Module headers are H2 (`## Module Name`) under their parent group (H1) in BUG.md
 - The parent groups (`# Common`, `# System Module`, `# Business Module`) are NOT modules themselves
-  — they are organizational headers
+  â€” they are organizational headers
 - When `module:` filter is provided, only include bugs under the matching H2 module section
 - Module matching: convert filter value to title case for matching (e.g., `location-information`
   matches `## Location Information`, `ui-ux-standards` matches `## UI/UX Standards`)
@@ -337,9 +337,9 @@ Before starting any work, check `CHANGELOG.md` in the application folder (`<app_
 1. If `<app_folder>/CHANGELOG.md` does not exist, skip this check (first-ever execution for this application).
 2. If `<app_folder>/CHANGELOG.md` exists, scan all `## vX.Y.Z` headings and determine the **highest version** using semantic versioning comparison.
 3. Apply the gate based on the version argument form:
-   - **Single version**: If requested version **<** highest version → **STOP immediately**. Print: `"Version {requested} is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
-   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version → **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
-   - **`version:all` or omitted**: Skip this check — when processing all discovered versions, historical versions are expected to be present in the source file.
+   - **Single version**: If requested version **<** highest version â†’ **STOP immediately**. Print: `"Version {requested} is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
+   - **Comma-separated list**: Check the **lowest** version in the list. If lowest **<** highest version â†’ **STOP immediately**. Print: `"Version {lowest} in the provided list is lower than the current application version {highest} recorded in <app_folder>/CHANGELOG.md. Execution rejected."`
+   - **`version:all` or omitted**: Skip this check â€” when processing all discovered versions, historical versions are expected to be present in the source file.
 
 ## PRD.md Extended Sections
 
@@ -373,12 +373,12 @@ If PRD.md contains a `# High Level Process Flow` section:
 
 This phase runs at the START of every iteration, including the first.
 
-0. **Ensure Ralph Loop is active (INTERNAL — silent)** — Check if `.claude/ralph-loop.local.md`
+0. **Ensure Ralph Loop is active (INTERNAL â€” silent)** â€” Check if `.claude/ralph-loop.local.md`
    exists. If it does NOT exist, silently invoke Ralph Loop using the Skill tool as described
    in the "Internal Auto-Start Mechanism" section above. The user should NOT be informed about
-   this step — it is an internal implementation detail. If the file already exists, skip this step.
+   this step â€” it is an internal implementation detail. If the file already exists, skip this step.
 
-1. **Use project information from CLAUDE.md (already in context)** — extract JDK path, Maven path, database credentials,
+1. **Use project information from CLAUDE.md (already in context)** â€” extract JDK path, Maven path, database credentials,
    and all infrastructure details. These values are required for every subsequent tool command.
 
 2. Check if `<app_folder>/context/bug/BUG_MASTER.md` exists
@@ -396,7 +396,7 @@ This phase runs at the START of every iteration, including the first.
      - Update the Summary table counts
      - Resume processing from the first new version
    - Scan the Version Processing Order table for the FIRST version with status != `COMPLETED`
-   - If ALL versions are `COMPLETED` (and therefore all bugs have terminal status) →
+   - If ALL versions are `COMPLETED` (and therefore all bugs have terminal status) â†’
      output `<promise>ALL BUGS RESOLVED</promise>` and stop
    - Otherwise, within the active version section, find the FIRST bug with status `NEW` or
      `IN_PROGRESS`
@@ -405,15 +405,15 @@ This phase runs at the START of every iteration, including the first.
 
 4. If it does not exist, proceed to Phase 1 (fresh start)
 
-### Phase 1: Pre-Implementation — Analyze, Tag, and Create Master Checklist
+### Phase 1: Pre-Implementation â€” Analyze, Tag, and Create Master Checklist
 
 #### Step 1.1: Read, Resolve Versions, and Filter BUG.md
 
 1. Read `<app_folder>/context/BUG.md`
 2. **Resolve the version list** using the Version Resolution rules:
-   - Single version → `[v1.0.4]`
-   - Comma-separated → parse and sort ascending by semver → `[v1.0.3, v1.0.4]`
-   - `all` or omitted → scan BUG.md for ALL `[vX.Y.Z]` tags, deduplicate, sort ascending → `[v1.0.1, v1.0.2, v1.0.3, ...]`
+   - Single version â†’ `[v1.0.4]`
+   - Comma-separated â†’ parse and sort ascending by semver â†’ `[v1.0.3, v1.0.4]`
+   - `all` or omitted â†’ scan BUG.md for ALL `[vX.Y.Z]` tags, deduplicate, sort ascending â†’ `[v1.0.1, v1.0.2, v1.0.3, ...]`
 3. Apply module filter if provided
 4. For each resolved version, identify all bugs that match the filter criteria
 5. Count the total bugs per version and overall
@@ -430,7 +430,7 @@ This phase runs at the START of every iteration, including the first.
 Create `<app_folder>/context/bug/BUG_MASTER.md` with this structure:
 
 ```markdown
-# Bug Master — <Application Name>
+# Bug Master â€” <Application Name>
 
 **Started**: <date>
 **Context**: <app_folder>/context
@@ -493,34 +493,34 @@ Create `<app_folder>/context/bug/BUG_MASTER.md` with this structure:
 | **Total** | **X** |
 ```
 
-**IMPORTANT — Single version shortcut**: When only a single version is resolved (either
+**IMPORTANT â€” Single version shortcut**: When only a single version is resolved (either
 explicitly provided or only one version exists in BUG.md), the BUG_MASTER.md still uses
 the same structure above but with only one version section. The Version Processing Order
 table will have a single row.
 
-**IMPORTANT — Version-first organization**: Bugs are grouped by version (H2), then by
+**IMPORTANT â€” Version-first organization**: Bugs are grouped by version (H2), then by
 module (H3) within each version. This ensures the version-sequential processing order
 is visually clear and easy to track.
 
 **Status Values:**
-- `NEW` — Bug has been tagged but not yet worked on
-- `IN_PROGRESS` — Bug is currently being investigated/fixed
-- `FIXED` — Bug has been fixed and verified
-- `CANNOT_REPRODUCE` — Bug could not be reproduced via Playwright
-- `HIGH_IMPACT` — Fix would potentially break other working functionalities; deferred
+- `NEW` â€” Bug has been tagged but not yet worked on
+- `IN_PROGRESS` â€” Bug is currently being investigated/fixed
+- `FIXED` â€” Bug has been fixed and verified
+- `CANNOT_REPRODUCE` â€” Bug could not be reproduced via Playwright
+- `HIGH_IMPACT` â€” Fix would potentially break other working functionalities; deferred
 
-### Phase 2: Implementation — Fix Each Bug (Version by Version, One at a Time)
+### Phase 2: Implementation â€” Fix Each Bug (Version by Version, One at a Time)
 
 Process bugs **version by version** in the order defined in the Version Processing Order table:
 
 1. Find the FIRST version in the Version Processing Order table with status != `COMPLETED`
 2. Update that version's status to `IN_PROGRESS` and record the start date
 3. Within that version section, find the FIRST bug with status `NEW` or `IN_PROGRESS`
-4. Fix that bug using Steps 2.1–2.8 below
+4. Fix that bug using Steps 2.1â€“2.8 below
 5. After fixing, check if ALL bugs in the current version have terminal status:
-   - If YES → mark the version as `COMPLETED` in the Version Processing Order table, record
+   - If YES â†’ mark the version as `COMPLETED` in the Version Processing Order table, record
      completion date, and move to the NEXT version (step 1)
-   - If NO → find the next `NEW` bug in the same version and continue
+   - If NO â†’ find the next `NEW` bug in the same version and continue
 6. Repeat until ALL versions are `COMPLETED`
 
 For each bug with status `NEW` in BUG_MASTER.md (within the current version), in order:
@@ -534,7 +534,7 @@ For each bug with status `NEW` in BUG_MASTER.md (within the current version), in
 #### Step 2.2: Reproduce the Bug with Playwright
 
 1. Read the bug description from BUG.md (including reproduction steps and expected result)
-2. Write a Playwright script to reproduce the bug — save the script file in the bug folder:
+2. Write a Playwright script to reproduce the bug â€” save the script file in the bug folder:
    `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/reproduce.spec.ts`
 3. In the Playwright script, use **explicit screenshot paths** pointing to the bug folder.
    Do NOT rely on Playwright's default screenshot location. Use `page.screenshot()` with an
@@ -566,7 +566,7 @@ bug artifacts.
 Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_TEST_SPEC.md`:
 
 ```markdown
-# Test Spec — <BUG-XXX>
+# Test Spec â€” <BUG-XXX>
 
 **Bug**: <Short description>
 **Module**: <Module Name>
@@ -606,7 +606,7 @@ test('<BUG-XXX>: <description>', async ({ page }) => {
 
 #### Step 2.4: Analyze and Plan the Fix
 
-1. Analyze the bug in detail — read relevant source code, templates, configurations
+1. Analyze the bug in detail â€” read relevant source code, templates, configurations
 2. Determine the root cause
 3. Plan how to fix it
 4. Assess impact on other functionalities
@@ -614,12 +614,12 @@ test('<BUG-XXX>: <description>', async ({ page }) => {
 Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 
 ```markdown
-# Fix Plan — <BUG-XXX>
+# Fix Plan â€” <BUG-XXX>
 
 **Bug**: <Short description>
 **Module**: <Module Name>
 **Root Cause**: <What is causing the bug>
-**Impact Assessment**: <Low/Medium/High — does fixing this affect other features?>
+**Impact Assessment**: <Low/Medium/High â€” does fixing this affect other features?>
 
 ---
 
@@ -661,7 +661,7 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 #### Step 2.5: Apply the Fix
 
 1. Make the code changes as planned in BUG_FIX_PLAN.md
-2. **Annotate the fix in source (MANDATORY)** — On EACH method, block, or template region
+2. **Annotate the fix in source (MANDATORY)** â€” On EACH method, block, or template region
    modified by the fix, leave a `[BUG-XXX]` marker comment using the language's native
    comment style:
    - Java method: prepend a Javadoc line `* [BUG-XXX] <one-line description>` (or extend
@@ -682,11 +682,11 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 
    The marker enables `git blame` and IDE search to trace any modified line back to
    BUG.md without consulting BUG_FIX_PLAN.md.
-3. **Append to top-of-file traceability comment (if present)** — If the modified file
+3. **Append to top-of-file traceability comment (if present)** â€” If the modified file
    already carries a top-of-file traceability comment (from `conductor-feature-develop`'s
    code-level traceability rule), append the `[BUG-XXX]` code to its `Bug fixes:` line,
    creating the line if it does not yet exist. Use the `USHM#####` / `NFRHM####` /
-   `CONSHM###` / `REFHM####` codes already present in the file — do NOT change them:
+   `CONSHM###` / `REFHM####` codes already present in the file â€” do NOT change them:
    ```java
    /**
     * Implements: USHM00003, USHM00006
@@ -707,7 +707,7 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
      fullPage: true
    });
    ```
-   Do NOT save screenshots in the application source folder — always use the bug folder under `<app_folder>/context/`.
+   Do NOT save screenshots in the application source folder â€” always use the bug folder under `<app_folder>/context/`.
 
 **IF verified (test passes):**
 - Update BUG_MASTER.md: set status to `FIXED`
@@ -723,21 +723,21 @@ Create `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/BUG_FIX_PLAN.md`:
 
 Analyze the fix to determine which artifacts need updating:
 
-**A. UI Fix → Update Mockups**
+**A. UI Fix â†’ Update Mockups**
 
 If the fix changed the visual appearance (HTML/CSS/layout changes in JTE templates):
 1. Navigate to `<app_folder>/context/mockup/` and find the relevant module screens
 2. Update the HTML mockup files to reflect the fix
 3. Log the mockup changes in BUG_FIX_PLAN.md
 
-**B. Code Logic Fix → Update Specifications**
+**B. Code Logic Fix â†’ Update Specifications**
 
 If the fix involved code logic changes (service layer, controller logic, validation):
 1. Navigate to `<app_folder>/context/specification/<module-slug>/`
 2. Update the SPEC.md to reflect the changed behavior
 3. Log the specification changes in BUG_FIX_PLAN.md
 
-**C. Module Model Fix → Update Models**
+**C. Module Model Fix â†’ Update Models**
 
 If the fix involved module model changes (new/removed fields, collection changes):
 1. Navigate to `<app_folder>/context/model/<module-slug>/`
@@ -788,7 +788,7 @@ After all bugs have been processed (every bug has a terminal status):
 1. Update BUG_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Update all Summary table counts
-2. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) — **one entry per version processed**:
+2. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) â€” **one entry per version processed**:
    - Read `<app_folder>/CHANGELOG.md`. If it does not exist, create it with context header.
    - For EACH version in the resolved version list (ascending order):
      - Search for a `## {version}` heading matching this version.
@@ -800,57 +800,57 @@ After all bugs have been processed (every bug has a terminal status):
 
 ## Critical Rules
 
-1. **CLAUDE.md is the source of truth for all tool commands** — CLAUDE.md is automatically
+1. **CLAUDE.md is the source of truth for all tool commands** â€” CLAUDE.md is automatically
    loaded into context. Use the exact JDK path, Maven path, database credentials,
    and all other infrastructure details from CLAUDE.md. NEVER hardcode or guess paths.
 
-2. **One bug at a time** — Fix bugs sequentially. Complete all steps for one bug before moving
+2. **One bug at a time** â€” Fix bugs sequentially. Complete all steps for one bug before moving
    to the next. Never work on multiple bugs simultaneously.
 
-3. **BUG_MASTER.md is the master checkpoint** — Ralph Loop uses BUG_MASTER.md to determine
+3. **BUG_MASTER.md is the master checkpoint** â€” Ralph Loop uses BUG_MASTER.md to determine
    which bugs have been fixed and which are pending. Always keep it up to date. For detailed
    status of each bug, refer to the BUG_FIX_PLAN.md in each bug's folder.
 
-4. **Never skip reproduction** — Always attempt to reproduce the bug with Playwright first.
+4. **Never skip reproduction** â€” Always attempt to reproduce the bug with Playwright first.
    If it can't be reproduced, mark it as `CANNOT_REPRODUCE` and move on.
 
-5. **HIGH_IMPACT defers, not blocks** — If a fix would break other features, mark it as
+5. **HIGH_IMPACT defers, not blocks** â€” If a fix would break other features, mark it as
    `HIGH_IMPACT` and move to the next bug. Do not attempt risky fixes.
 
-6. **Track everything** — Every action should be logged in BUG_FIX_PLAN.md so that any
+6. **Track everything** â€” Every action should be logged in BUG_FIX_PLAN.md so that any
    future session (or Ralph Loop iteration) can understand what was done and what remains.
 
-7. **Preserve existing tags** — Never modify or remove existing `[BUG-XXX]` tags in BUG.md.
+7. **Preserve existing tags** â€” Never modify or remove existing `[BUG-XXX]` tags in BUG.md.
    Only add new tags to untagged bugs.
 
-8. **Update artifacts faithfully** — When a fix changes UI, logic, or models, update the
+8. **Update artifacts faithfully** â€” When a fix changes UI, logic, or models, update the
    corresponding mockups, specifications, and module models. Keep all artifacts in sync.
 
-9. **Context window awareness** — If approaching context limits, save progress to
+9. **Context window awareness** â€” If approaching context limits, save progress to
    BUG_MASTER.md and BUG_FIX_PLAN.md. Ralph Loop will resume from where you left off.
 
-10. **Ralph Loop discipline — NEVER stop prematurely** — After fixing one bug, IMMEDIATELY
+10. **Ralph Loop discipline â€” NEVER stop prematurely** â€” After fixing one bug, IMMEDIATELY
     check for the next `NEW` bug and start it. Do NOT stop "to let the user review". The only
     valid reasons to stop within an iteration are: (a) context window approaching limit,
     (b) all bugs resolved (output promise), or (c) an unrecoverable error requiring user input.
 
-11. **Auto-start Ralph Loop (INTERNAL)** — The FIRST action MUST be to silently check if Ralph
+11. **Auto-start Ralph Loop (INTERNAL)** â€” The FIRST action MUST be to silently check if Ralph
     Loop is active (`.claude/ralph-loop.local.md` exists). If not, silently invoke it using the
-    Skill tool. The user should NEVER be asked to start Ralph Loop manually — this is an internal
+    Skill tool. The user should NEVER be asked to start Ralph Loop manually â€” this is an internal
     implementation detail handled entirely by the skill. Do NOT mention Ralph Loop to the user.
 
-12. **NO creative alternatives for 3rd party applications (CRITICAL)** — Use the EXACT methods,
+12. **NO creative alternatives for 3rd party applications (CRITICAL)** â€” Use the EXACT methods,
     connection strings, CLIs, and credentials described in `CLAUDE.md`. NEVER use Docker
     containers, alternative databases, or different CLIs than what CLAUDE.md specifies.
 
-13. **Screenshots MUST be saved in the bug folder (CRITICAL)** — All Playwright screenshots
+13. **Screenshots MUST be saved in the bug folder (CRITICAL)** â€” All Playwright screenshots
     (reproduction, verification, fixed) MUST be saved to
     `<app_folder>/context/bug/<module-slug>/<BUG-XXX>/` using explicit `page.screenshot({ path: ... })`
     calls. NEVER save screenshots in the application source folder, Playwright's default test-results
     directory, or any other location. The Playwright script files themselves should also be saved in
     the bug folder, not in the source tree.
 
-14. **Spring Boot `app:` namespace for new configuration (CRITICAL)** — When a bug fix
+14. **Spring Boot `app:` namespace for new configuration (CRITICAL)** â€” When a bug fix
     introduces a new configuration value in a Spring Boot application, that value MUST be
     added under the top-level `app:` key in `application.yml`. NEVER place new
     application-specific keys at the YAML root (e.g., top-level `notification:`,
@@ -870,12 +870,12 @@ After all bugs have been processed (every bug has a terminal status):
 
     **If the bug fix touches code that currently reads configuration from a root-level
     YAML key or a framework namespace, relocate the config under `app:` as part of the
-    fix** — do not leave the violation in place. Update the `application.yml`, the Java
+    fix** â€” do not leave the violation in place. Update the `application.yml`, the Java
     `@ConfigurationProperties` prefix, any `@Value` references, and any tests that use
     `@TestPropertySource` or `@SpringBootTest(properties = ...)`. See SPECIFICATION.md
     section "Application-Specific Configuration (`app:` namespace)" for the rules.
 
-15. **Code-level bug traceability is MANDATORY** — Every method, block, or template region
+15. **Code-level bug traceability is MANDATORY** â€” Every method, block, or template region
     modified by a bug fix MUST carry a `[BUG-XXX]` marker comment using the language's
     native comment style (Javadoc / PHPDoc / JSDoc / `{{-- --}}` / `@* *@` / `<!-- -->` /
     `#`). When a modified file already carries a top-of-file traceability comment from
@@ -886,4 +886,4 @@ After all bugs have been processed (every bug has a terminal status):
     **Why**: `git blame` and IDE search must surface the originating bug for any fix line
     directly, without consulting BUG_FIX_PLAN.md (which is a transient tracking file).
     PRD.md's `### Bug` section captures **what** was fixed; the in-source `[BUG-XXX]`
-    marker captures **where** — both are required for end-to-end traceability.
+    marker captures **where** â€” both are required for end-to-end traceability.

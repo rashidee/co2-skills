@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-ts-cli
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a distributable Node.js CLI
@@ -16,7 +16,7 @@ description: >
   "design a TypeScript CLI", "write a technical spec for my CLI tool",
   "scaffold spec for a Node CLI", or any request describing a command-line application.
   Even if the user only mentions a subset (e.g., "CLI with config file support" or
-  "distributable Node tool"), this skill likely applies — ask and confirm.
+  "distributable Node tool"), this skill likely applies â€” ask and confirm.
 ---
 
 # TypeScript CLI Application Specification Generator
@@ -27,8 +27,8 @@ intended to be followed by a developer or coding agent to produce a fully functi
 packageable CLI tool.
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the application — from `package.json` configuration to
-command action handlers to binary packaging — so that implementation becomes a mechanical
+document describing every layer of the application â€” from `package.json` configuration to
+command action handlers to binary packaging â€” so that implementation becomes a mechanical
 exercise.
 
 ## Technology Stack
@@ -74,7 +74,7 @@ Include in the version table only when the corresponding integration is selected
 | glob                   | 11.x    | File Operations = yes   |
 
 > **Async patterns (Polling, Inline Batch, Background Daemon) use no additional
-> npm packages** — they are implemented entirely with Node.js built-ins
+> npm packages** â€” they are implemented entirely with Node.js built-ins
 > (`setTimeout`, `process.kill`, `child_process.spawn`) and the packages already
 > in the core stack (ora for progress, chalk for output). The async pattern type
 > is detected from PRD.md NFRs and user stories; no new dependency version rows
@@ -84,63 +84,63 @@ Include in the version table only when the corresponding integration is selected
 
 The spec must include these in the `dependencies` configuration section (always):
 
-- `commander` — CLI argument parsing and command routing
-- `chalk` — Terminal colour output (ESM-only, v5+)
-- `ora` — Spinner / progress indicators
-- `zod` — Schema validation for config, arguments, and API payloads
+- `commander` â€” CLI argument parsing and command routing
+- `chalk` â€” Terminal colour output (ESM-only, v5+)
+- `ora` â€” Spinner / progress indicators
+- `zod` â€” Schema validation for config, arguments, and API payloads
 
 Always in `devDependencies`:
-- `typescript` — TypeScript compiler
-- `tsup` — TypeScript bundler (esbuild-based, handles ESM, shebang injection)
-- `vitest` — Unit and integration testing
-- `@types/node` — Node.js type declarations
-- `tsx` — TypeScript execution for scripts and development
-- `eslint` + `@typescript-eslint/eslint-plugin` — Linting
+- `typescript` â€” TypeScript compiler
+- `tsup` â€” TypeScript bundler (esbuild-based, handles ESM, shebang injection)
+- `vitest` â€” Unit and integration testing
+- `@types/node` â€” Node.js type declarations
+- `tsx` â€” TypeScript execution for scripts and development
+- `eslint` + `@typescript-eslint/eslint-plugin` â€” Linting
 
 ### Conditional Dependencies
 
 **If Prompts = yes:**
-- `@inquirer/prompts` — Modern interactive prompts (officially maintained Inquirer v9+)
+- `@inquirer/prompts` â€” Modern interactive prompts (officially maintained Inquirer v9+)
 
 **If User Config = yes:**
-- `conf` — Persistent user-level configuration stored in OS config directory
+- `conf` â€” Persistent user-level configuration stored in OS config directory
 
 **If Project Config = yes:**
-- `cosmiconfig` — Project-level config file loading (supports `.json`, `.yaml`, `.js`, `package.json`)
+- `cosmiconfig` â€” Project-level config file loading (supports `.json`, `.yaml`, `.js`, `package.json`)
 
 **If Local Database = yes:**
-- `better-sqlite3` — Synchronous SQLite driver (no async complexity in CLI context)
-- `drizzle-orm` — TypeScript-first ORM with schema-as-code and type-safe query builder
-- `env-paths` — OS-correct data directory resolution (macOS / Linux / Windows)
-- `@types/better-sqlite3` — TypeScript type declarations (devDependency)
-- `drizzle-kit` — Migration generator and Drizzle Studio (devDependency)
+- `better-sqlite3` â€” Synchronous SQLite driver (no async complexity in CLI context)
+- `drizzle-orm` â€” TypeScript-first ORM with schema-as-code and type-safe query builder
+- `env-paths` â€” OS-correct data directory resolution (macOS / Linux / Windows)
+- `@types/better-sqlite3` â€” TypeScript type declarations (devDependency)
+- `drizzle-kit` â€” Migration generator and Drizzle Studio (devDependency)
 
 **If Shell Execution = yes:**
-- `execa` — Child process execution with better ergonomics and ESM support
+- `execa` â€” Child process execution with better ergonomics and ESM support
 
 **If HTTP Client = yes:**
-- `got` — HTTP client with TypeScript-first design (ESM-only, v14+)
+- `got` â€” HTTP client with TypeScript-first design (ESM-only, v14+)
 
 **If Auto-update = yes:**
-- `update-notifier` — Non-blocking update checks against npm registry
+- `update-notifier` â€” Non-blocking update checks against npm registry
 
 **If Binary Packaging = yes (devDependency):**
-- `@yao-pkg/pkg` — Compiles Node.js application into standalone executables
+- `@yao-pkg/pkg` â€” Compiles Node.js application into standalone executables
 
 **If Table Output = yes:**
-- `cli-table3` — Tabular terminal output with borders and alignment
+- `cli-table3` â€” Tabular terminal output with borders and alignment
 
 **If Banner/Box UI = yes:**
-- `boxen` — Bordered terminal box output (ESM-only)
+- `boxen` â€” Bordered terminal box output (ESM-only)
 
 **If File Operations = yes:**
-- `glob` — File system globbing with ESM support
+- `glob` â€” File system globbing with ESM support
 
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the custom applications defined in `CLAUDE.md`. The skill
-reads all required inputs from the project's context files — no interactive Q&A is needed
+reads all required inputs from the project's context files â€” no interactive Q&A is needed
 for the core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -173,7 +173,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_my_tool` → `my_tool`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_my_tool` â†’ `my_tool`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -199,13 +199,13 @@ When a version is provided, only include user stories, NFRs, and constraints fro
 When `command:<name>` is provided:
 - Only generate the `SPEC.md` for that specific command
 - Other existing command spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that command's TOC entry is
+- `SPECIFICATION.md` (root) gets a partial update â€” only that command's TOC entry is
   added or updated; all other entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **four input sources** read from the project's context files.
-The skill does NOT ask the user for prompts, config, packaging, or other choices — it
+The skill does NOT ask the user for prompts, config, packaging, or other choices â€” it
 **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
@@ -217,7 +217,7 @@ From CLAUDE.md (already loaded in context), locate the target application under 
 - **Binary name**: The kebab-case executable name (e.g., `my-tool`, `deploy`)
 - **Application description**: The description paragraph below the heading
 - **Target audiences**: The "Used by" or "Consumers" list
-- **Dependencies**: The "Depends on" list — primary source for determining optional components
+- **Dependencies**: The "Depends on" list â€” primary source for determining optional components
 
 The application name is used to derive:
 - **Package name**: kebab-case of the application name with `@scope/` prefix if scoped
@@ -346,8 +346,8 @@ dependencies and requirements in `CLAUDE.md` and cross-referencing with `PRD.md`
 | All persistent data fits in simple key-value pairs (use `conf` instead) | Local Database = no |
 
 > **Local Database vs `conf`:** If the data has multiple rows, grows over time, needs
-> querying, or involves relationships — use SQLite. If it is a handful of user
-> preferences or a single token — use `conf`.
+> querying, or involves relationships â€” use SQLite. If it is a handful of user
+> preferences or a single token â€” use `conf`.
 
 ### Shell Execution Detection
 
@@ -433,18 +433,18 @@ After analyzing all inputs, produce a determination summary before generating th
 
 ```
 Optional Component Determination:
-- Prompts:              yes (from PRD.md → init command has interactive wizard)
-- User Config:          yes (from PRD.md → login command stores API token)
-- Project Config:       yes (from PRD.md → per-project .mytoolrc support)
-- Local Database:       yes (from PRD.md → history command lists past runs)
-- Async - Polling:      yes (from PRD.md → deploy --watch flag)
-- Async - Inline Batch: yes (from PRD.md → sync --all processes 1000s of items)
+- Prompts:              yes (from PRD.md â†’ init command has interactive wizard)
+- User Config:          yes (from PRD.md â†’ login command stores API token)
+- Project Config:       yes (from PRD.md â†’ per-project .mytoolrc support)
+- Local Database:       yes (from PRD.md â†’ history command lists past runs)
+- Async - Polling:      yes (from PRD.md â†’ deploy --watch flag)
+- Async - Inline Batch: yes (from PRD.md â†’ sync --all processes 1000s of items)
 - Async - Daemon:       no
 - Shell Execution:      no
-- HTTP Client:          yes (from CLAUDE.md → depends on My API)
+- HTTP Client:          yes (from CLAUDE.md â†’ depends on My API)
 - Auto-update:          yes (default for npm-distributed tool)
 - Binary Packaging:     no (npm distribution only)
-- Table Output:         yes (from PRD.md → list commands produce tabular output)
+- Table Output:         yes (from PRD.md â†’ list commands produce tabular output)
 - Banner/Box UI:        no
 - File Operations:      no
 ```
@@ -456,14 +456,14 @@ If the user disagrees with any determination, allow them to override before proc
 Once inputs are gathered and optional components are determined, generate the specification
 as a **multi-file output split by command**. Read the spec template at
 `references/spec-template.md` for the exact structure and content of each section.
-The template is the authoritative guide — follow it closely.
+The template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Shared infrastructure: `package.json`, TypeScript config,
+1. **Root `SPECIFICATION.md`** â€” Shared infrastructure: `package.json`, TypeScript config,
    build tooling, CLI entry point, shared services, UI utilities, config management,
    error handling, testing strategy, and packaging.
-2. **Per-command `<command-name>/SPEC.md`** — Each command gets its own folder with a
+2. **Per-command `<command-name>/SPEC.md`** â€” Each command gets its own folder with a
    self-contained specification covering argument/option definitions, service methods,
    prompt flows, and output formatting.
 
@@ -480,14 +480,14 @@ The specification is split into two categories:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md              ← Shared infrastructure + TOC
-├── init/
-│   └── SPEC.md                   ← Command blueprint for 'init'
-├── deploy/
-│   └── SPEC.md                   ← Command blueprint for 'deploy'
-├── config/
-│   └── SPEC.md                   ← Command blueprint for 'config'
-└── ...                           ← One folder per command from PRD.md
+â”œâ”€â”€ SPECIFICATION.md              â† Shared infrastructure + TOC
+â”œâ”€â”€ init/
+â”‚   â””â”€â”€ SPEC.md                   â† Command blueprint for 'init'
+â”œâ”€â”€ deploy/
+â”‚   â””â”€â”€ SPEC.md                   â† Command blueprint for 'deploy'
+â”œâ”€â”€ config/
+â”‚   â””â”€â”€ SPEC.md                   â† Command blueprint for 'config'
+â””â”€â”€ ...                           â† One folder per command from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -542,14 +542,14 @@ NODE_HOME=C:\nvm4w\nodejs
 
 **Rules:**
 - Only include variables that are actually used by the application (via `process.env`)
-- Use actual values from SECRET.md — never use placeholders or `TODO`
+- Use actual values from SECRET.md â€” never use placeholders or `TODO`
 - If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file must be loaded using `dotenv` (add as a dependency if not already present)
 - The `.env` file is gitignored
 
 #### 4. Application Entry Point
-`src/cli.ts` — the Commander.js `Program` setup: name, description, version, global options
+`src/cli.ts` â€” the Commander.js `Program` setup: name, description, version, global options
 (`--verbose`, `--json`, `--no-color`), command registration imports, and `program.parse()`.
 See `references/command-patterns.md` for the root program setup, global option propagation
 pattern, and async error handling with `parseAsync`.
@@ -559,39 +559,39 @@ Full `src/` directory tree with all files, named after actual commands and servi
 from the context.
 
 #### 6. Shared Types
-`src/types/index.ts` — all shared TypeScript interfaces and type aliases used across
+`src/types/index.ts` â€” all shared TypeScript interfaces and type aliases used across
 commands and services.
 
 #### 7. Terminal UI Utilities
-- `src/ui/logger.ts` — chalk-based logger with `info`, `success`, `warn`, `error`,
+- `src/ui/logger.ts` â€” chalk-based logger with `info`, `success`, `warn`, `error`,
   `debug` (gated on `--verbose`) methods
-- `src/ui/spinner.ts` — ora wrapper with typed start/succeed/fail/stop helpers
-- `src/ui/table.ts` — cli-table3 wrapper *(conditional on Table Output = yes)*
-- `src/ui/output.ts` — Unified output handler respecting `--json` flag
+- `src/ui/spinner.ts` â€” ora wrapper with typed start/succeed/fail/stop helpers
+- `src/ui/table.ts` â€” cli-table3 wrapper *(conditional on Table Output = yes)*
+- `src/ui/output.ts` â€” Unified output handler respecting `--json` flag
 
 #### 8. Error Handling
-`src/errors.ts` — Base `CliError` class with exit code mapping. `handleError()` function
+`src/errors.ts` â€” Base `CliError` class with exit code mapping. `handleError()` function
 used in every command `action` handler to catch, format, and exit cleanly.
 
-#### 9. User Configuration Management *(conditional — include only if User Config = yes)*
-`src/config/user.config.ts` — `conf` setup with schema (Zod), typed accessors, and
+#### 9. User Configuration Management *(conditional â€” include only if User Config = yes)*
+`src/config/user.config.ts` â€” `conf` setup with schema (Zod), typed accessors, and
 migration strategy. Key names, default values, and OS storage paths.
 See `references/config-patterns.md`.
 
-#### 10. Project Configuration Management *(conditional — include only if Project Config = yes)*
-`src/config/project.config.ts` — `cosmiconfig` loader with Zod validation. Config file
+#### 10. Project Configuration Management *(conditional â€” include only if Project Config = yes)*
+`src/config/project.config.ts` â€” `cosmiconfig` loader with Zod validation. Config file
 search path, supported formats, and merge strategy with defaults.
 See `references/config-patterns.md`.
 
-#### 11. HTTP Client Setup *(conditional — include only if HTTP Client = yes)*
-`src/services/http.client.ts` — `got` instance with base URL, auth header injection,
+#### 11. HTTP Client Setup *(conditional â€” include only if HTTP Client = yes)*
+`src/services/http.client.ts` â€” `got` instance with base URL, auth header injection,
 retry configuration, and typed error handling.
 
-#### 12. Shell Execution Utilities *(conditional — include only if Shell Execution = yes)*
-`src/utils/shell.ts` — `execa` wrapper with logging, timeout, and error handling.
+#### 12. Shell Execution Utilities *(conditional â€” include only if Shell Execution = yes)*
+`src/utils/shell.ts` â€” `execa` wrapper with logging, timeout, and error handling.
 
-#### 13. Auto-Update Notifier *(conditional — include only if Auto-update = yes)*
-`src/utils/updater.ts` — `update-notifier` integration called once at CLI startup with
+#### 13. Auto-Update Notifier *(conditional â€” include only if Auto-update = yes)*
+`src/utils/updater.ts` â€” `update-notifier` integration called once at CLI startup with
 non-blocking async check.
 
 #### 14. Testing Strategy
@@ -599,7 +599,7 @@ Vitest configuration, command testing patterns with `process.argv` mocking, serv
 testing, config testing with temp directories.
 See `references/testing-patterns.md`.
 
-#### 15. Packaging & Distribution *(conditional — include only if Binary Packaging = yes)*
+#### 15. Packaging & Distribution *(conditional â€” include only if Binary Packaging = yes)*
 `tsup` build pipeline, `@yao-pkg/pkg` configuration, platform targets, npm scripts for
 each platform binary, GitHub Actions release workflow stub.
 See `references/packaging-patterns.md`.
@@ -607,55 +607,55 @@ See `references/packaging-patterns.md`.
 **For npm-only distribution:** `package.json` `files`, `bin`, `engines`, `prepublishOnly`
 script, `.npmignore`, semantic versioning guidance.
 
-#### 16. Local Database *(conditional — include only if Local Database = yes)*
-`src/db/schema.ts` — Drizzle table definitions (all entity tables derived from model files).
-`src/db/client.ts` — `better-sqlite3` singleton with WAL mode, foreign keys, and
+#### 16. Local Database *(conditional â€” include only if Local Database = yes)*
+`src/db/schema.ts` â€” Drizzle table definitions (all entity tables derived from model files).
+`src/db/client.ts` â€” `better-sqlite3` singleton with WAL mode, foreign keys, and
 automatic migration runner on first open.
-`src/db/path.ts` — `env-paths` based OS data directory resolution.
-`src/db/repositories/` — One repository class per entity exposing typed CRUD and query
+`src/db/path.ts` â€” `env-paths` based OS data directory resolution.
+`src/db/repositories/` â€” One repository class per entity exposing typed CRUD and query
 methods. `drizzle.config.ts`, `drizzle/` migration folder, and `db:generate` / `db:migrate`
 / `db:studio` npm scripts.
 See `references/database-patterns.md`.
 
-#### 17. Async Patterns *(conditional — include only if any async pattern is detected)*
+#### 17. Async Patterns *(conditional â€” include only if any async pattern is detected)*
 
 Include only the sub-sections that apply. Multiple sub-sections may be included together.
 
 **17a. Shared Signal Handling** *(include whenever any async pattern is yes)*
-`src/utils/signal.ts` — `onSignal(cleanupFn)` utility that registers SIGINT and SIGTERM
+`src/utils/signal.ts` â€” `onSignal(cleanupFn)` utility that registers SIGINT and SIGTERM
 handlers, runs the cleanup function, then exits with code 130 (Ctrl+C) or 0 (SIGTERM).
 Used by polling loops, batch processors, and the daemon runner to ensure Ctrl+C always
 produces a clean exit rather than a Node.js stack trace.
 
-**17b. Polling** *(conditional — include only if Polling = yes)*
-`src/utils/poll.ts` — `poll<T>(options)` function with configurable interval, timeout,
+**17b. Polling** *(conditional â€” include only if Polling = yes)*
+`src/utils/poll.ts` â€” `poll<T>(options)` function with configurable interval, timeout,
 spinner integration, and `onTick` callback for dynamic status text. Command handlers
 pass `--watch` / `--follow` / `--wait` flags down to the poll utility. Non-watch invocation
 (fire-and-forget) must remain supported when the flag is absent.
 See `references/async-patterns.md`.
 
-**17c. Inline Batch Processing** *(conditional — include only if Inline Batch = yes)*
-`src/utils/batch.ts` — `runBatch<TInput, TOutput>(options)` function with configurable
+**17c. Inline Batch Processing** *(conditional â€” include only if Inline Batch = yes)*
+`src/utils/batch.ts` â€” `runBatch<TInput, TOutput>(options)` function with configurable
 concurrency, bail-on-error mode, per-item error collection, and `onProgress` callback.
-`src/ui/progress.ts` — `ProgressBar` wrapper over ora showing `[percent%] n/total — ETA Xs`.
+`src/ui/progress.ts` â€” `ProgressBar` wrapper over ora showing `[percent%] n/total â€” ETA Xs`.
 When `Local Database = yes`, include the resume pattern: services filter out already-processed
 IDs from the item list by querying the repository before the batch starts.
 See `references/async-patterns.md`.
 
-**17d. Background Daemon** *(conditional — include only if Background Daemon = yes)*
-`src/daemon/runner.ts` — `runDaemon()` function implementing the daemon's event loop;
+**17d. Background Daemon** *(conditional â€” include only if Background Daemon = yes)*
+`src/daemon/runner.ts` â€” `runDaemon()` function implementing the daemon's event loop;
 called when the process detects `MY_TOOL_DAEMON_MODE=1` in the environment before
 Commander parses arguments.
-`src/services/daemon.service.ts` — `DaemonManager` class with `start()` (spawn detached),
+`src/services/daemon.service.ts` â€” `DaemonManager` class with `start()` (spawn detached),
 `stop()` (SIGTERM + timeout + SIGKILL), `isRunning()` (signal-0 check), `getStatus()`,
 and `getRecentLogs()`. PID stored in `conf` (requires User Config = yes).
-`src/commands/daemon/index.ts` — `start`, `stop`, `status`, `logs` sub-commands.
+`src/commands/daemon/index.ts` â€” `start`, `stop`, `status`, `logs` sub-commands.
 See `references/async-patterns.md`.
 
 ### What Goes in Each `<command-name>/SPEC.md` (Per-Command)
 
 For EACH command from PRD.md, create a folder named after the command (kebab-case) and
-generate a `SPEC.md` inside it. Each file is **self-contained** — a coding agent can
+generate a `SPEC.md` inside it. Each file is **self-contained** â€” a coding agent can
 implement the command after the shared infrastructure is in place.
 
 Each command SPEC.md must include:
@@ -701,13 +701,13 @@ After all specification files are successfully generated, append an entry to `CH
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md              ← Root: TOC + shared infrastructure
-├── <command-1>/
-│   └── SPEC.md                   ← Self-contained command blueprint
-├── <command-2>/
-│   └── SPEC.md
-└── <command-N>/
-    └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md              â† Root: TOC + shared infrastructure
+â”œâ”€â”€ <command-1>/
+â”‚   â””â”€â”€ SPEC.md                   â† Self-contained command blueprint
+â”œâ”€â”€ <command-2>/
+â”‚   â””â”€â”€ SPEC.md
+â””â”€â”€ <command-N>/
+    â””â”€â”€ SPEC.md
 ```
 
 **Sample code is mandatory.** Every component described in any spec file must include a
@@ -733,7 +733,7 @@ client, logger) through the constructor. No global singletons imported directly 
 files. This enables clean unit testing with mocks.
 
 **Commands must not contain business logic.** The command `action` handler is a thin
-orchestrator: parse options → call service → format output → handle errors. All domain
+orchestrator: parse options â†’ call service â†’ format output â†’ handle errors. All domain
 logic lives in `src/services/`.
 
 **Separate output from logic.** Service methods return typed data structures. The command
@@ -746,8 +746,8 @@ appropriate code). On success: `process.exit(0)` is implicit.
 
 **ESM import paths use `.js` extension.** In TypeScript source files:
 ```ts
-import { UserConfig } from '../config/user.config.js'  // ✓ correct
-import { UserConfig } from '../config/user.config'      // ✗ wrong
+import { UserConfig } from '../config/user.config.js'  // âœ“ correct
+import { UserConfig } from '../config/user.config'      // âœ— wrong
 ```
 
 **All user-facing strings go through the logger or output module.** Never call
@@ -764,7 +764,7 @@ maintained version. Import individual prompt functions, not the legacy `inquirer
 
 **If Binary Packaging = yes:**
 - Use dynamic `import()` for any modules not compatible with pkg's static analysis
-- Avoid `__filename` / `__dirname` — use `import.meta.url` with `fileURLToPath`
+- Avoid `__filename` / `__dirname` â€” use `import.meta.url` with `fileURLToPath`
 - All asset files (templates, default configs) must be embedded via `pkg`'s `assets` config
 
 **If User Config = yes:**
@@ -783,24 +783,24 @@ maintained version. Import individual prompt functions, not the legacy `inquirer
 - Authentication tokens must come from the config system, never hardcoded
 
 **If Local Database = yes:**
-- All database access must go through repository classes — services never use `db` directly
-- Repositories receive `DbClient` via constructor injection — no global `getDb()` calls
+- All database access must go through repository classes â€” services never use `db` directly
+- Repositories receive `DbClient` via constructor injection â€” no global `getDb()` calls
   inside service files (only in the composition root `cli.ts` or service constructors)
-- Every write statement (`insert`, `update`, `delete`) must call `.run()` to execute —
+- Every write statement (`insert`, `update`, `delete`) must call `.run()` to execute â€”
   Drizzle returns a prepared statement object that is not automatically executed
 - All multi-step writes that must succeed or fail together must use `db.transaction()`
 - JSON columns must be serialised with `JSON.stringify` on insert and `JSON.parse` on
-  read — never store raw objects in `text` columns
+  read â€” never store raw objects in `text` columns
 - Migration files in `drizzle/` are committed to source control; never edit generated
-  SQL files after commit — always generate new ones via `drizzle-kit generate`
-- The database file path must come from `getDatabasePath()` — never hardcode a path
+  SQL files after commit â€” always generate new ones via `drizzle-kit generate`
+- The database file path must come from `getDatabasePath()` â€” never hardcode a path
 
 **If any Async Pattern is yes (Polling, Inline Batch, or Background Daemon):**
 - Every long-running loop MUST register an `onSignal` handler before entering the loop
   and dispose it via the returned function when the loop exits normally
-- Ctrl+C must NEVER produce a Node.js stack trace — the signal handler catches it,
+- Ctrl+C must NEVER produce a Node.js stack trace â€” the signal handler catches it,
   runs cleanup, and calls `process.exit(130)`
-- SIGTERM must exit cleanly with code `0` — it signals intentional shutdown
+- SIGTERM must exit cleanly with code `0` â€” it signals intentional shutdown
   (e.g. `daemon stop`), not an error
 
 **If Polling = yes:**
@@ -810,33 +810,33 @@ maintained version. Import individual prompt functions, not the legacy `inquirer
   default (300s) is a maximum, not a guarantee
 
 **If Inline Batch = yes:**
-- Concurrency must be configurable via `--concurrency <n>` — never hardcode parallelism
+- Concurrency must be configurable via `--concurrency <n>` â€” never hardcode parallelism
 - Both `--bail` (stop on first error) and the default (collect all errors, continue) must
   be supported
 - Exit code must be `1` when any items fail, even if the majority succeeded
-- The `onProgress` callback updates the spinner — service code never touches ora directly
+- The `onProgress` callback updates the spinner â€” service code never touches ora directly
 
 **If Background Daemon = yes:**
 - The daemon process is the SAME binary launched with `MY_TOOL_DAEMON_MODE=1` in the
-  environment — never ship a separate daemon binary
+  environment â€” never ship a separate daemon binary
 - The daemon entry point check in `cli.ts` must appear BEFORE Commander parses `argv`,
   so the daemon mode is invisible to all user-facing `--help` output
-- PID storage requires User Config (`conf`) — Background Daemon detection automatically
+- PID storage requires User Config (`conf`) â€” Background Daemon detection automatically
   forces User Config = yes in the determination summary
 - `DaemonManager.isRunning()` must use signal-0 (`process.kill(pid, 0)`) to test
-  process liveness — never rely on PID alone (PIDs are reused by the OS)
+  process liveness â€” never rely on PID alone (PIDs are reused by the OS)
 
 ## Principles Embedded in the Spec
 
 ### Always-Applicable Principles
 - ESM-first TypeScript with strict mode (`"strict": true`)
-- Thin command action handlers — orchestrate, don't implement
-- Services are pure TypeScript — no CLI concerns, fully testable
+- Thin command action handlers â€” orchestrate, don't implement
+- Services are pure TypeScript â€” no CLI concerns, fully testable
 - Single output module respects `--json` flag for machine-readable output
 - Every command has `--help` text that matches the user stories
 - Errors produce clean, human-friendly messages with non-zero exit codes
 - Verbose mode (`--verbose`, `-v`) reveals internal steps via `logger.debug()`
-- All file paths use `node:path` and `node:url` — no raw string concatenation
+- All file paths use `node:path` and `node:url` â€” no raw string concatenation
 
 ### Conditional Principles
 - **If Prompts = yes:** Interactive and non-interactive modes are both supported. Every
@@ -846,7 +846,7 @@ maintained version. Import individual prompt functions, not the legacy `inquirer
 - **If Local Database = yes:** SQLite is the single source of truth for all structured
   local data. `conf` remains for user preferences and tokens; SQLite is for anything
   with multiple rows, history, or relational structure. The database opens and migrates
-  automatically on first command run — no manual `init-db` step required.
+  automatically on first command run â€” no manual `init-db` step required.
 - **If Polling = yes:** Every watched command has a non-watch path that exits immediately.
   The `poll()` utility owns all timing and spinner state; the command handler only
   provides the `check` function and interprets the final result.
@@ -854,7 +854,7 @@ maintained version. Import individual prompt functions, not the legacy `inquirer
   collection; the service owns per-item logic; the command handler owns progress display
   and final output. These three responsibilities must never be mixed.
 - **If Background Daemon = yes:** The daemon runner (`runDaemon`) is a plain async
-  function — it has no Commander, no prompts, and no user interaction. Its only
+  function â€” it has no Commander, no prompts, and no user interaction. Its only
   interface is `MY_TOOL_DAEMON_MODE=1` (start) and SIGTERM (stop).
 - **If Binary Packaging = yes:** The binary must work with zero Node.js dependency on the
   target machine. Asset embedding and path resolution must be validated for each platform.

@@ -1,6 +1,6 @@
----
+﻿---
 name: modelgen-relational
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: xhigh
 description: >
   Extract module models from Agile user stories using Domain-Driven Design (DDD) principles.
@@ -49,7 +49,7 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `<application>` | Yes | Application name — matched against root-level application folders |
+| `<application>` | Yes | Application name â€” matched against root-level application folders |
 | `<version>` | Yes | Version label (e.g., `v1.0.3`). Used for version-filtered generation. |
 | `module:<name>` | No | Limit generation to a single module |
 
@@ -80,7 +80,7 @@ The skill requires mandatory `<application>` and `<version>` arguments, with an 
 1. Match the specified module name **case-insensitively** against modules in PRD.md
 2. Convert `snake_case` input to title-case for matching (e.g., `location_information` -> `Location Information`)
 3. If no module matches, **stop and report available module names** before doing any file writes
-4. Exactly one module must match — partial or ambiguous matches are rejected with suggestions
+4. Exactly one module must match â€” partial or ambiguous matches are rejected with suggestions
 
 ### Version Filtering
 
@@ -129,20 +129,20 @@ The user must provide a **new version identifier** for the update (e.g., "1.1.0"
 - Parse the updated PRD.md
 - Compare against source story references in existing model files
 - Classify changes into:
-  - **ADDED** — New stories not referenced by any existing model element
-  - **MODIFIED** — Stories whose text has changed (same tag, different content)
-  - **REMOVED** — Stories referenced in the model but no longer present in PRD.md
-  - **UNCHANGED** — Stories with no changes
+  - **ADDED** â€” New stories not referenced by any existing model element
+  - **MODIFIED** â€” Stories whose text has changed (same tag, different content)
+  - **REMOVED** â€” Stories referenced in the model but no longer present in PRD.md
+  - **UNCHANGED** â€” Stories with no changes
 
 #### Phase U3: Staleness & Validity Check
 
 For each existing model element (entity, attribute, relationship, enum value), check:
-- **Orphaned elements**: Source stories entirely removed → flag for removal
-- **Partially orphaned**: Some source stories removed but others remain → flag for review
-- **Stale attributes**: Source story text changed such that the attribute inference no longer holds → flag for update
-- **Stale relationships**: Verb/preposition patterns changed → flag for re-evaluation
-- **Stale enums**: Qualifier terms changed or removed → flag for update
-- **Contradictions**: New stories contradict existing model assumptions → flag
+- **Orphaned elements**: Source stories entirely removed â†’ flag for removal
+- **Partially orphaned**: Some source stories removed but others remain â†’ flag for review
+- **Stale attributes**: Source story text changed such that the attribute inference no longer holds â†’ flag for update
+- **Stale relationships**: Verb/preposition patterns changed â†’ flag for re-evaluation
+- **Stale enums**: Qualifier terms changed or removed â†’ flag for update
+- **Contradictions**: New stories contradict existing model assumptions â†’ flag
 
 Produce a **Staleness Report** table:
 
@@ -156,7 +156,7 @@ Action values: `REMOVE`, `UPDATE`, `REVIEW`, `KEEP`
 
 #### Phase U4: Incremental Extraction
 
-- For ADDED stories: run the full 8-phase extraction pipeline (existing Phases 1–8)
+- For ADDED stories: run the full 8-phase extraction pipeline (existing Phases 1â€“8)
 - For MODIFIED stories: re-extract affected model elements, compare with existing, merge
 - Apply new version tag to all new/modified elements
 
@@ -185,7 +185,7 @@ Read references/model-extraction-methodology.md
 This reference defines the 8-phase extraction pipeline in detail, including linguistic
 analysis heuristics, entity classification decision trees, attribute inference rules,
 relationship detection patterns, and NFR impact mappings. The instructions below
-orchestrate that methodology — always defer to the reference for phase-specific rules.
+orchestrate that methodology â€” always defer to the reference for phase-specific rules.
 
 ---
 
@@ -199,7 +199,7 @@ ask the user to supply it before proceeding. Do NOT infer modules from story con
 | Element | Description |
 |---------|-------------|
 | **Module List** | Explicit list of module names (bounded context candidates) |
-| **User Stories** | Agile-format stories, each tagged with a **module** and a **version**. Format: "As [role], I want to [action] [object] so that [purpose]". The module associates the story to a bounded context. The version enables progressive model evolution tracking — every entity, attribute, relationship, and enum value in the output will reference the version that introduced it. |
+| **User Stories** | Agile-format stories, each tagged with a **module** and a **version**. Format: "As [role], I want to [action] [object] so that [purpose]". The module associates the story to a bounded context. The version enables progressive model evolution tracking â€” every entity, attribute, relationship, and enum value in the output will reference the version that introduced it. |
 | **NFRs per Module** | Non-functional requirements (security, performance, compliance, etc.) |
 
 ### Optional Input
@@ -245,16 +245,16 @@ shared-database deployment. The prefix is auto-generated but can be overridden b
 
 **Auto-generation algorithm (in order of preference):**
 
-1. **Multi-word module** — take the first letter of each word, up to 3 characters.
-  - "User Management" → `USM`
-  - "Order Processing" → `ORP`
-  - "Inventory" → `INV` (single word: first 3 characters)
-2. **Single-word module** — take the first 3 characters.
-  - "Billing" → `BIL`
-  - "Inventory" → `INV`
-3. **Collision resolution** — if two modules produce the same prefix, append a numeric
+1. **Multi-word module** â€” take the first letter of each word, up to 3 characters.
+  - "User Management" â†’ `USM`
+  - "Order Processing" â†’ `ORP`
+  - "Inventory" â†’ `INV` (single word: first 3 characters)
+2. **Single-word module** â€” take the first 3 characters.
+  - "Billing" â†’ `BIL`
+  - "Inventory" â†’ `INV`
+3. **Collision resolution** â€” if two modules produce the same prefix, append a numeric
    suffix to the second one and truncate to 3 characters.
-  - "Order Processing" → `ORP`, "Order Placement" → `OPL` (use first + second-word first two)
+  - "Order Processing" â†’ `ORP`, "Order Placement" â†’ `OPL` (use first + second-word first two)
   - If still colliding, use first letter + incremental digit: `OR1`, `OR2`
 
 **Rules:**
@@ -282,14 +282,14 @@ shared-database deployment. The prefix is auto-generated but can be overridden b
 ## Processing Workflow
 
 Process ALL modules in a single pass. Each module is treated as an independent bounded
-context — do not model cross-module relationships. If you detect a potential cross-module
+context â€” do not model cross-module relationships. If you detect a potential cross-module
 dependency (e.g., Module A references an entity that looks like it belongs to Module B),
 note it in the assumptions table but do not create a relationship.
 
 ### Version Tracking
 
 Within each module, process user stories **in version order** (earliest version first).
-Every model element — entity, attribute, relationship, enum value, domain event — must
+Every model element â€” entity, attribute, relationship, enum value, domain event â€” must
 be annotated with the **version that introduced it**. This means:
 
 - If Entity `Order` first appears from stories in version `1.0`, its version is `1.0`.
@@ -302,7 +302,7 @@ This enables the user to trace exactly what changed at each version and supports
 progressive model growth across sprints or phases.
 
 For each module, execute the following phases sequentially. The output is the final
-consolidated result — do NOT include intermediate phase analysis in the deliverables.
+consolidated result â€” do NOT include intermediate phase analysis in the deliverables.
 
 ### Phase 1: Linguistic Analysis
 
@@ -310,12 +310,12 @@ Parse each user story using the grammar-to-domain mapping from the methodology r
 (Section 3). For compound stories with multiple verbs, decompose into individual operations.
 
 Key extractions:
-- **Subjects** → Actor/Role candidates (enum values)
-- **Verbs** → Operations, commands, state transitions
-- **Direct Objects** → Primary entity candidates
-- **Indirect Objects** → Related entity candidates
-- **Purpose Clauses** → Business rules, domain events
-- **Adjectives/Qualifiers** → Enum values, states, types
+- **Subjects** â†’ Actor/Role candidates (enum values)
+- **Verbs** â†’ Operations, commands, state transitions
+- **Direct Objects** â†’ Primary entity candidates
+- **Indirect Objects** â†’ Related entity candidates
+- **Purpose Clauses** â†’ Business rules, domain events
+- **Adjectives/Qualifiers** â†’ Enum values, states, types
 
 ### Phase 2: Entity Identification
 
@@ -323,11 +323,11 @@ Classify every extracted noun using the decision flowchart from the methodology 
 (Section 4.2):
 
 ```
-Finite known set? → ENUM
-Has identity + lifecycle? → Is it aggregate root? → AGGREGATE ROOT / ENTITY
-Immutable, describes another? → VALUE OBJECT
-Verb/action that happened? → DOMAIN EVENT
-Otherwise → DOMAIN SERVICE or needs analysis
+Finite known set? â†’ ENUM
+Has identity + lifecycle? â†’ Is it aggregate root? â†’ AGGREGATE ROOT / ENTITY
+Immutable, describes another? â†’ VALUE OBJECT
+Verb/action that happened? â†’ DOMAIN EVENT
+Otherwise â†’ DOMAIN SERVICE or needs analysis
 ```
 
 Apply naming conventions: PascalCase for entities, enums, events, value objects, join entities.
@@ -336,7 +336,7 @@ Apply naming conventions: PascalCase for entities, enums, events, value objects,
 
 Derive attributes from four sources in priority order:
 1. **Explicit mention** in user story text
-2. **Operation inference** (CRUD verbs → audit fields, version, soft delete)
+2. **Operation inference** (CRUD verbs â†’ audit fields, version, soft delete)
 3. **NFR requirements** (see Appendix B of the methodology reference)
 4. **Domain convention** (id, audit fields, base entity pattern)
 
@@ -375,9 +375,9 @@ delete, or optimistic locking are implied.
 
 If PRD.md contains an `# Architecture Principle` section, read it and apply to model decisions:
 
-- **Monolithic vs. Microservice**: If "monolithic" (e.g., "monolithic web application", "modular architecture"), model cross-module references as soft references (ID columns without FK constraints) and note this convention in the Cross-Module Dependencies section. If "microservice", enforce strict bounded context isolation — no cross-module references at all.
+- **Monolithic vs. Microservice**: If "monolithic" (e.g., "monolithic web application", "modular architecture"), model cross-module references as soft references (ID columns without FK constraints) and note this convention in the Cross-Module Dependencies section. If "microservice", enforce strict bounded context isolation â€” no cross-module references at all.
 - **Event-driven**: If architecture mentions "event-driven" or "domain events", elevate domain event identification in Phase 2. Generate more domain event entities and event payload types in Section 7 (Domain Events). Each inter-module data flow should have a corresponding domain event.
-- **Stateless**: If architecture mentions "stateless", confirm that no session-related entities are modeled — user context comes from JWT tokens or external identity providers.
+- **Stateless**: If architecture mentions "stateless", confirm that no session-related entities are modeled â€” user context comes from JWT tokens or external identity providers.
 - **Database type confirmation**: Use the architecture section to confirm the relational database choice. If the architecture mentions a specific database engine (e.g., PostgreSQL, MySQL), record it in assumptions for DDL dialect considerations.
 
 If the `# Architecture Principle` section is absent, skip this sub-phase and proceed with existing behavior.
@@ -386,7 +386,7 @@ If the `# Architecture Principle` section is absent, skip this sub-phase and pro
 
 If PRD.md contains a `# High Level Process Flow` section, read it and extract state-related information:
 
-- **Entity lifecycle states**: If a process flow describes status transitions for an entity (e.g., "Received → Validated → Enriched → Active"), cross-reference with enum extraction from Phase 2. Ensure all states mentioned in process flows appear in the corresponding entity's status enum definition. Add any missing states.
+- **Entity lifecycle states**: If a process flow describes status transitions for an entity (e.g., "Received â†’ Validated â†’ Enriched â†’ Active"), cross-reference with enum extraction from Phase 2. Ensure all states mentioned in process flows appear in the corresponding entity's status enum definition. Add any missing states.
 - **Intermediate entities**: If a flow describes intermediate or staging data (e.g., "incoming message stored before validation"), verify that corresponding staging/intermediate entities exist in the model. If not, create them.
 - **Domain events from flows**: Each step in a process flow that describes "publishes", "sends", or "triggers" should be checked against the Domain Events table (Section 7). Add any flow-derived events not already captured from user stories.
 
@@ -396,7 +396,7 @@ If the `# High Level Process Flow` section is absent, skip this sub-phase.
 
 Since modules are provided explicitly by the user, confirm each module as a bounded context.
 Within each context, identify aggregates by grouping entities with transactional cohesion.
-No aggregate should contain more than 4–5 entities.
+No aggregate should contain more than 4â€“5 entities.
 
 ### Phase 7: Output Generation
 
@@ -503,7 +503,7 @@ A markdown file containing the following sections. Use tables for all structured
 | Module | Prefix | Auto-Generated | Override |
 |--------|--------|----------------|----------|
 
-(e.g., User Management | USM | Yes | — )
+(e.g., User Management | USM | Yes | â€” )
 
 ## 2. Entity Catalog
 
@@ -511,7 +511,7 @@ A markdown file containing the following sections. Use tables for all structured
 |--------|----------|-----------------|----------------|---------------|---------------|---------|
 
 ## 3. Base Entity Specification
-(If applicable — audit fields, soft delete, versioning inherited by all entities)
+(If applicable â€” audit fields, soft delete, versioning inherited by all entities)
 
 ## 4. Attribute Detail
 (One subsection per entity with full attribute table)
@@ -600,7 +600,7 @@ source stories for that module.)
 - **Model Documentation:** [{module-kebab}/model.md](./{module-kebab}/model.md)
 - **ERD Diagram:** [{module-kebab}/erd.mermaid](./{module-kebab}/erd.mermaid)
 - **Entities:** {comma-separated PascalCase entity names}
-- **Key Relationships:** {2–3 most significant relationships in natural language}
+- **Key Relationships:** {2â€“3 most significant relationships in natural language}
 
 (Repeat for each module, in the same order as the Modules table.)
 
@@ -649,29 +649,29 @@ needing clarification. Links to the respective module's Assumptions and Ambiguit
 All output files are written under the user-specified output directory, organized as
 one subdirectory per module. Module names are converted to kebab-case for directory names.
 
-Given an output directory `/path/to/output` and three modules — "User Management",
+Given an output directory `/path/to/output` and three modules â€” "User Management",
 "Order Management", and "Inventory":
 
 ```
 /path/to/output/
-├── MODEL.md                  # Root summary and table of contents
-├── user-management/
-│   ├── erd.mermaid
-│   └── model.md
-├── order-management/
-│   ├── erd.mermaid
-│   └── model.md
-└── inventory/
-    ├── erd.mermaid
-    └── model.md
+â”œâ”€â”€ MODEL.md                  # Root summary and table of contents
+â”œâ”€â”€ user-management/
+â”‚   â”œâ”€â”€ erd.mermaid
+â”‚   â””â”€â”€ model.md
+â”œâ”€â”€ order-management/
+â”‚   â”œâ”€â”€ erd.mermaid
+â”‚   â””â”€â”€ model.md
+â””â”€â”€ inventory/
+    â”œâ”€â”€ erd.mermaid
+    â””â”€â”€ model.md
 ```
 
 The root directory contains:
-- `MODEL.md` — summary and table of contents linking to all module models
+- `MODEL.md` â€” summary and table of contents linking to all module models
 
 Each subdirectory contains exactly two files:
-- `erd.mermaid` — the Mermaid ERD diagram for that module
-- `model.md` — the full model documentation for that module
+- `erd.mermaid` â€” the Mermaid ERD diagram for that module
+- `model.md` â€” the full model documentation for that module
 
 ---
 
@@ -687,8 +687,8 @@ Before presenting output, verify:
 - [ ] Every "assign X to Y" pattern has a join entity
 - [ ] Every NFR has been analyzed for model impact
 - [ ] All M:N relationships have join entities
-- [ ] No aggregate exceeds 4–5 entities
-- [ ] No entity exceeds 15–20 attributes (decompose into value objects if larger)
+- [ ] No aggregate exceeds 4â€“5 entities
+- [ ] No entity exceeds 15â€“20 attributes (decompose into value objects if larger)
 - [ ] Naming conventions are consistent (PascalCase entities, camelCase attributes)
 - [ ] The Mermaid ERD is syntactically valid
 - [ ] All ambiguities are recorded with proposed defaults

@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-spring-jpa-restapi
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a Spring Boot 3 REST API
@@ -16,7 +16,7 @@ description: >
   "scaffold spec for a REST API", or any request for a specification document
   describing a Spring Boot REST API application. Even if the user only mentions
   a subset of the stack (e.g., "Spring Boot API" or "Spring REST with MySQL" or
-  "Spring Boot API with Keycloak"), this skill likely applies — ask and confirm.
+  "Spring Boot API with Keycloak"), this skill likely applies â€” ask and confirm.
 ---
 
 # Spring Boot REST API Specification Generator
@@ -26,8 +26,8 @@ blueprint for building a Spring Boot 3 REST API application. The spec is intende
 followed by a developer or a coding agent to produce a fully functional project scaffold.
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the application — from Maven configuration to controller
-endpoints to security filter chains — so that implementation becomes a mechanical exercise.
+document describing every layer of the application â€” from Maven configuration to controller
+endpoints to security filter chains â€” so that implementation becomes a mechanical exercise.
 
 ## Technology Stack
 
@@ -102,19 +102,19 @@ The spec must include these in the Maven configuration section (always):
 
 **If Messaging = yes:**
 - Spring Boot AMQP Starter (`spring-boot-starter-amqp`)
-  *(shared with Remote Partitioning — if both are selected, include the dependency once)*
+  *(shared with Remote Partitioning â€” if both are selected, include the dependency once)*
 
 **If Reporting = yes:**
-- JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`) — report engine with JRDesign API for programmatic layout
+- JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`) â€” report engine with JRDesign API for programmatic layout
 - JasperReports Fonts (`net.sf.jasperreports:jasperreports-fonts:7.0.3`)
-- OpenPDF (`com.github.librepdf:openpdf:2.0.4`) — PDF export engine for JasperReports 7.x
-- Apache POI OOXML (`org.apache.poi:poi-ooxml:5.4.1`) — XLSX export support
+- OpenPDF (`com.github.librepdf:openpdf:2.0.4`) â€” PDF export engine for JasperReports 7.x
+- Apache POI OOXML (`org.apache.poi:poi-ooxml:5.4.1`) â€” XLSX export support
 
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the custom applications defined in `CLAUDE.md`. The skill
-reads all required inputs from the project's context files — no interactive Q&A is needed
+reads all required inputs from the project's context files â€” no interactive Q&A is needed
 for the core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -179,14 +179,14 @@ When a version is provided, only include user stories, NFRs, and constraints fro
 When `module:<name>` is provided:
 - Only generate the `SPEC.md` for that specific module
 - Other existing module spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that module's entry in the TOC
+- `SPECIFICATION.md` (root) gets a partial update â€” only that module's entry in the TOC
   is added or updated; all other TOC entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **five input sources** that are read from the project's
 context files. The skill does NOT ask the user for database, authentication, scheduling,
-or messaging choices — it **determines** these automatically from the context.
+or messaging choices â€” it **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
 
@@ -195,7 +195,7 @@ section. Extract:
 
 - **Application name**: The section heading (e.g., "HC Adapter", "SC Adapter")
 - **Application description**: The description paragraph below the heading
-- **Dependencies**: The "Depends on" list — this is the primary source for determining
+- **Dependencies**: The "Depends on" list â€” this is the primary source for determining
   optional components (see [Determining Optional Components](#determining-optional-components))
 
 The application name is used to derive:
@@ -221,7 +221,7 @@ The user stories directly inform:
 - Which REST API endpoints are needed
 - Which request/response DTOs and validation rules apply
 
-**Important:** Items with strikethrough (`~~text~~`) are deprecated — do NOT include them
+**Important:** Items with strikethrough (`~~text~~`) are deprecated â€” do NOT include them
 as active requirements. Instead, list them in the "Removed / Replaced" subsection of the
 traceability table (see spec-template.md) so that developers can see what was removed and
 which version removed it. If a deprecated item has a replacement (e.g., `USHC00015` replaced
@@ -245,7 +245,7 @@ with tagged items like `[NFRHC0120]`. These inform:
 - Performance constraints (e.g., "automatically deleted after 30 days")
 - Security requirements (e.g., "API key authentication", "JWT validation")
 
-NFRs should be mapped to specific technical decisions in the spec — for example, an NFR
+NFRs should be mapped to specific technical decisions in the spec â€” for example, an NFR
 stating "staging database" confirms adapter pattern, while "sent asynchronously" confirms
 event-driven processing.
 
@@ -258,7 +258,7 @@ items like `[CONSHC042]`. These define hard boundaries that the spec must enforc
 - Feature boundaries (e.g., "only 2 message types supported")
 - Scope limitations (e.g., "does not manage any user, permissions and roles")
 
-Constraints are embedded directly into the relevant module blueprint — they inform
+Constraints are embedded directly into the relevant module blueprint â€” they inform
 service interface contracts, validation rules, and API endpoint configurations.
 
 ### Input 5: Module Model (from model/ folder)
@@ -306,7 +306,7 @@ If PRD.md contains an `# Architecture Principle` section, read it and extract ar
 | Pattern to Extract | How It Influences the Specification |
 |---|---|
 | Framework mention (e.g., "Spring Boot") | Validates technology stack choice |
-| "Stateless" | Confirms stateless REST API — no HTTP session, JWT validation only; include in Security section |
+| "Stateless" | Confirms stateless REST API â€” no HTTP session, JWT validation only; include in Security section |
 | "Event-driven" | Enhances event publishing/subscribing sections with event catalog and explicit listener patterns |
 | "Message driven" / "message queue" | Validates RabbitMQ integration; include message flow per module |
 | "Document based database" / "MongoDB" | Primary signal for Database = MongoDB |
@@ -411,7 +411,7 @@ Reporting is determined from PRD.md content:
 - JasperReports with JRDesign API for fully programmatic report layout (no .jrxml templates)
 - `ReportDefinition` interface with `buildDesign()` method for modules to implement
 - `ReportDesignHelper` utility class with static builders for common layout patterns
-- `ReportService` orchestrating compile → fill → export via `JRBeanCollectionDataSource`
+- `ReportService` orchestrating compile â†’ fill â†’ export via `JRBeanCollectionDataSource`
 - Report registry persisted in the database
 - REST controller with report list, details, and generation endpoints (JSON + file download)
 - Multi-format export: PDF (OpenPDF), XLSX (Apache POI), CSV
@@ -427,7 +427,7 @@ Optional Component Determination:
 - Authentication: Keycloak Resource Server (from CLAUDE.md -> depends on Hub Single Sign On)
 - Scheduling:    no
 - Messaging:     yes (from CLAUDE.md -> depends on Hub to HC Adapter Message Queue)
-- Reporting:     yes (from PRD.md → Report module with Report interface NFR)
+- Reporting:     yes (from PRD.md â†’ Report module with Report interface NFR)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -450,7 +450,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Database name/credentials**: From SECRET.md (root-level file with local environment credentials)
 
 **Auto-derived from CLAUDE.md (Port Allocation table):**
-- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default — the port MUST match the allocated port for this application.
+- **Server port**: Look up the application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Do NOT hardcode a default â€” the port MUST match the allocated port for this application.
 
 **Optional (use sensible defaults if not found in context):**
 - **API version prefix**: Default `/api/v1`
@@ -461,13 +461,13 @@ After determination, these values are needed. Most are derived automatically:
 Once inputs are gathered from context files and optional components are determined,
 generate the specification as a **multi-file output split by module**. Read the spec
 template at `references/spec-template.md` for the exact structure and content of each
-section. The template is the authoritative guide — follow it closely.
+section. The template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Contains the Table of Contents, shared infrastructure,
+1. **Root `SPECIFICATION.md`** â€” Contains the Table of Contents, shared infrastructure,
    and application-level sections that apply across all modules.
-2. **Per-module `<module-name>/SPEC.md`** — Each module gets its own folder with
+2. **Per-module `<module-name>/SPEC.md`** â€” Each module gets its own folder with
    a self-contained specification file covering that module's complete blueprint.
 
 This split enables a coding agent to:
@@ -478,7 +478,7 @@ This split enables a coding agent to:
 not generic placeholders. Specifically:
 
 - **Modules** must use the actual module names from PRD.md and MODEL.md
-  (e.g., `jobDemand`, `candidateRegistration`, `employer` — not `module1`, `module2`)
+  (e.g., `jobDemand`, `candidateRegistration`, `employer` â€” not `module1`, `module2`)
 - **Entity fields** must match the actual fields defined in the module model
   files (e.g., `model/job-demand/model.md`), not placeholder `fieldOne`/`fieldTwo`
 - **Service interfaces** must expose methods matching the actual user stories (e.g., if
@@ -495,12 +495,12 @@ not generic placeholders. Specifically:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    <- TOC + shared/application-level specs
-├── job-demand/
-│   └── SPEC.md                         <- Module blueprint for Job Demand
-├── candidate-registration/
-│   └── SPEC.md                         <- Module blueprint for Candidate Registration
-├── ...                                 <- One folder per module from PRD.md
+â”œâ”€â”€ SPECIFICATION.md                    <- TOC + shared/application-level specs
+â”œâ”€â”€ job-demand/
+â”‚   â””â”€â”€ SPEC.md                         <- Module blueprint for Job Demand
+â”œâ”€â”€ candidate-registration/
+â”‚   â””â”€â”€ SPEC.md                         <- Module blueprint for Candidate Registration
+â”œâ”€â”€ ...                                 <- One folder per module from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -510,7 +510,7 @@ sections that a coding agent implements **first** before any module work:
 
 #### 1. Project Overview
 Project metadata, application description, technology stack summary, the complete
-list of API consumers/roles, and the **Module Index** —
+list of API consumers/roles, and the **Module Index** â€”
 a table listing every module with a link to its `<module>/SPEC.md` file.
 
 #### 2. Maven Configuration
@@ -526,16 +526,16 @@ selected, or self-issued JWT if selected), scheduling config (if selected), and 
 configuration. **All environment-sensitive values (ports, hostnames, credentials, URIs)
 MUST use Spring's `${ENV_VAR:default}` syntax** to allow externalization via environment
 variables while keeping sensible defaults for local development. Do NOT use Spring
-profiles or profile-specific YAML files — environment differences are handled entirely
+profiles or profile-specific YAML files â€” environment differences are handled entirely
 through environment variables (e.g., via `.env` file locally or system environment
 variables in deployment).
 
 #### 3a. Application-Specific Configuration (`app:` namespace)
 
-All application-owned configuration — any config specific to THIS application, as
-opposed to the Spring/Java ecosystem — MUST live under the top-level `app:` key in
+All application-owned configuration â€” any config specific to THIS application, as
+opposed to the Spring/Java ecosystem â€” MUST live under the top-level `app:` key in
 `application.yml`. NEVER place application-specific keys under Spring framework
-namespaces (`spring.*`, `server.*`, `management.*`, `logging.*`, `springdoc.*`) —
+namespaces (`spring.*`, `server.*`, `management.*`, `logging.*`, `springdoc.*`) â€”
 those are reserved for framework configuration.
 
 **Grouping rule.** Organise the `app:` tree by module:
@@ -544,7 +544,7 @@ those are reserved for framework configuration.
   settings) sit directly under `app.*` with no module prefix.
 - **Per-module values** are grouped under `app.<module-kebab-case>.*`, one block
   per module that needs runtime config. A module with a single config value still
-  gets its own block — do not flatten.
+  gets its own block â€” do not flatten.
 - **NEVER place module-specific keys at the YAML root** (e.g., top-level
   `notification:`, `batch-job:`, `audit-trail:`). They MUST be nested under `app:`.
 
@@ -554,7 +554,7 @@ automatically. Do NOT use camelCase or snake_case in YAML.
 
 **Binding rule.** For every `app.*` subtree (cross-cutting OR per-module), bind once
 via `@ConfigurationProperties` on a **record** in the corresponding module's `config`
-subpackage — or, for cross-cutting values, in the application-level `config`
+subpackage â€” or, for cross-cutting values, in the application-level `config`
 subpackage. **Do NOT** inject individual values via `@Value("${app....}")` scattered
 across beans. Bind once at the module boundary and inject the typed record.
 
@@ -576,7 +576,7 @@ app:
       - /actuator/health
       - /api/v1/info
 
-  # Per-module blocks — one per module with runtime config
+  # Per-module blocks â€” one per module with runtime config
   notification:
     email:
       from-address: ${NOTIFICATION_FROM_ADDRESS:noreply@example.com}
@@ -636,7 +636,7 @@ version in:
 1. **A health/info endpoint** (e.g., `GET /api/v1/info` or Spring Actuator
    `/actuator/info`) returning `{"version": "1.0.3", ...}`. Inject `AppProperties`
    into the controller and read the version via `appProperties.version()`.
-2. **Every API response envelope** — if the API uses a standard response wrapper,
+2. **Every API response envelope** â€” if the API uses a standard response wrapper,
    include a `version` field (e.g., `{"version": "1.0.3", "data": {...}}`).
 
 #### 3b. `.env` File Generation from SECRET.md
@@ -682,7 +682,7 @@ MAVEN_HOME=C:\Users\rashidee.rashid.BESTINET\apache-maven-3.9.12
 
 **Rules:**
 - Only include variables that are actually referenced in `application.yml`
-- Use actual values from SECRET.md — never use placeholders or `TODO`
+- Use actual values from SECRET.md â€” never use placeholders or `TODO`
 - If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file is gitignored (already covered in `.gitignore`)
@@ -698,7 +698,7 @@ with `controller` subpackages (not `page`/`fragment`). Use actual module names.
 Read `references/modulith-patterns.md` for the detailed module layout and inter-module
 communication rules.
 
-#### 6. Security Configuration *(conditional — include only if Auth != none)*
+#### 6. Security Configuration *(conditional â€” include only if Auth != none)*
 **If Auth = Keycloak (Resource Server):** OAuth2 Resource Server setup with JWT validation.
 `SecurityFilterChain` with `oauth2ResourceServer(jwt -> ...)`. Keycloak JWT decoder
 configuration. Role extraction from JWT claims (`realm_access`, `resource_access`).
@@ -753,7 +753,7 @@ SpringDoc OpenAPI configuration for auto-generating Swagger UI. Controller annot
 SLF4J with Logback configuration, correlation ID filter (`X-Correlation-Id` header),
 MDC context filter, per-module log levels.
 
-#### 13. Scheduling and Batch Processing *(conditional — include only if Scheduling = yes)*
+#### 13. Scheduling and Batch Processing *(conditional â€” include only if Scheduling = yes)*
 Quartz scheduler configuration with job store matching the selected database.
 Read `references/batch-patterns.md` for the full scaffolding spec.
 
@@ -761,7 +761,7 @@ Read `references/batch-patterns.md` for the full scaffolding spec.
 Spring Modulith application events for inter-module communication. Read
 `references/modulith-patterns.md` for details.
 
-#### 15. Messaging (RabbitMQ Pub/Sub) *(conditional — include only if Messaging = yes)*
+#### 15. Messaging (RabbitMQ Pub/Sub) *(conditional â€” include only if Messaging = yes)*
 Standalone RabbitMQ publisher/consumer services for inter-system communication.
 Read `references/messaging-patterns.md` for the full messaging architecture.
 
@@ -769,30 +769,30 @@ Read `references/messaging-patterns.md` for the full messaging architecture.
 Per-module MapStruct mapper conventions and mapping flow patterns.
 
 #### 17. Testing Strategy
-Overview of testing approach — unit tests (service layer with Mockito), integration tests
+Overview of testing approach â€” unit tests (service layer with Mockito), integration tests
 (controller layer with `@WebMvcTest` and MockMvc), security test utilities
 (JWT mocking if Keycloak, or `@WithMockUser` if JWT), Spring Modulith module verification.
 
-#### 18. Caching Strategy *(optional — include if applicable)*
+#### 18. Caching Strategy *(optional â€” include if applicable)*
 HTTP caching headers (`Cache-Control`, `ETag`). Application-level caching with
 Spring Cache and Caffeine. Cache eviction strategies.
 
-#### 19. Idempotency *(optional — include if applicable)*
+#### 19. Idempotency *(optional â€” include if applicable)*
 `Idempotency-Key` header pattern for mutating operations. Duplicate detection
 and response replay.
 
-#### 20. Reporting (JasperReports JRDesign API) *(conditional — include only if Reporting = yes)*
-JasperReports infrastructure with fully programmatic report layout via JRDesign API — no
+#### 20. Reporting (JasperReports JRDesign API) *(conditional â€” include only if Reporting = yes)*
+JasperReports infrastructure with fully programmatic report layout via JRDesign API â€” no
 `.jrxml` XML templates. Report layouts are built entirely in Java code using `JasperDesign`,
 `JRDesignBand`, `JRDesignStaticText`, `JRDesignTextField`, and `JRDesignField` classes.
 Includes `ReportDefinition` interface with `buildDesign()` method for modules to implement,
 `ReportDesignHelper` utility with static builders for common patterns (A4 portrait/landscape,
-column headers, detail bands, page footers), `ReportService` orchestrating compile → fill →
+column headers, detail bands, page footers), `ReportService` orchestrating compile â†’ fill â†’
 export via `JRBeanCollectionDataSource`, `ReportRegistry` for auto-discovering and persisting
 report definitions at startup, REST controller with report list, details, and generation
 endpoints (`GET /api/v1/reports`, `POST /api/v1/reports/{id}/generate`), multi-format export
 (PDF via OpenPDF, XLSX via Apache POI, CSV). Modules register reports by creating
-`@Component` classes implementing `ReportDefinition` — each report builds its layout
+`@Component` classes implementing `ReportDefinition` â€” each report builds its layout
 programmatically and calls module services to produce DTOs (never repositories directly),
 preserving Spring Modulith module boundaries. Read `references/reporting-patterns.md` for
 the full reporting architecture.
@@ -817,7 +817,7 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **MapStruct mapper** with mappings matching actual field names
 - **Service implementation** with full CRUD logic
 - **REST controller** with endpoints matching user stories (`@RestController`)
-- **Complete code samples** for every component — continuous and copy-pasteable
+- **Complete code samples** for every component â€” continuous and copy-pasteable
 
 **Separating REST API Layer from Messaging/Async Pipeline:**
 
@@ -825,10 +825,10 @@ When a module has BOTH user-facing endpoints (user stories) AND async processing
 (e.g., RabbitMQ message consumption, message validation, ACK publishing, forwarding),
 the SPEC.md MUST clearly separate these into distinct sections:
 
-1. **REST API sections** — service methods for CRUD operations (search, getById, create,
+1. **REST API sections** â€” service methods for CRUD operations (search, getById, create,
    update, delete), REST controllers, request/response DTOs. These are driven by user
    stories (USHCxxxxx).
-2. **Messaging Pipeline sections** — message consumer (`@RabbitListener`), message
+2. **Messaging Pipeline sections** â€” message consumer (`@RabbitListener`), message
    validator, ACK publisher, forward publisher, queue configuration, domain events,
    `processIncomingMessage()` service method. These are driven by NFRs (NFRHCxxxx).
 
@@ -838,7 +838,7 @@ the SPEC.md MUST clearly separate these into distinct sections:
 > messaging infrastructure (`RabbitMQMessagingConfig`, `RabbitMQPublisher`,
 > `MessageConverterConfig`, cross-module event/command DTOs) lives in
 > `shared/messaging/`, but that package must contain **no** `@RabbitListener`
-> classes. See `references/messaging-patterns.md` § "Consumer Service (module-internal)"
+> classes. See `references/messaging-patterns.md` Â§ "Consumer Service (module-internal)"
 > for the canonical pattern.
 
 See `references/spec-template.md` for the exact template structure.
@@ -869,13 +869,13 @@ The generated specification is a **folder of files**, not a single document:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    <- Root: TOC + shared/application-level specs
-├── <module-1>/
-│   └── SPEC.md                         <- Module blueprint (self-contained)
-├── <module-2>/
-│   └── SPEC.md
-├── <module-N>/
-│   └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md                    <- Root: TOC + shared/application-level specs
+â”œâ”€â”€ <module-1>/
+â”‚   â””â”€â”€ SPEC.md                         <- Module blueprint (self-contained)
+â”œâ”€â”€ <module-2>/
+â”‚   â””â”€â”€ SPEC.md
+â”œâ”€â”€ <module-N>/
+â”‚   â””â”€â”€ SPEC.md
 ```
 
 - **Root folder**: `<app_folder>/context/specification/`
@@ -895,7 +895,7 @@ follow them. If any constraint is violated, the spec is incorrect.
 
 ### Universal Constraints (Always Apply)
 
-**Do NOT use Lombok's `@Data` annotation — anywhere.** Use `@Getter` and `@Setter`
+**Do NOT use Lombok's `@Data` annotation â€” anywhere.** Use `@Getter` and `@Setter`
 explicitly on every class that needs accessors. `@Data` generates `equals()`, `hashCode()`,
 and `toString()` which cause problems with persistent entities, lazy-loaded
 collections, and circular references. The spec must use `@Getter @Setter` consistently.
@@ -942,7 +942,7 @@ collection/table names, module names, and user stories from the context files.
 
 **If Auth = Keycloak (Resource Server):**
 - **Use OAuth2 Resource Server (not OAuth2 Client).** The application validates JWT tokens
-  in the `Authorization: Bearer` header. Stateless — no HTTP session.
+  in the `Authorization: Bearer` header. Stateless â€” no HTTP session.
 - **Do NOT manage users and roles in the application.** Keycloak owns user/role management.
   The application only reads roles from JWT claims to enforce access control.
 
@@ -984,6 +984,6 @@ separately.
 
 ### Conditional Principles
 - **If Auth = Keycloak:** OAuth2 Resource Server with JWT validation for all
-  authentication and authorization (stateless). No user/role management — external IdP only.
+  authentication and authorization (stateless). No user/role management â€” external IdP only.
 - **If Auth = JWT:** Custom JWT token provider with stateless authentication.
 - **If Auth = none:** No security filter chain. All endpoints are publicly accessible.

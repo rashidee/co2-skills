@@ -1,12 +1,12 @@
----
+﻿---
 name: testgen-functional
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate Playwright E2E test plan and specification documents from project artifacts
   (user stories, module models, mockups, specifications). Produces a TEST_PLAN.md root
   summary and per-module TEST_SPEC.md files containing test scenarios, data seeding
-  scripts, and cleanup scripts — all as detailed Markdown blueprints, not actual test code.
+  scripts, and cleanup scripts â€” all as detailed Markdown blueprints, not actual test code.
   Input: application name (mandatory), version (mandatory), module (optional).
   Output: TEST_PLAN.md + per-module TEST_SPEC.md files in the auto-resolved test output folder.
   Trigger on keywords: "generate test plan",
@@ -36,7 +36,7 @@ the seeding strategy, execution order, and test design for each module.
 | L1: Auth | Test user setup | Modules about User/Auth; SSO/OAuth references in CLAUDE.md | Auth provider CLI (e.g., Keycloak `kcadm`, Laravel `artisan tinker`, or DB seed) |
 | L2: Reference Data | Admin-configured master data | User stories with "manage", "configure" by admin roles; no inbound message queue trigger | Direct DB insert via database CLI (e.g., `mongosh`, `mysql`, `psql`, `artisan tinker`) |
 | L3: Transactional Data | Message-driven data | NFRs mentioning "incoming messages", "message queue", "inbound messages"; Reference section linking to MESSAGE_*.md files | Message queue publish via broker CLI (e.g., `rabbitmqadmin`) |
-| L4: Side-Effect Data | Data generated as byproduct | NFRs mentioning "auto-generated", "system generated", "automatically"; modules like Activities, Audit Trail, Notifications | No seeding — asserted as side effects of L2/L3 operations |
+| L4: Side-Effect Data | Data generated as byproduct | NFRs mentioning "auto-generated", "system generated", "automatically"; modules like Activities, Audit Trail, Notifications | No seeding â€” asserted as side effects of L2/L3 operations |
 
 ## Input
 
@@ -83,7 +83,7 @@ The application name is matched against root-level application folders:
 
 **Argument parsing**: The `module:` prefix is the canonical form. Also accept:
 - `module:"Location Information"` (quoted, with space)
-- `module:location_information` (snake_case — convert to title-case for matching)
+- `module:location_information` (snake_case â€” convert to title-case for matching)
 - Natural language: `for Location Information module`, `only Location Information`
 
 ---
@@ -164,7 +164,7 @@ brackets, e.g., `[v1.0.1]`. Items may also be marked with strikethrough (`~~`).
 **Strikethrough exclusion** (always applied, regardless of version parameter):
 - Any line wrapped in `~~strikethrough~~` markup MUST be excluded from processing
 - This includes user stories, NFRs, constraints, references, test instructions, and bug fixes
-- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` → **SKIP**
+- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` â†’ **SKIP**
 - Partially strikethrough lines (where only part is struck) should still be excluded
   if the tag identifier is within the strikethrough
 
@@ -204,28 +204,28 @@ CLAUDE.md is automatically loaded into context. Extract the following from it:
    - SSO connection info (host, admin credentials, CLI path)
 3. **CLI tools available**: Map each infrastructure component to its CLI tool based on
    what CLAUDE.md declares. Common mappings:
-   - MongoDB → `mongosh` (connection string from CLAUDE.md)
-   - MySQL → `mysql` (host, port, credentials from CLAUDE.md)
-   - PostgreSQL → `psql` (host, port, credentials from CLAUDE.md)
-   - RabbitMQ → `rabbitmqadmin` (host, port, credentials from CLAUDE.md)
-   - Keycloak → `kcadm` (CLI path, host, admin credentials from CLAUDE.md)
-   - Laravel artisan → `php artisan` (for seeder commands, tinker, queue management)
+   - MongoDB â†’ `mongosh` (connection string from CLAUDE.md)
+   - MySQL â†’ `mysql` (host, port, credentials from CLAUDE.md)
+   - PostgreSQL â†’ `psql` (host, port, credentials from CLAUDE.md)
+   - RabbitMQ â†’ `rabbitmqadmin` (host, port, credentials from CLAUDE.md)
+   - Keycloak â†’ `kcadm` (CLI path, host, admin credentials from CLAUDE.md)
+   - Laravel artisan â†’ `php artisan` (for seeder commands, tinker, queue management)
 
    The skill auto-detects which tools apply from CLAUDE.md dependencies. Do not assume
-   a specific tech stack — read it from the project context.
+   a specific tech stack â€” read it from the project context.
 4. **Application dependencies**: What this application depends on (DB, MQ, SSO)
 5. **Environment variable mapping**: Map each infrastructure value from CLAUDE.md to a
    standardized environment variable name. These env vars will be referenced in seeding
    scripts and helper classes so that generated Playwright tests are portable across
    machines. Common mappings:
-   - Database connection string → `TEST_DB_URI` (MongoDB) or `TEST_DB_HOST`, `TEST_DB_PORT`,
+   - Database connection string â†’ `TEST_DB_URI` (MongoDB) or `TEST_DB_HOST`, `TEST_DB_PORT`,
      `TEST_DB_USER`, `TEST_DB_PASSWORD`, `TEST_DB_NAME` (MySQL/PostgreSQL)
-   - Message Queue → `TEST_MQ_HOST`, `TEST_MQ_PORT`, `TEST_MQ_USER`, `TEST_MQ_PASSWORD`,
+   - Message Queue â†’ `TEST_MQ_HOST`, `TEST_MQ_PORT`, `TEST_MQ_USER`, `TEST_MQ_PASSWORD`,
      `TEST_MQ_VHOST` (or `TEST_MQ_URL` for AMQP URL)
-   - SSO/Auth → `TEST_SSO_HOST`, `TEST_SSO_ADMIN_USER`, `TEST_SSO_ADMIN_PASSWORD`,
+   - SSO/Auth â†’ `TEST_SSO_HOST`, `TEST_SSO_ADMIN_USER`, `TEST_SSO_ADMIN_PASSWORD`,
      `TEST_SSO_CLI_PATH` (e.g., path to `kcadm.bat` or `kcadm.sh`), `TEST_SSO_REALM`
-   - Application → `TEST_APP_BASE_URL` (base URL for Playwright navigation)
-   - Additional CLI paths → `TEST_PHP_PATH`, `TEST_JAVA_HOME`, `TEST_MAVEN_PATH` (as needed)
+   - Application â†’ `TEST_APP_BASE_URL` (base URL for Playwright navigation)
+   - Additional CLI paths â†’ `TEST_PHP_PATH`, `TEST_JAVA_HOME`, `TEST_MAVEN_PATH` (as needed)
 
    Only include env vars for infrastructure components that actually exist in CLAUDE.md.
 
@@ -250,11 +250,11 @@ If PRD.md contains an `# Architecture Principle` section, extract patterns that 
 
 | Pattern | Test Impact |
 |---|---|
-| "Event-driven" | L3 transactional data may have async propagation delay — tests MUST include wait/retry patterns (e.g., `await expect.poll(() => ...).toPass({ timeout: 10000 })`) for eventual consistency assertions |
-| "Message driven" | Confirms L3 classification heuristics — modules receiving data via message queues are L3 |
+| "Event-driven" | L3 transactional data may have async propagation delay â€” tests MUST include wait/retry patterns (e.g., `await expect.poll(() => ...).toPass({ timeout: 10000 })`) for eventual consistency assertions |
+| "Message driven" | Confirms L3 classification heuristics â€” modules receiving data via message queues are L3 |
 | "Stateless" | Tests should handle token refresh/expiry scenarios; include JWT expiry test case |
 | ACK/NACK patterns | Generate assertion steps verifying messages published to correct queues with expected correlation IDs |
-| "At-least-once delivery" | Include idempotency test — send same message twice, verify no duplicate records |
+| "At-least-once delivery" | Include idempotency test â€” send same message twice, verify no duplicate records |
 
 If absent, proceed with existing layer classification heuristics.
 
@@ -263,7 +263,7 @@ If absent, proceed with existing layer classification heuristics.
 If PRD.md contains a `# High Level Process Flow` section:
 1. Parse all named process flows with their ordered steps
 2. Each process flow becomes an **end-to-end test scenario** (or test suite) in TEST_SPEC.md:
-   - Happy path: each step → a test step with specific assertions
+   - Happy path: each step â†’ a test step with specific assertions
    - Error paths (if described): each generates a separate error scenario
    - ACK/NACK patterns generate queue assertion steps (verify messages in outbound queues)
 3. Process flows are the **primary source for L3 (Transactional Data) test scenarios**
@@ -279,7 +279,7 @@ For each module, look for `<app_folder>/context/model/{module-kebab}/model.md`
 
 Convert module name to kebab-case:
 - Lowercase the module name, replace spaces with hyphens
-- Examples: "Location Information" → `location-information`, "Employer" → `employer`
+- Examples: "Location Information" â†’ `location-information`, "Employer" â†’ `employer`
 
 If the model file exists, extract:
 
@@ -304,7 +304,7 @@ For each module, look for `<app_folder>/context/specification/{module-kebab}/SPE
 
 If found, extract:
 
-1. **Traceability section**: Maps user stories → collections → mockup screens
+1. **Traceability section**: Maps user stories â†’ collections â†’ mockup screens
 2. **Public API** (Service Interface): Method signatures showing available operations
 3. **DTOs**: Field definitions showing what the API exposes
 4. **Validation rules**: Any documented validation logic
@@ -363,24 +363,24 @@ This data is used to generate:
 
 For each module, apply the following classification heuristics **in order** (first match wins):
 
-**L1: Auth** — Module is classified as L1 if:
+**L1: Auth** â€” Module is classified as L1 if:
 - Module name is "User" or contains "Authentication", "Authorization", "SSO"
 - User stories reference "profile", "password", "login", "logout"
 - NFRs reference "JWT", "SSO", "Keycloak", "token", "authentication"
 
-**L4: Side-Effect Data** — Module is classified as L4 if:
+**L4: Side-Effect Data** â€” Module is classified as L4 if:
 - Module name is "Activities", "Audit Trail", "Notification", or similar
 - NFRs mention "auto-generated", "system generated", "automatically logged"
 - NFRs mention "will be logged", "will be recorded automatically"
 - No user stories with "manage" or "configure" actions (only "view" actions)
 
-**L3: Transactional Data** — Module is classified as L3 if:
+**L3: Transactional Data** â€” Module is classified as L3 if:
 - NFRs mention "incoming messages", "message queue", "inbound messages"
 - Reference section links to `MESSAGE_*.md` files
 - NFRs mention "unique view ... based on incoming"
 - User stories are primarily "view" and "search" (no "manage"/"configure"/"add"/"create")
 
-**L2: Reference Data** — Module is classified as L2 if:
+**L2: Reference Data** â€” Module is classified as L2 if:
 - User stories contain "manage", "configure", "add", "create", "edit", "delete"
 - Actions are performed by admin roles
 - No message queue triggers (no MESSAGE_*.md references)
@@ -404,7 +404,7 @@ Build a dependency graph between modules:
 3. **User story references**: If user stories mention "view associated X" where X is
    another module, there is a dependency.
 
-4. **Layer ordering**: L1 → L2 → L3 → L4 (higher layers depend on lower layers implicitly)
+4. **Layer ordering**: L1 â†’ L2 â†’ L3 â†’ L4 (higher layers depend on lower layers implicitly)
 
 5. **Within-layer dependencies**: Within L2, reference data that other L2 modules depend on
    must be seeded first (e.g., Location Information before Employer, since employers have
@@ -424,7 +424,7 @@ Write `<app_folder>/context/test/TEST_PLAN.md` with the following structure:
 **Generated**: {date}
 **Source**: {PRD.md path}
 **Version**: {target version or "all versions"}
-**Versions Covered**: v1.0.0 — v{LATEST_VERSION}
+**Versions Covered**: v1.0.0 â€” v{LATEST_VERSION}
 **Module Filter**: {module name or "all modules"}
 
 ---
@@ -433,7 +433,7 @@ Write `<app_folder>/context/test/TEST_PLAN.md` with the following structure:
 
 - **Application**: {Application Name} ({Initials})
 - **Description**: {from PRD.md context line or CLAUDE.md}
-- **Stack**: {from CLAUDE.md — e.g., "Spring Boot 3 + MongoDB + Keycloak + RabbitMQ" or "Laravel 12 + MySQL + Keycloak + RabbitMQ"}
+- **Stack**: {from CLAUDE.md â€” e.g., "Spring Boot 3 + MongoDB + Keycloak + RabbitMQ" or "Laravel 12 + MySQL + Keycloak + RabbitMQ"}
 
 ---
 
@@ -473,7 +473,7 @@ TEST_DB_USER={username}
 TEST_DB_PASSWORD={password}
 TEST_DB_NAME={database name}
 
-# Message Queue ({type from CLAUDE.md}) — include only if MQ exists
+# Message Queue ({type from CLAUDE.md}) â€” include only if MQ exists
 TEST_MQ_HOST={host}
 TEST_MQ_PORT={port}
 TEST_MQ_USER={username}
@@ -481,7 +481,7 @@ TEST_MQ_PASSWORD={password}
 TEST_MQ_VHOST={vhost}
 TEST_MQ_URL={full AMQP URL}
 
-# SSO / Auth ({type from CLAUDE.md}) — include only if SSO exists
+# SSO / Auth ({type from CLAUDE.md}) â€” include only if SSO exists
 TEST_SSO_HOST={host URL, e.g., http://localhost:8180}
 TEST_SSO_ADMIN_USER={admin username}
 TEST_SSO_ADMIN_PASSWORD={admin password}
@@ -498,10 +498,10 @@ so that other developers know which variables to configure.
 ## 3. Test Users
 
 {Populate this table from TWO sources:
-1. `### Test` sections in PRD.md — human-specified test users with exact credentials
+1. `### Test` sections in PRD.md â€” human-specified test users with exact credentials
    and roles. These take precedence and MUST be used as-is (e.g., the Authentication
    module's `### Test` section may specify exact usernames, passwords, and roles).
-2. Auto-derived from user story roles — for any role NOT already covered by a
+2. Auto-derived from user story roles â€” for any role NOT already covered by a
    `### Test` section, generate a test user entry.}
 
 | User | Role | Purpose | Seeding Method | Source |
@@ -522,10 +522,10 @@ so that other developers know which variables to configure.
 
 {Ordered list of modules, respecting layer ordering and within-layer dependencies}
 
-1. **L1 — Auth Setup**: {modules}
-2. **L2 — Reference Data**: {modules in dependency order}
-3. **L3 — Transactional Data**: {modules in dependency order}
-4. **L4 — Side-Effect Assertions**: {modules}
+1. **L1 â€” Auth Setup**: {modules}
+2. **L2 â€” Reference Data**: {modules in dependency order}
+3. **L3 â€” Transactional Data**: {modules in dependency order}
+4. **L4 â€” Side-Effect Assertions**: {modules}
 
 ---
 
@@ -533,32 +533,32 @@ so that other developers know which variables to configure.
 
 {List all test spec files in strict dependency order derived from the dependency graph
 built in Step 8. A module only appears after ALL modules it depends on have been listed.
-Apply a topological sort within each layer, then order layers L1 → L2 → L3 → L4.
+Apply a topological sort within each layer, then order layers L1 â†’ L2 â†’ L3 â†’ L4.
 Group by layer in the TOC for readability, but the numbering is globally sequential
 and reflects the dependency-resolved execution order throughout.}
 
-### L1 — Auth Setup
+### L1 â€” Auth Setup
 
-1. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {comma-separated versions} — [Summary](#module-{module-anchor})
+1. [{Module Name}]({module-kebab}/TEST_SPEC.md) â€” Versions: {comma-separated versions} â€” [Summary](#module-{module-anchor})
 
-### L2 — Reference Data
+### L2 â€” Reference Data
 
 {List L2 modules in topological order: if Module B depends on Module A, Module A comes first.}
 
-2. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
-3. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+2. [{Module Name}]({module-kebab}/TEST_SPEC.md) â€” Versions: {versions} â€” [Summary](#module-{module-anchor})
+3. [{Module Name}]({module-kebab}/TEST_SPEC.md) â€” Versions: {versions} â€” [Summary](#module-{module-anchor})
 
-### L3 — Transactional Data
+### L3 â€” Transactional Data
 
 {List L3 modules in topological order by their inter-module dependencies.}
 
-4. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+4. [{Module Name}]({module-kebab}/TEST_SPEC.md) â€” Versions: {versions} â€” [Summary](#module-{module-anchor})
 
-### L4 — Side-Effect Assertions
+### L4 â€” Side-Effect Assertions
 
-{List L4 modules after all upstream L1–L3 modules they assert against.}
+{List L4 modules after all upstream L1â€“L3 modules they assert against.}
 
-5. [{Module Name}]({module-kebab}/TEST_SPEC.md) — Versions: {versions} — [Summary](#module-{module-anchor})
+5. [{Module Name}]({module-kebab}/TEST_SPEC.md) â€” Versions: {versions} â€” [Summary](#module-{module-anchor})
 
 ---
 
@@ -572,7 +572,7 @@ what it depends on, and a breakdown of its test scenarios by type.}
 
 ### Module: {Module Name} {#module-{module-anchor}}
 
-**Layer**: {L1/L2/L3/L4} — {layer purpose}
+**Layer**: {L1/L2/L3/L4} â€” {layer purpose}
 **Seeding Strategy**: {Keycloak CLI / DB Insert / MQ Publish / No seeding (side effect)}
 **Spec File**: [{module-kebab}/TEST_SPEC.md]({module-kebab}/TEST_SPEC.md)
 
@@ -582,7 +582,7 @@ what it depends on, and a breakdown of its test scenarios by type.}
 |--------------------|-------|--------|
 | {module name} | {L1/L2/L3} | {why this module must be seeded first} |
 
-_(None — this module has no prerequisites.)_ ← use when no deps
+_(None â€” this module has no prerequisites.)_ â† use when no deps
 
 **Data Seeded**:
 
@@ -590,7 +590,7 @@ _(None — this module has no prerequisites.)_ ← use when no deps
 |--------------------|-------------|-------------------|
 | {collection} | {count} | {field: value, ...} |
 
-_(No seeding required — data is a side effect of upstream operations.)_ ← use for L4
+_(No seeding required â€” data is a side effect of upstream operations.)_ â† use for L4
 
 **Test Scenarios Summary**:
 
@@ -599,9 +599,9 @@ _(No seeding required — data is a side effect of upstream operations.)_ ← us
 | Navigation | {n} | Verify sidebar link reaches the {Module Name} screen |
 | Search | {n} | Search by {param1}, {param2}, ... |
 | View / Detail | {n} | View detail of {entity} with tabs: {tab names} |
-| CRUD — Create | {n} | Create new {entity} with required fields |
-| CRUD — Edit | {n} | Update {field} of an existing {entity} |
-| CRUD — Delete | {n} | Delete {entity} with confirmation dialog |
+| CRUD â€” Create | {n} | Create new {entity} with required fields |
+| CRUD â€” Edit | {n} | Update {field} of an existing {entity} |
+| CRUD â€” Delete | {n} | Delete {entity} with confirmation dialog |
 | Validation | {n} | Required fields, {constraint description}, ... |
 | Mapping | {n} | Map {entity A} to {entity B} |
 | Toggle | {n} | Activate / Deactivate {entity} |
@@ -645,7 +645,7 @@ _{Omit rows for types with 0 scenarios.}_
 
 ## 9. Global Teardown
 
-{Cleanup strategy — reverse order of setup}
+{Cleanup strategy â€” reverse order of setup}
 
 ### 9a. Database Cleanup
 
@@ -672,7 +672,7 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 **Application**: {Application Name} ({Initials})
 **Module**: {Module Name}
 **Category**: {System Module / Business Module}
-**Layer**: {L1 / L2 / L3 / L4} — {layer purpose}
+**Layer**: {L1 / L2 / L3 / L4} â€” {layer purpose}
 **Seeding Strategy**: {Keycloak CLI / DB Insert / MQ Publish / No seeding (side effect)}
 **Generated**: {date}
 **Version**: {target version or "all versions"}
@@ -686,7 +686,7 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 
 ### Layer Classification Reasoning
 
-{Why this module was classified into its layer — which heuristic matched}
+{Why this module was classified into its layer â€” which heuristic matched}
 
 ### Source Artifacts
 
@@ -712,7 +712,7 @@ For each module (or the filtered module), write `<app_folder>/context/test/{modu
 
 | ID | Type | Removed In | Replaced By | Reason |
 |---|---|---|---|---|
-| {old ID} | {User Story/NFR/Constraint} | {version removed} | {new ID or "—"} | {reason} |
+| {old ID} | {User Story/NFR/Constraint} | {version removed} | {new ID or "â€”"} | {reason} |
 
 ### Test Instructions (from PRD.md)
 
@@ -725,7 +725,7 @@ Section 4.
 
 Test instructions guide the test spec generator on specific scenarios or edge cases that
 a human tester has identified as important. They do NOT replace the auto-derived scenarios
-but complement them — ensuring critical test paths are not missed.
+but complement them â€” ensuring critical test paths are not missed.
 
 When a test instruction specifies exact test data (e.g., usernames, passwords, field values),
 use those values as-is in the relevant seeding scripts and test scenarios.}
@@ -735,23 +735,23 @@ use those values as-is in the relevant seeding scripts and test scenarios.}
 | {TSTHM tag} | {v1.0.x} | {Full text of the test instruction from PRD.md} |
 
 {Example: `[TSTHM0003]` specifies exact test user credentials and roles for the Auth
-module — these MUST be used in the L1 Auth seeding script instead of auto-generated
+module â€” these MUST be used in the L1 Auth seeding script instead of auto-generated
 user data. `[TSTHA0006]` describes specific validation edge cases for the Employer
-module — these should generate additional VAL- test scenarios in Section 4.}
+module â€” these should generate additional VAL- test scenarios in Section 4.}
 
-_(No test instructions for this module.)_ ← use when the `### Test` section is empty or has no tagged items
+_(No test instructions for this module.)_ â† use when the `### Test` section is empty or has no tagged items
 
 ### Bug Fix Regression Coverage
 
 {If the module has a `### Bug` section in PRD.md, list each bug fix and its corresponding
 regression test requirement. Each bug fix MUST have at least one test scenario that verifies
-the fix still holds — preventing the same bug from reappearing.}
+the fix still holds â€” preventing the same bug from reappearing.}
 
 | Bug Tag | Version | Description | Regression Scenario |
 |---------|---------|-------------|-------------------|
 | {BUG-XXX} | {v1.0.x} | {Bug fix description from PRD.md} | {REG-prefix-NNN: scenario ID in Section 4} |
 
-_(No bug fixes recorded for this module.)_ ← use when the `### Bug` section is empty or absent
+_(No bug fixes recorded for this module.)_ â† use when the `### Bug` section is empty or absent
 
 ---
 
@@ -777,7 +777,7 @@ ensures Playwright tests are portable across developer machines. Use `$ENV_VAR` 
 in bash command templates and note that the actual Playwright helper code should read
 these from `process.env.*` via a `.env` file.
 
-**For L1 (Auth)** — use the auth provider's CLI or framework seeder:
+**For L1 (Auth)** â€” use the auth provider's CLI or framework seeder:
 
 *If Keycloak (detected from CLAUDE.md):*
 ```bash
@@ -798,7 +798,7 @@ php artisan tinker --execute="
 "
 ```
 
-**For L2 (Reference Data / DB Insert)** — use the database CLI matching CLAUDE.md:
+**For L2 (Reference Data / DB Insert)** â€” use the database CLI matching CLAUDE.md:
 
 *If MongoDB:*
 ```bash
@@ -836,7 +836,7 @@ INSERT INTO {table} ({columns}) VALUES
 php artisan db:seed --class=Test{Module}Seeder
 ```
 
-**For L3 (Transactional Data / MQ Publish)** — use the message broker CLI:
+**For L3 (Transactional Data / MQ Publish)** â€” use the message broker CLI:
 
 *If RabbitMQ:*
 ```bash
@@ -848,7 +848,7 @@ rabbitmqadmin -H "$TEST_MQ_HOST" -P "$TEST_MQ_PORT" -u "$TEST_MQ_USER" -p "$TEST
 
 **For L4 (Side Effect)**:
 ```
-No seeding required — data is generated as a side effect of L2/L3 operations.
+No seeding required â€” data is generated as a side effect of L2/L3 operations.
 Assert existence after upstream tests complete.
 ```
 
@@ -874,7 +874,7 @@ Assert existence after upstream tests complete.
 
 ### 4a. Navigation Tests
 
-{Derived from mockup sidebar links — verify the module screen is accessible}
+{Derived from mockup sidebar links â€” verify the module screen is accessible}
 
 #### NAV-{prefix}-001: Navigate to {Module} screen
 
@@ -1059,7 +1059,7 @@ Assert existence after upstream tests complete.
 
 ### 4i. Raw Message View Tests
 
-{Derived from user stories referencing "view raw message" — typically for L3 modules}
+{Derived from user stories referencing "view raw message" â€” typically for L3 modules}
 
 #### RAW-{prefix}-001: View raw inbound message
 
@@ -1076,7 +1076,7 @@ Assert existence after upstream tests complete.
 
 ### 4j. Pagination Tests
 
-{Applied to every list screen — verify pagination works correctly}
+{Applied to every list screen â€” verify pagination works correctly}
 
 #### PAGE-{prefix}-001: Verify pagination on {entity} list
 
@@ -1105,7 +1105,7 @@ previously fixed bugs from reappearing during redevelopment.}
 
 - **Source**: {BUG-XXX} [v1.0.x] from `### Bug` section
 - **Bug Description**: {description of what was broken and how it was fixed}
-- **Role**: {role — infer from the bug context or use the most common module role}
+- **Role**: {role â€” infer from the bug context or use the most common module role}
 - **Preconditions**: {relevant seeded data exists}
 - **Steps**:
   1. {Steps that would have triggered the original bug}
@@ -1113,7 +1113,7 @@ previously fixed bugs from reappearing during redevelopment.}
   3. {Perform the action that was broken}
 - **Expected**:
   - {The corrected behavior as described in the bug fix}
-  - {The bug does NOT reappear — the fix is still in effect}
+  - {The bug does NOT reappear â€” the fix is still in effect}
 
 {Repeat for each bug fix in the module's `### Bug` section.
 If no `### Bug` section exists for this module, omit Section 4k entirely.}
@@ -1136,7 +1136,7 @@ a test path not already covered by any auto-derived scenario.}
 
 - **Source**: {TST tag} [v1.0.x] from `### Test` section
 - **Instruction**: {Full text of the tagged test instruction}
-- **Role**: {role — infer from instruction context}
+- **Role**: {role â€” infer from instruction context}
 - **Preconditions**: {relevant seeded data or setup}
 - **Steps**:
   1. {Steps derived from the human test instruction}
@@ -1153,12 +1153,12 @@ If no tagged items exist in `### Test`, omit Section 4l entirely.}
 
 ### 5a. Cleanup Script
 
-{Reverse of seeding — remove all test data}
+{Reverse of seeding â€” remove all test data}
 
 **IMPORTANT**: Cleanup scripts MUST use the same environment variables as seeding scripts
 (from Section 2a of TEST_PLAN.md). Never hardcode paths, credentials, or connection strings.
 
-**For L2 (DB cleanup)** — use the database CLI matching CLAUDE.md:
+**For L2 (DB cleanup)** â€” use the database CLI matching CLAUDE.md:
 
 *If MongoDB:*
 ```bash
@@ -1189,7 +1189,7 @@ DELETE FROM {table} WHERE _test_data = true;
 php artisan test:cleanup --module={module}
 ```
 
-**For L3 (Queue cleanup)** — use the message broker CLI:
+**For L3 (Queue cleanup)** â€” use the message broker CLI:
 
 *If RabbitMQ:*
 ```bash
@@ -1199,7 +1199,7 @@ rabbitmqadmin -H "$TEST_MQ_HOST" -P "$TEST_MQ_PORT" -u "$TEST_MQ_USER" -p "$TEST
 
 ### 5b. Cleanup Order
 
-{Reverse dependency order — clean dependents first, then dependencies}
+{Reverse dependency order â€” clean dependents first, then dependencies}
 
 1. {last module in dependency order}
 2. ...
@@ -1211,19 +1211,19 @@ rabbitmqadmin -H "$TEST_MQ_HOST" -P "$TEST_MQ_PORT" -u "$TEST_MQ_USER" -p "$TEST
 
 | Test Scenario ID | User Story | Bug Fix | Test Instruction | Version | NFR(s) | Constraint(s) | Test Type |
 |-----------------|------------|---------|-----------------|---------|--------|---------------|-----------|
-| NAV-{prefix}-001 | — | — | — | — | — | — | Navigation |
-| SRCH-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Search |
-| VIEW-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | View |
-| CRUD-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Create |
-| CRUD-{prefix}-002 | {tag} | — | — | v1.0.x | — | — | Edit |
-| CRUD-{prefix}-003 | {tag} | — | — | v1.0.x | — | — | Delete |
-| VAL-{prefix}-001 | — | — | {TST tag or —} | v1.0.x | — | {tag} | Validation |
-| TOG-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Toggle |
-| HIST-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | History |
-| RAW-{prefix}-001 | {tag} | — | — | v1.0.x | — | — | Raw Message |
-| PAGE-{prefix}-001 | — | — | — | — | — | — | Pagination |
-| REG-{prefix}-001 | — | {BUG-XXX} | — | v1.0.x | — | — | Regression |
-| TSTI-{prefix}-001 | — | — | {TST tag} | v1.0.x | — | — | Test Instruction |
+| NAV-{prefix}-001 | â€” | â€” | â€” | â€” | â€” | â€” | Navigation |
+| SRCH-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Search |
+| VIEW-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | View |
+| CRUD-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Create |
+| CRUD-{prefix}-002 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Edit |
+| CRUD-{prefix}-003 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Delete |
+| VAL-{prefix}-001 | â€” | â€” | {TST tag or â€”} | v1.0.x | â€” | {tag} | Validation |
+| TOG-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Toggle |
+| HIST-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | History |
+| RAW-{prefix}-001 | {tag} | â€” | â€” | v1.0.x | â€” | â€” | Raw Message |
+| PAGE-{prefix}-001 | â€” | â€” | â€” | â€” | â€” | â€” | Pagination |
+| REG-{prefix}-001 | â€” | {BUG-XXX} | â€” | v1.0.x | â€” | â€” | Regression |
+| TSTI-{prefix}-001 | â€” | â€” | {TST tag} | v1.0.x | â€” | â€” | Test Instruction |
 ```
 
 ---
@@ -1258,7 +1258,7 @@ Layer Classification:
 
 Files generated:
 - TEST_PLAN.md
-- {module-kebab}/TEST_SPEC.md (× {N} modules)
+- {module-kebab}/TEST_SPEC.md (Ã— {N} modules)
 
 | Module | Layer | Scenarios | Spec File |
 |--------|-------|-----------|-----------|
@@ -1302,7 +1302,7 @@ After all test specification files are successfully generated, append an entry t
   command templates in TEST_PLAN.md and TEST_SPEC.md MUST reference environment variables
   (e.g., `$TEST_DB_URI`, `$TEST_SSO_CLI_PATH`) instead of hardcoded values. The env var
   names and their values from CLAUDE.md are documented in TEST_PLAN.md Section 2a. This
-  ensures the generated test blueprints are portable — developers configure their local
+  ensures the generated test blueprints are portable â€” developers configure their local
   `.env` file once and all test helpers work regardless of machine-specific paths.
 
 ### Document Quality
@@ -1325,7 +1325,7 @@ After all test specification files are successfully generated, append an entry t
 - **Test instructions from PRD.md are authoritative**: When a `### Test` section specifies
   exact test users, credentials, or setup procedures, use them as-is. Do not override with
   auto-generated values. Tagged test instructions (`[TSTxx####]`) provide human-guided
-  test scenarios and edge cases that MUST be incorporated into the test spec — either by
+  test scenarios and edge cases that MUST be incorporated into the test spec â€” either by
   merging into existing auto-derived scenarios or by creating new TSTI-* scenarios.
 - **Test instructions are additive, not exclusive**: Test instructions complement the
   standard auto-derived scenarios from User Stories, NFRs, Constraints, Models, Mockups,
@@ -1343,7 +1343,7 @@ After all test specification files are successfully generated, append an entry t
 - **Record reasoning**: Always document which heuristic matched for each classification.
 
 ### Dependencies
-- **Respect execution order**: L1 → L2 → L3 → L4. Within each layer, respect inter-module
+- **Respect execution order**: L1 â†’ L2 â†’ L3 â†’ L4. Within each layer, respect inter-module
   dependencies.
 - **Seeding before testing**: All prerequisite data must be seeded before a module's tests run.
 - **Cleanup in reverse order**: Clean up in reverse dependency order to avoid foreign key

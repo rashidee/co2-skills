@@ -1,6 +1,6 @@
----
+﻿---
 name: mockgen-tailwind
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate HTML mockup screens from PRD.md files for UI/UX human designer review.
@@ -51,7 +51,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` → `hub_middleware`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_hub_middleware` â†’ `hub_middleware`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -77,13 +77,13 @@ The application name is matched against root-level application folders:
 - If a module is provided (e.g., `module:Location Information`), only generate/update screens
   for that specific module. All other modules are skipped. Common screens (home, profile,
   account, notifications), partials (shell, header, footer, sidebars), and server files are
-  NOT regenerated when a module filter is active — only the module's own content fragments
+  NOT regenerated when a module filter is active â€” only the module's own content fragments
   are written (and MOCKUP.html is updated for only that module's cards).
 - If no module is provided, process all modules (default behavior)
 
 **Argument parsing**: The `module:` prefix is the canonical form. Also accept:
 - `module:"Location Information"` (quoted, with space)
-- `module:location_information` (snake_case — convert to title-case for matching)
+- `module:location_information` (snake_case â€” convert to title-case for matching)
 - Natural language: `for Location Information module`, `only Location Information`
 
 ## Version Gate
@@ -130,7 +130,7 @@ Items may also be marked with strikethrough (`~~`) to indicate they are deprecat
 **Strikethrough exclusion** (always applied, regardless of version parameter):
 - Any line wrapped in `~~strikethrough~~` markup MUST be excluded from processing
 - This includes user stories, NFRs, constraints, and references
-- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` → **SKIP**
+- Example: `~~[USHM00006] As a Hub Administrator user, I want to...~~` â†’ **SKIP**
 - Partially strikethrough lines (where only part is struck) should still be excluded
   if the tag identifier is within the strikethrough
 
@@ -158,14 +158,14 @@ Example parsing of a section with multiple versions:
 ```
 
 With target version `v1.0.0`:
-- USHM00006 → EXCLUDED (strikethrough)
-- USHM00009 → INCLUDED (v1.0.0 <= v1.0.0, not strikethrough)
-- USHM00012 → EXCLUDED (v1.0.1 > v1.0.0)
+- USHM00006 â†’ EXCLUDED (strikethrough)
+- USHM00009 â†’ INCLUDED (v1.0.0 <= v1.0.0, not strikethrough)
+- USHM00012 â†’ EXCLUDED (v1.0.1 > v1.0.0)
 
 With target version `v1.0.1` (or no version specified):
-- USHM00006 → EXCLUDED (strikethrough)
-- USHM00009 → INCLUDED
-- USHM00012 → INCLUDED
+- USHM00006 â†’ EXCLUDED (strikethrough)
+- USHM00009 â†’ INCLUDED
+- USHM00012 â†’ INCLUDED
 
 #### 1c: Module Filtering (applied only when a module argument is provided)
 
@@ -173,7 +173,7 @@ When a `module` argument is present, apply module filtering after version filter
 
 1. **Match the specified module** against the list of parsed modules (case-insensitive, ignoring
    leading/trailing whitespace). Also accept snake_case input by converting it to title-case
-   for comparison (e.g., `location_information` → match "Location Information").
+   for comparison (e.g., `location_information` â†’ match "Location Information").
 2. **Record the matched module name** for use in Step 3 and beyond.
 3. If no module matches, stop and report the available module names to the user before proceeding.
 4. **Module filter scope**: the filter only affects **content fragment generation** (Step 6e).
@@ -184,12 +184,12 @@ When a `module` argument is present, apply module filtering after version filter
 
 | Aspect | Full Generation | Module-Filtered |
 |--------|----------------|-----------------|
-| Common screens (home, profile, account, notifications) | Generate for every role | **SKIP** — already exist |
-| Partials (shell, header, footer) | Generate | **SKIP** — already exist |
-| Sidebar per role | Generate | **SKIP** — already exist |
-| server.js + package.json | Generate | **SKIP** — already exist |
+| Common screens (home, profile, account, notifications) | Generate for every role | **SKIP** â€” already exist |
+| Partials (shell, header, footer) | Generate | **SKIP** â€” already exist |
+| Sidebar per role | Generate | **SKIP** â€” already exist |
+| server.js + package.json | Generate | **SKIP** â€” already exist |
 | Module content files (target module) | Generate | **Generate / overwrite** |
-| Module content files (other modules) | Generate | **SKIP** — leave untouched |
+| Module content files (other modules) | Generate | **SKIP** â€” leave untouched |
 | MOCKUP.html | Generate full file | **Update only the target module's cards** |
 | footer.html version string | Update | **Update** (version may have changed) |
 
@@ -212,17 +212,17 @@ For each module extracted in Step 1:
 
 1. Convert the module name to **kebab-case** to derive the model folder name:
    - Lowercase the module name and replace spaces with hyphens
-   - Examples: "Location Information" → `location-information`, "Industrial Classification" → `industrial-classification`, "Employer" → `employer`
+   - Examples: "Location Information" â†’ `location-information`, "Industrial Classification" â†’ `industrial-classification`, "Employer" â†’ `employer`
 
 2. Check for `{model_dir}/{kebab-module}/model.md`
 
 3. If the file exists, parse it and extract the following sections:
 
-   - **Section 2 – Collection Catalog**: collection names and types (Root Collection, Audit Collection, etc.)
-   - **Section 5 – Field Detail per Collection**: for each collection — field name, type, required, nullable, constraints/notes
-   - **Section 6 – Embedded Document Definitions**: embedded type name and its sub-fields
-   - **Section 7 – Enum Definitions**: enum name and all allowed values with descriptions
-   - **Section 9 – Index Recommendations**: indexed fields (used to identify search/filter parameters)
+   - **Section 2 â€“ Collection Catalog**: collection names and types (Root Collection, Audit Collection, etc.)
+   - **Section 5 â€“ Field Detail per Collection**: for each collection â€” field name, type, required, nullable, constraints/notes
+   - **Section 6 â€“ Embedded Document Definitions**: embedded type name and its sub-fields
+   - **Section 7 â€“ Enum Definitions**: enum name and all allowed values with descriptions
+   - **Section 9 â€“ Index Recommendations**: indexed fields (used to identify search/filter parameters)
 
 4. Store this as the **module model** for the module, keyed by module name
 
@@ -254,7 +254,7 @@ Check if PRD.md contains a `# Design System` section. If it does:
 1. Extract the referenced file path (e.g., from `[DESIGN_SYSTEM.md](reference/DESIGN_SYSTEM.md)`)
 2. Resolve the path relative to PRD.md's location
 3. If the referenced file exists, read it and extract:
-   - Color palettes (primary, secondary, accent, neutral — hex values)
+   - Color palettes (primary, secondary, accent, neutral â€” hex values)
    - Typography (font families, font sizes, weight scale)
    - Spacing scale (if overriding Tailwind defaults)
    - Component patterns (button styles, card styles, form input styles, table styles, badge/chip styles, modal patterns)
@@ -268,9 +268,9 @@ If PRD.md does not have a `# Design System` section, or the referenced file does
 Read all files in `{app_name}/context/design/` (where `{app_name}` is the resolved application folder name from Step 1). Apply the design tokens and guidelines found there to all generated mockup screens.
 
 **Expected files** (any or all may be present):
-- `design-system.md` — Colors, typography, spacing, and visual style definitions
-- `components.md` — Reusable component patterns and Tailwind class conventions
-- `guidelines.md` — Layout rules, accessibility standards, and stack-specific guidelines
+- `design-system.md` â€” Colors, typography, spacing, and visual style definitions
+- `components.md` â€” Reusable component patterns and Tailwind class conventions
+- `guidelines.md` â€” Layout rules, accessibility standards, and stack-specific guidelines
 
 #### 2c: Default Fallback
 
@@ -278,7 +278,7 @@ If neither the PRD reference nor the `{app_name}/context/design/` folder provide
 
 #### 2d: Process Flow Status States
 
-If PRD.md contains a `# High Level Process Flow` section, scan it for entity status lifecycle descriptions (e.g., "Received → Validated → Enriched → Active"). For each status lifecycle found:
+If PRD.md contains a `# High Level Process Flow` section, scan it for entity status lifecycle descriptions (e.g., "Received â†’ Validated â†’ Enriched â†’ Active"). For each status lifecycle found:
 - Ensure list screens for the corresponding module include a status column with colored badges for each state
 - Use design system color tokens for badge colors (e.g., success color for active/completed states, warning for pending, danger for failed/rejected)
 
@@ -313,7 +313,7 @@ For each module screen, analyze the user stories and identify sub-screens needed
 | "view history/audit of X" | `{module}_history.html` - History/audit log view |
 | "view associated X of Y" | `{module}_{sub}_list.html` - Associated records list |
 
-#### 3f: Report Layout Screens (conditional — if PRD.md contains report-related content)
+#### 3f: Report Layout Screens (conditional â€” if PRD.md contains report-related content)
 
 Scan PRD.md for report-related content:
 - NFRs mentioning "report", "Report interface", "generate report", "report generation"
@@ -358,7 +358,7 @@ showing the filter criteria used to generate the report (e.g., Date Range: 2025-
 
 **Add to MOCKUP.html**: Include a "Reports" section at the bottom of each role's screen cards
 (after all module cards) listing the report layout links. Report links open in new tabs
-pointing directly to the standalone HTML files (no server route needed — static files).
+pointing directly to the standalone HTML files (no server route needed â€” static files).
 
 **Add to sidebar**: If reports are present, add a "Reports" navigation group in each role's
 sidebar with links opening report layouts in new tabs.
@@ -399,7 +399,7 @@ Build a **complete** screen plan. Every entry must map to a generated file:
 
 ### Step 4: Create Output Folder Structure
 
-**Module filter**: When a module argument is active, skip this step entirely — the folder
+**Module filter**: When a module argument is active, skip this step entirely â€” the folder
 structure already exists from a previous full generation. Only content files for the target
 module will be written in Step 6e.
 
@@ -449,10 +449,10 @@ package-lock.json
 ```
 
 Key behaviours of server.js:
-- `GET /` → serves `MOCKUP.html` (static landing page)
-- `GET /:role` → redirects to `/:role/home`
-- `GET /:role/:page` → assembles full HTML from shell + header + sidebar + content + footer
-- `GET /api/content/:role/:page` → returns content fragment only (for HTMX in-page swaps)
+- `GET /` â†’ serves `MOCKUP.html` (static landing page)
+- `GET /:role` â†’ redirects to `/:role/home`
+- `GET /:role/:page` â†’ assembles full HTML from shell + header + sidebar + content + footer
+- `GET /api/content/:role/:page` â†’ returns content fragment only (for HTMX in-page swaps)
 - Injects `{{ROLE}}` into header and sidebar partials before responding (so HTMX links in
   dropdowns and sidebar reference the correct role)
 
@@ -481,7 +481,7 @@ Use templates from [references/admin-layout-template.md](references/admin-layout
 
 **Apply the design system** from Step 2 (colors, typography, spacing) to all templates.
 
-**Module filter**: When a module argument is active, skip steps 6a–6d (shell, header,
+**Module filter**: When a module argument is active, skip steps 6aâ€“6d (shell, header,
 footer, sidebars). Proceed directly to **6e** for the target module's content fragments only.
 Also update `partials/footer.html` if the version string changed (the footer version badge
 must always reflect the current target version).
@@ -520,7 +520,7 @@ Alpine.js `:class` binding highlights the active menu item based on `window.loca
 
 #### 6e: Generate content fragments ({role}/content/{page}.html)
 
-Each content fragment contains **only** the page content — no `<html>`, `<head>`, `<body>`,
+Each content fragment contains **only** the page content â€” no `<html>`, `<head>`, `<body>`,
 no Tailwind config, no CDN scripts. Structure:
 
 ```
@@ -548,9 +548,9 @@ For each module screen, analyze the user stories and generate appropriate UI moc
 
 #### Model-Driven Field Usage (MANDATORY when model file exists)
 
-When a module model was loaded in Step 1b, use its actual field definitions — not generic placeholders — to populate every screen. Generic field names like "Field 1" or "Description" are not acceptable when a model is available.
+When a module model was loaded in Step 1b, use its actual field definitions â€” not generic placeholders â€” to populate every screen. Generic field names like "Field 1" or "Description" are not acceptable when a model is available.
 
-**Field type → HTML input mapping:**
+**Field type â†’ HTML input mapping:**
 
 | Model Type | Form Input | Notes |
 |------------|-----------|-------|
@@ -565,16 +565,16 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 
 **List / Search screens** (`{module}.html`):
 - **Filter form**: render filter inputs only for fields that appear in Index Recommendations (Section 9). Use the correct input type per the mapping above. Enum-indexed fields use `<select>`. Date-indexed fields use date range pickers.
-- **Results table**: choose 5–7 of the most identifying non-system fields as columns. For embedded objects, show them as a single column (e.g., "Company Name" rather than expanding all sub-fields). Null/optional fields can be shown with a dash (`—`) in sample data.
-- **Table row actions**: View → `{module}_detail`, Edit → `{module}_edit`, Delete → Alpine.js confirm
+- **Results table**: choose 5â€“7 of the most identifying non-system fields as columns. For embedded objects, show them as a single column (e.g., "Company Name" rather than expanding all sub-fields). Null/optional fields can be shown with a dash (`â€”`) in sample data.
+- **Table row actions**: View â†’ `{module}_detail`, Edit â†’ `{module}_edit`, Delete â†’ Alpine.js confirm
 - **Pagination** (MANDATORY): Every results table MUST include a pagination bar directly below the table. Requirements:
   - Default page size: **10 items per page**
-  - Show "Showing X–Y of Z results" summary text on the left
+  - Show "Showing Xâ€“Y of Z results" summary text on the left
   - Show page size selector (`<select>`) with options 10, 25, 50 on the right (default 10)
   - Show Previous / Next buttons and page number buttons in the centre
-  - Page number buttons: show first page, last page, current page ± 1, with `...` ellipsis for gaps
+  - Page number buttons: show first page, last page, current page Â± 1, with `...` ellipsis for gaps
   - Use Alpine.js `x-data="{ currentPage: 1, pageSize: 10, totalItems: 47 }"` (sample total) to drive display state
-  - Page buttons use HTMX `hx-get` linking to the same route (self-referential) — acceptable per Link Integrity Rule 6
+  - Page buttons use HTMX `hx-get` linking to the same route (self-referential) â€” acceptable per Link Integrity Rule 6
   - Previous/Next buttons are disabled (visual only with `opacity-50 cursor-not-allowed`) when at first/last page
   - Use sample data: populate exactly 10 visible rows in the table (matching the default page size)
 
@@ -602,19 +602,19 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 
 **History / Audit screens** (`{module}_history.html`):
 - Use fields from the **audit/history collection** (the non-root collection in the Collection Catalog):
-  - `changeType` → colored badge using enum values from Section 7
-  - `fieldChanged` → code-styled text (`<code>`)
-  - `previousValue` / `newValue` → inline diff or truncated JSON display
-  - `changedAt` → formatted timestamp
-  - `changedBy` → plain text (e.g., "SYSTEM" or username)
+  - `changeType` â†’ colored badge using enum values from Section 7
+  - `fieldChanged` â†’ code-styled text (`<code>`)
+  - `previousValue` / `newValue` â†’ inline diff or truncated JSON display
+  - `changedAt` â†’ formatted timestamp
+  - `changedBy` â†’ plain text (e.g., "SYSTEM" or username)
 - Render as a chronological table, newest first
 - **Pagination** (MANDATORY): Include pagination bar below the history table. Default 10 items per page. Same Alpine.js + HTMX pattern as list screens (see above).
 
 **Sample data alignment**: Placeholder values in screens must be consistent with field constraints:
-- `countryCode` → use actual allowed values (e.g., "MYS", "BHR", "MDV") per CONSHM constraints if present in model notes
-- Enum fields → use one of the defined enum values (not arbitrary strings)
-- `companyRegistrationNumber` → e.g., "201901012345 (1234567-X)"
-- `ISODate` fields → use realistic ISO dates (e.g., "2025-08-15T10:30:00Z")
+- `countryCode` â†’ use actual allowed values (e.g., "MYS", "BHR", "MDV") per CONSHM constraints if present in model notes
+- Enum fields â†’ use one of the defined enum values (not arbitrary strings)
+- `companyRegistrationNumber` â†’ e.g., "201901012345 (1234567-X)"
+- `ISODate` fields â†’ use realistic ISO dates (e.g., "2025-08-15T10:30:00Z")
 
 ---
 
@@ -623,32 +623,32 @@ When a module model was loaded in Step 1b, use its actual field definitions — 
 **Every clickable element MUST navigate to a real route. No `href="#"` allowed anywhere.**
 
 1. **Table row actions** (View, Edit, Delete):
-   - "View" / "Details" → HTMX link to `/{role}/{module}_detail`
-   - "Edit" → HTMX link to `/{role}/{module}_edit`
-   - "Delete" → Alpine.js inline confirm dialog (`href="javascript:void(0)"`)
-   - "Add New" / "Create" → HTMX link to `/{role}/{module}_create`
+   - "View" / "Details" â†’ HTMX link to `/{role}/{module}_detail`
+   - "Edit" â†’ HTMX link to `/{role}/{module}_edit`
+   - "Delete" â†’ Alpine.js inline confirm dialog (`href="javascript:void(0)"`)
+   - "Add New" / "Create" â†’ HTMX link to `/{role}/{module}_create`
 
 2. **Tabs within a screen**:
    - Each tab MUST HTMX-link to its corresponding content file
    - The current tab is visually active; other tabs link to their respective content pages
 
 3. **Header links**:
-   - Notification bell icon → HTMX nav to `notifications`
-   - Notification dropdown "View all notifications" → HTMX nav to `notifications`
-   - Locale dropdown options → `javascript:void(0)` (static language switcher mockup)
-   - Night mode toggle → Alpine.js `@click="toggleDark()"` (no href)
-   - Profile dropdown → HTMX nav to `profile`
-   - Account dropdown → HTMX nav to `account`
-   - Logout → `href="/"` (returns to landing page)
+   - Notification bell icon â†’ HTMX nav to `notifications`
+   - Notification dropdown "View all notifications" â†’ HTMX nav to `notifications`
+   - Locale dropdown options â†’ `javascript:void(0)` (static language switcher mockup)
+   - Night mode toggle â†’ Alpine.js `@click="toggleDark()"` (no href)
+   - Profile dropdown â†’ HTMX nav to `profile`
+   - Account dropdown â†’ HTMX nav to `account`
+   - Logout â†’ `href="/"` (returns to landing page)
 
 4. **Sidebar links**: HTMX links to correct module screen routes (already enforced)
 
 5. **Breadcrumb links**: HTMX links
-   - Home → `/{role}/home`
-   - Module → `/{role}/{module}`
-   - Detail / current → plain text, no link
+   - Home â†’ `/{role}/home`
+   - Module â†’ `/{role}/{module}`
+   - Detail / current â†’ plain text, no link
 
-6. **Pagination links**: HTMX `hx-get` links to the same route (self-referential) are acceptable. Pagination is MANDATORY on every list — page buttons must use `hx-get` with the same route, not `href="#"`
+6. **Pagination links**: HTMX `hx-get` links to the same route (self-referential) are acceptable. Pagination is MANDATORY on every list â€” page buttons must use `hx-get` with the same route, not `href="#"`
 
 7. **Back / Cancel buttons**: HTMX link to the parent screen
 
@@ -761,11 +761,11 @@ Before finalizing output, perform a link integrity check across ALL generated fi
 1. **Scan every generated file** for all `href`, `hx-get`, and `hx-push-url` attribute values
 2. **Build a link registry**: map every route reference to the file that should exist
 3. **Verify each HTMX route** resolves to an existing content fragment:
-   - `hx-get="/api/content/{role}/{page}"` → verify `{role}/content/{page}.html` exists
-   - `href="javascript:void(0)"` → acceptable for delete confirm, locale switcher
-   - `href="/"` → acceptable for logout
-   - `target="_blank"` links → acceptable for images, PDFs, external resources
-   - `href="#"` → **NOT ALLOWED** — dead link, must be fixed
+   - `hx-get="/api/content/{role}/{page}"` â†’ verify `{role}/content/{page}.html` exists
+   - `href="javascript:void(0)"` â†’ acceptable for delete confirm, locale switcher
+   - `href="/"` â†’ acceptable for logout
+   - `target="_blank"` links â†’ acceptable for images, PDFs, external resources
+   - `href="#"` â†’ **NOT ALLOWED** â€” dead link, must be fixed
 4. **For any missing target file**, either:
    - Generate the missing content fragment, OR
    - Update the link to point to an existing route
@@ -806,7 +806,7 @@ After all mockup files are successfully generated, append an entry to `CHANGELOG
 - **ZERO dead links**: Every `href` and `hx-get` in every file must resolve. No `href="#"`
 - **Pagination on every list** (MANDATORY): Every screen that renders a table or card list of records MUST include a pagination bar below it. Default page size is **10 items per page**. Applies to: module list screens, history/audit screens, notifications screen, and any embedded sub-tables within detail screens that may grow unbounded. Use Alpine.js `x-data` for page state and HTMX `hx-get` (self-referential) for page navigation. Omitting pagination from any list is a generation error.
 - **Partials for layout**: Header, footer, and sidebar are partial files, NOT duplicated inline
-- **Content fragments only**: Role screen files contain only page content — no `<html>/<head>/<body>`
+- **Content fragments only**: Role screen files contain only page content â€” no `<html>/<head>/<body>`
 - **HTMX navigation**: All in-app navigation uses HTMX (`hx-get`, `hx-target`, `hx-push-url`)
 - **Alpine.js for interactivity**: Dropdowns, toggles, confirm dialogs use Alpine.js
 - **Images open in new tab**: Any `<img>` link or image view action uses `target="_blank"`
@@ -826,7 +826,7 @@ After all mockup files are successfully generated, append an entry to `CHANGELOG
 - Use consistent color scheme from the design system across all partials and content fragments
 - The version displayed in footer should be the target version if specified, or the latest version
   found in PRD.md
-- **Strikethrough items MUST always be excluded** — lines wrapped in `~~` are deprecated/removed
+- **Strikethrough items MUST always be excluded** â€” lines wrapped in `~~` are deprecated/removed
 - **Version filtering**: When a target version is provided, only include items from sections
   with version tags <= target version
 - **Model-driven screens**: When a module model file exists at `model/{kebab-module}/model.md`,

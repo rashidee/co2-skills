@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-flutter-riverpod
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a Flutter mobile application
@@ -20,7 +20,7 @@ description: >
   spec for a Flutter Riverpod app", or any request for a specification document describing
   a Flutter + Riverpod + Dio + Hive application. Even if the user only mentions a subset
   of the stack (e.g., "Flutter mobile app" or "Flutter with Firebase notifications"),
-  this skill likely applies — ask and confirm.
+  this skill likely applies â€” ask and confirm.
 ---
 
 # Flutter Mobile Specification Generator
@@ -31,8 +31,8 @@ by a developer or a coding agent to produce a fully functional project scaffold 
 both Android and iOS.
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the application — from `pubspec.yaml` configuration to
-Material Theme, from Riverpod providers to Dio retry interceptors — so that implementation
+document describing every layer of the application â€” from `pubspec.yaml` configuration to
+Material Theme, from Riverpod providers to Dio retry interceptors â€” so that implementation
 becomes a mechanical exercise.
 
 ## Technology Stack
@@ -100,55 +100,55 @@ Include in the version table only when the corresponding integration is selected
 The spec must include these in the `pubspec.yaml` dependencies section (always):
 
 **Runtime dependencies:**
-- `flutter` (sdk: flutter) — Core Flutter framework
-- `flutter_riverpod` — Riverpod for Flutter
-- `riverpod_annotation` — Annotations for riverpod_generator
-- `hooks_riverpod` — Riverpod with flutter_hooks integration
-- `flutter_hooks` — React-style hooks for Flutter
-- `hive` + `hive_flutter` — Local NoSQL key-value database
-- `dio` — HTTP client
-- `dio_smart_retry` — Retry interceptor for Dio
-- `pretty_dio_logger` — Request/response logging in development
-- `go_router` — Declarative routing
-- `freezed_annotation` — Annotations for freezed code generation
-- `json_annotation` — Annotations for json_serializable
-- `firebase_core` — Firebase initialization
-- `firebase_messaging` — Push notification (FCM)
-- `flutter_local_notifications` — Foreground/scheduled local notifications
-- `cached_network_image` — Network image with caching and placeholders
-- `flutter_svg` — SVG rendering
-- `pull_to_refresh` — Smart pull-to-refresh widget
-- `font_awesome_flutter` — Font Awesome icons
-- `material_design_icons_flutter` — Material Design Icons (MDI)
-- `intl` — Internationalization, date/number formatting
-- `url_launcher` — Open URLs, dial, mailto, etc.
-- `flutter_dotenv` — Load `.env` configuration files
-- `path_provider` — Filesystem paths for Hive init
-- `flutter_secure_storage` — Encrypted key-value store (keychain/keystore)
+- `flutter` (sdk: flutter) â€” Core Flutter framework
+- `flutter_riverpod` â€” Riverpod for Flutter
+- `riverpod_annotation` â€” Annotations for riverpod_generator
+- `hooks_riverpod` â€” Riverpod with flutter_hooks integration
+- `flutter_hooks` â€” React-style hooks for Flutter
+- `hive` + `hive_flutter` â€” Local NoSQL key-value database
+- `dio` â€” HTTP client
+- `dio_smart_retry` â€” Retry interceptor for Dio
+- `pretty_dio_logger` â€” Request/response logging in development
+- `go_router` â€” Declarative routing
+- `freezed_annotation` â€” Annotations for freezed code generation
+- `json_annotation` â€” Annotations for json_serializable
+- `firebase_core` â€” Firebase initialization
+- `firebase_messaging` â€” Push notification (FCM)
+- `flutter_local_notifications` â€” Foreground/scheduled local notifications
+- `cached_network_image` â€” Network image with caching and placeholders
+- `flutter_svg` â€” SVG rendering
+- `pull_to_refresh` â€” Smart pull-to-refresh widget
+- `font_awesome_flutter` â€” Font Awesome icons
+- `material_design_icons_flutter` â€” Material Design Icons (MDI)
+- `intl` â€” Internationalization, date/number formatting
+- `url_launcher` â€” Open URLs, dial, mailto, etc.
+- `flutter_dotenv` â€” Load `.env` configuration files
+- `path_provider` â€” Filesystem paths for Hive init
+- `flutter_secure_storage` â€” Encrypted key-value store (keychain/keystore)
 
 **Development dependencies:**
-- `flutter_test` (sdk: flutter) — Widget test framework
-- `build_runner` — Code generation runner
-- `freezed` — Immutable data class generator
-- `json_serializable` — JSON serialization generator
-- `riverpod_generator` — Riverpod provider generator
-- `hive_generator` — Hive type adapter generator
-- `flutter_lints` — Recommended lint rules
-- `flutter_native_splash` — Native splash screen generator
-- `mocktail` — Mock library for unit tests
+- `flutter_test` (sdk: flutter) â€” Widget test framework
+- `build_runner` â€” Code generation runner
+- `freezed` â€” Immutable data class generator
+- `json_serializable` â€” JSON serialization generator
+- `riverpod_generator` â€” Riverpod provider generator
+- `hive_generator` â€” Hive type adapter generator
+- `flutter_lints` â€” Recommended lint rules
+- `flutter_native_splash` â€” Native splash screen generator
+- `mocktail` â€” Mock library for unit tests
 
 ### Conditional Dependencies
 
 **If Auth = Keycloak or OIDC:**
-- `flutter_appauth` — Native OAuth2/OIDC PKCE flow (uses AppAuth Android/iOS)
-- `openid_client` — OIDC discovery and token parsing
+- `flutter_appauth` â€” Native OAuth2/OIDC PKCE flow (uses AppAuth Android/iOS)
+- `openid_client` â€” OIDC discovery and token parsing
 
 **If WebSocket = yes:**
-- `web_socket_channel` — Cross-platform WebSocket client
+- `web_socket_channel` â€” Cross-platform WebSocket client
 
 **If i18n = yes:**
 - `flutter_localizations` (sdk: flutter)
-- `intl` is already in core — used for ARB-based message localization
+- `intl` is already in core â€” used for ARB-based message localization
 
 **If Analytics = yes:**
 - `firebase_analytics`
@@ -170,7 +170,7 @@ The spec must include these in the `pubspec.yaml` dependencies section (always):
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the custom applications defined in `CLAUDE.md`. The skill
-reads all required inputs from the project's context files — no interactive Q&A is needed
+reads all required inputs from the project's context files â€” no interactive Q&A is needed
 for the core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -203,7 +203,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_mobile` → `mobile`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_mobile` â†’ `mobile`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -230,13 +230,13 @@ When a version is provided, only include user stories, NFRs, and constraints fro
 When `module:<name>` is provided:
 - Only generate the `SPEC.md` for that specific module
 - Other existing module spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that module's entry in the TOC
+- `SPECIFICATION.md` (root) gets a partial update â€” only that module's entry in the TOC
   is added or updated; all other TOC entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **six input sources** read from the project's context files.
-The skill does NOT ask the user for auth, API backend URL, or optional component choices —
+The skill does NOT ask the user for auth, API backend URL, or optional component choices â€”
 it **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
@@ -246,14 +246,14 @@ From CLAUDE.md (already loaded in context), locate the target application under 
 
 - **Application name**: The section heading (e.g., "Mobile App", "Field Worker")
 - **Application description**: The description paragraph below the heading
-- **Dependencies**: The "Depends on" list — primary source for determining backend API
+- **Dependencies**: The "Depends on" list â€” primary source for determining backend API
   base URL, authentication provider, and optional components
 
 The application name is used to derive:
 - **Project slug**: snake_case of the application name (Dart/Flutter package naming;
   e.g., `mobile_app`, `field_worker`)
 - **App bundle ID / Application ID**: Reverse-DNS format (e.g.,
-  `com.example.mobile_app`) — Android `applicationId` and iOS `CFBundleIdentifier`
+  `com.example.mobile_app`) â€” Android `applicationId` and iOS `CFBundleIdentifier`
 - **App display name**: Title-case of application name (e.g., "Mobile App")
 
 ### Input 2: User Stories (from PRD.md)
@@ -275,7 +275,7 @@ The user stories directly inform:
 - Which form fields and validation rules apply
 - Which Flutter widgets best match the described UI
 
-**Important:** Items with strikethrough (`~~text~~`) are deprecated — do NOT include them
+**Important:** Items with strikethrough (`~~text~~`) are deprecated â€” do NOT include them
 as active requirements. List them in the "Removed / Replaced" subsection of the
 traceability table.
 
@@ -294,7 +294,7 @@ These inform:
 - Validation rules (character limits, format requirements)
 - Performance constraints (lazy widgets, image caching, offline support)
 
-NFRs should be mapped to specific technical decisions in the spec — for example, an NFR
+NFRs should be mapped to specific technical decisions in the spec â€” for example, an NFR
 stating "paginated with 20 items per page" confirms which Riverpod pagination pattern
 to use, while "must work offline" confirms which Hive box manages the offline cache.
 
@@ -307,7 +307,7 @@ hard boundaries that the spec must enforce:
 - Business rules (e.g., "category must exist before creating content")
 - Access control (e.g., "only WORKER role can access task management")
 
-Constraints are embedded directly into the relevant module blueprint — they inform
+Constraints are embedded directly into the relevant module blueprint â€” they inform
 freezed model definitions, repository method parameters, and route guard configurations.
 
 ### Input 5: Module Model (from model/ folder)
@@ -350,12 +350,12 @@ HTML files organized by role in subfolders.
 - Navigation structure from drawer/bottom-nav HTML files
 - Data display patterns (list pages, detail pages, create/edit forms)
 
-**IMPORTANT — Role folders inform access control, NOT route paths.** The role-specific
+**IMPORTANT â€” Role folders inform access control, NOT route paths.** The role-specific
 folder structure (e.g., `mockup/worker/task/task-list.html`) determines:
-1. Which role can access the screen → `redirect` guard with role check
+1. Which role can access the screen â†’ `redirect` guard with role check
 2. Which navigation items appear for each role
 It does NOT determine the route path. The route path is always module-based:
-- `GoRoute(path: '/task', ...)` — NOT `GoRoute(path: '/worker/task', ...)`
+- `GoRoute(path: '/task', ...)` â€” NOT `GoRoute(path: '/worker/task', ...)`
 
 The mockup screens directly map to:
 - Flutter screen widgets (one per HTML screen)
@@ -436,7 +436,7 @@ If Auth = Keycloak, also extract from CLAUDE.md:
 - Keycloak realm: Default derived from project name
 - Keycloak client ID: Default `<project-slug>-mobile`
 - Keycloak issuer URI: Default `http://localhost:8180/realms/<realm>`
-- Keycloak roles: Infer from mockup role folders (e.g., `worker` → `WORKER`, `admin` → `ADMIN`)
+- Keycloak roles: Infer from mockup role folders (e.g., `worker` â†’ `WORKER`, `admin` â†’ `ADMIN`)
 
 If Auth = Local (API-managed JWT):
 - Login/logout handled by Dio calls to the backend
@@ -466,13 +466,13 @@ Present it to the user for confirmation:
 
 ```
 Optional Component Determination:
-- Backend API:    http://localhost:<port>/api (from CLAUDE.md Port Allocation table → depends on backend app)
-- Authentication: Keycloak PKCE via flutter_appauth (from CLAUDE.md → depends on Single Sign On)
+- Backend API:    http://localhost:<port>/api (from CLAUDE.md Port Allocation table â†’ depends on backend app)
+- Authentication: Keycloak PKCE via flutter_appauth (from CLAUDE.md â†’ depends on Single Sign On)
 - WebSocket:      no
-- i18n:           yes (from PRD.md → English + Bahasa Malaysia required)
-- Analytics:      yes (from PRD.md NFR → screen view tracking)
-- Crashlytics:    yes (from PRD.md NFR → production error monitoring)
-- ImagePicker:    yes (from PRD.md → upload photo of completed task)
+- i18n:           yes (from PRD.md â†’ English + Bahasa Malaysia required)
+- Analytics:      yes (from PRD.md NFR â†’ screen view tracking)
+- Crashlytics:    yes (from PRD.md NFR â†’ production error monitoring)
+- ImagePicker:    yes (from PRD.md â†’ upload photo of completed task)
 - FilePicker:     no
 - Sharing:        no
 - Permissions:    yes (camera, photo library)
@@ -498,7 +498,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Design tokens**: ThemeData colors extracted from mockup CSS/inline styles
 
 **Auto-derived from CLAUDE.md (Port Allocation table):**
-- **Backend API base URL**: Look up the backend application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Construct the base URL as `http://10.0.2.2:<port>/api/v1` for Android emulator development (which proxies `localhost`) and `http://localhost:<port>/api/v1` for iOS simulator. Do NOT hardcode `8080` — the port MUST match the allocated port for the backend application this mobile app depends on.
+- **Backend API base URL**: Look up the backend application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Construct the base URL as `http://10.0.2.2:<port>/api/v1` for Android emulator development (which proxies `localhost`) and `http://localhost:<port>/api/v1` for iOS simulator. Do NOT hardcode `8080` â€” the port MUST match the allocated port for the backend application this mobile app depends on.
 
 **Optional (use sensible defaults if not found in context):**
 - **Default locale**: Default `en`
@@ -511,14 +511,14 @@ After determination, these values are needed. Most are derived automatically:
 Once inputs are gathered from context files and optional components are determined,
 generate the specification as a **multi-file output split by module**. Read the spec
 template at `references/spec-template.md` for the exact structure and content of each
-section. The template is the authoritative guide — follow it closely.
+section. The template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Table of Contents, shared infrastructure, ThemeData,
+1. **Root `SPECIFICATION.md`** â€” Table of Contents, shared infrastructure, ThemeData,
    routing, auth configuration, Hive/Dio/Firebase init, and application-level sections
    that apply across all modules.
-2. **Per-module `<module-name>/SPEC.md`** — Each module gets its own folder with a
+2. **Per-module `<module-name>/SPEC.md`** â€” Each module gets its own folder with a
    self-contained specification covering that module's complete blueprint.
 
 This split enables a coding agent to:
@@ -529,7 +529,7 @@ This split enables a coding agent to:
 not generic placeholders. Specifically:
 
 - **Modules** must use the actual module names from PRD.md and MODEL.md
-  (e.g., `task`, `order`, `catalogue` — not `module1`, `module2`)
+  (e.g., `task`, `order`, `catalogue` â€” not `module1`, `module2`)
 - **Freezed models** must match the actual fields defined in the module model files,
   not placeholder `fieldOne`/`fieldTwo`
 - **Repositories** must expose methods matching the actual user stories (e.g., if a story
@@ -546,21 +546,21 @@ not generic placeholders. Specifically:
   **ALL traceability sub-tables (User Stories, NFRs, AND Constraints) MUST include the
   `| Version |` column.**
 - **Removed / Replaced items**: The traceability section must include a "Removed / Replaced"
-  subsection listing deprecated items — showing the removed ID, the version that removed it,
+  subsection listing deprecated items â€” showing the removed ID, the version that removed it,
   the replacement ID (if any), and a brief reason.
 
 ### Output Structure
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← TOC + shared/application-level specs
-├── task/
-│   └── SPEC.md                         ← Module blueprint for Task
-├── order/
-│   └── SPEC.md                         ← Module blueprint for Order
-├── catalogue/
-│   └── SPEC.md                         ← Module blueprint for Catalogue
-├── ...                                 ← One folder per module from PRD.md
+â”œâ”€â”€ SPECIFICATION.md                    â† TOC + shared/application-level specs
+â”œâ”€â”€ task/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Task
+â”œâ”€â”€ order/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Order
+â”œâ”€â”€ catalogue/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Catalogue
+â”œâ”€â”€ ...                                 â† One folder per module from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -605,7 +605,7 @@ final versionLabel = 'v${info.version}+${info.buildNumber}';
 Generate `.env.development` and `.env.production` files at the project root for use with
 `flutter_dotenv`. The `.env.development` file is populated by reading `SECRET.md` from
 the project root, mapping credential and platform values to plain environment variable
-names (no `VITE_` prefix — Flutter does not use Vite). The `.env.production` file uses
+names (no `VITE_` prefix â€” Flutter does not use Vite). The `.env.production` file uses
 placeholder values for production.
 
 **Process:**
@@ -632,7 +632,7 @@ KEYCLOAK_REDIRECT_URI=com.example.mobile_app:/oauth2redirect
 
 **Rules:**
 - Use plain environment variable names; access via `dotenv.env['API_BASE_URL']`
-- Use actual values from SECRET.md — never use placeholders or `TODO`
+- Use actual values from SECRET.md â€” never use placeholders or `TODO`
 - If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (Android emulator uses `10.0.2.2` for host's `localhost`)
 - Both `.env.development` and `.env.production` are gitignored, but the **files MUST
@@ -653,7 +653,7 @@ family), component themes (ElevatedButtonTheme, AppBarTheme, CardTheme, InputDec
 FloatingActionButtonTheme), and shape/radius tokens.
 Read `references/component-patterns.md` for theme setup patterns.
 
-#### 6. Authentication Configuration *(conditional — include only if Auth != none)*
+#### 6. Authentication Configuration *(conditional â€” include only if Auth != none)*
 **If Auth = Keycloak:** PKCE Authorization Code flow using `flutter_appauth`. The native
 AppAuth library (Android + iOS) handles the system browser redirect. `AuthRepository`
 exposes `signIn()`, `signOut()`, `getAccessToken()`. Tokens stored in
@@ -667,7 +667,7 @@ interceptor handles 401 responses, route guard via go_router `redirect` callback
 redirects unauthenticated users.
 
 #### 7. Router Configuration
-go_router v14 route tree — top-level routes, nested shell routes for bottom navigation,
+go_router v14 route tree â€” top-level routes, nested shell routes for bottom navigation,
 route guards via `redirect`, deep link configuration for FCM/Keycloak callbacks,
 typed route helpers (optional, via `go_router_builder`).
 Read `references/routing-patterns.md` for route patterns.
@@ -676,9 +676,9 @@ Read `references/routing-patterns.md` for route patterns.
 Dio instance with `baseUrl` from `dotenv.env['API_BASE_URL']`, request/response
 interceptors:
 - Auth interceptor (Bearer token injection)
-- Retry interceptor (`DioSmartRetry` — exponential backoff on 5xx, network errors, retry idempotent methods)
-- Logging interceptor (`PrettyDioLogger`, **dev only** — guard with `kDebugMode`)
-- Error interceptor (transforms `DioException` → typed `ApiFailure` sealed class)
+- Retry interceptor (`DioSmartRetry` â€” exponential backoff on 5xx, network errors, retry idempotent methods)
+- Logging interceptor (`PrettyDioLogger`, **dev only** â€” guard with `kDebugMode`)
+- Error interceptor (transforms `DioException` â†’ typed `ApiFailure` sealed class)
 
 `connectTimeout`, `receiveTimeout`, `sendTimeout` from `.env`.
 
@@ -721,7 +721,7 @@ state (CircularProgressIndicator inside ElevatedButton).
 #### 15. Error Handling Strategy
 Top-level `FlutterError.onError` and `PlatformDispatcher.instance.onError` for uncaught
 errors (route to Crashlytics if enabled), Dio error interceptor mapping `DioException`
-→ `ApiFailure` sealed class, Riverpod `AsyncValue.when(...)` for screen-level
+â†’ `ApiFailure` sealed class, Riverpod `AsyncValue.when(...)` for screen-level
 error/loading states, `ErrorState` widget for full-screen errors with retry button,
 `ScaffoldMessenger` (SnackBar) for transient errors.
 
@@ -763,13 +763,13 @@ tests via `integration_test` package. Per-feature test conventions matching the 
 - Launcher icon via `flutter_launcher_icons` (optional)
 - ProGuard rules for Firebase + AppAuth (Android release builds)
 
-#### 20. Internationalisation *(conditional — include only if i18n = yes)*
+#### 20. Internationalisation *(conditional â€” include only if i18n = yes)*
 `flutter_localizations` enabled, `intl` for ARB messages, `flutter_gen_l10n` configured
 in `pubspec.yaml`, `lib/l10n/app_en.arb` + per-locale ARBs, generated `AppLocalizations`
 class, `MaterialApp.localizationsDelegates` and `supportedLocales` wired, locale-switch
 provider persisted in Hive.
 
-#### 21. WebSocket Integration *(conditional — include only if WebSocket = yes)*
+#### 21. WebSocket Integration *(conditional â€” include only if WebSocket = yes)*
 `web_socket_channel` setup, connection management Riverpod provider with auto-reconnect
 + exponential backoff, typed event handler with sealed-class events, lifecycle hook
 in `AppShellScreen` to open/close socket on app foreground/background.
@@ -795,23 +795,23 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **Header** with module name and back-reference to root `SPECIFICATION.md`
 - **Traceability**: User story IDs, NFR IDs, constraint IDs, table/collection names,
   mockup screen filenames, all with version tags
-- **Freezed Models** — `@freezed` data classes matching the module model fields
+- **Freezed Models** â€” `@freezed` data classes matching the module model fields
   (field-for-field), including `fromJson`/`toJson` via `json_serializable`
-- **Hive Adapters** *(if module is cached offline)* — `@HiveType` adapter with field
+- **Hive Adapters** *(if module is cached offline)* â€” `@HiveType` adapter with field
   numbers matching the freezed model
-- **Validation Rules** — Validator static methods or `Form` validator closures derived
+- **Validation Rules** â€” Validator static methods or `Form` validator closures derived
   from PRD constraints
-- **API Repository** — Dio-based API class matching user story data operations
-- **Riverpod Providers** — `AsyncNotifierProvider` for list, family provider for detail,
+- **API Repository** â€” Dio-based API class matching user story data operations
+- **Riverpod Providers** â€” `AsyncNotifierProvider` for list, family provider for detail,
   mutation methods on a `Notifier` for CUD operations, cache invalidation pattern via
   `ref.invalidate()`
-- **Screens** — one per mockup screen, using Material 3 widgets matching the mockup layout
-- **Form Widgets** — create/edit forms with `Form` + `GlobalKey<FormState>` + reusable
+- **Screens** â€” one per mockup screen, using Material 3 widgets matching the mockup layout
+- **Form Widgets** â€” create/edit forms with `Form` + `GlobalKey<FormState>` + reusable
   field widgets
-- **Route Definitions** — go_router routes for this module with `redirect` guards
+- **Route Definitions** â€” go_router routes for this module with `redirect` guards
   matching the mockup role folder access control
-- **Navigation Items** — bottom-nav / drawer entries for each role that can access this module
-- **Complete code samples** for every widget — continuous and copy-pasteable
+- **Navigation Items** â€” bottom-nav / drawer entries for each role that can access this module
+- **Complete code samples** for every widget â€” continuous and copy-pasteable
 
 See `references/spec-template.md` for the exact per-module template structure.
 
@@ -841,13 +841,13 @@ The generated specification is a **folder of files**, not a single document:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← Root: TOC + shared/application-level specs
-├── <module-1>/
-│   └── SPEC.md                         ← Module blueprint (self-contained)
-├── <module-2>/
-│   └── SPEC.md
-├── <module-N>/
-│   └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md                    â† Root: TOC + shared/application-level specs
+â”œâ”€â”€ <module-1>/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint (self-contained)
+â”œâ”€â”€ <module-2>/
+â”‚   â””â”€â”€ SPEC.md
+â”œâ”€â”€ <module-N>/
+â”‚   â””â”€â”€ SPEC.md
 ```
 
 ## Constraints (Non-Negotiable)
@@ -855,7 +855,7 @@ The generated specification is a **folder of files**, not a single document:
 These constraints apply to every code sample in the generated spec:
 
 **Null-safe Dart everywhere.** Target Dart 3.5+ with sound null safety. No `dynamic`
-unless the API genuinely returns unstructured JSON — prefer `Object?` with explicit
+unless the API genuinely returns unstructured JSON â€” prefer `Object?` with explicit
 type checks, or strongly typed `Map<String, dynamic>` only at the JSON boundary.
 
 **Feature-based architecture.** Every module maps to `lib/features/<module>/`. Nothing
@@ -865,21 +865,21 @@ genuinely reusable across at least two modules.
 **No tokens in plaintext storage.** JWT access and refresh tokens are stored in
 `flutter_secure_storage` (Keychain / Android Keystore), never in `SharedPreferences`,
 Hive, or in-memory globals that persist beyond the process. Hive is encrypted (`HiveAesCipher`)
-when storing user-sensitive cached data — encryption key lives in `flutter_secure_storage`.
+when storing user-sensitive cached data â€” encryption key lives in `flutter_secure_storage`.
 
 **Riverpod for all state.** Do not use `setState` for state that crosses widgets, and
-do not use `InheritedWidget` directly — use Riverpod providers. `setState` is only
+do not use `InheritedWidget` directly â€” use Riverpod providers. `setState` is only
 acceptable for purely local widget UI state (animation controllers, hover, focus).
 
 **Freezed for all data models.** No hand-rolled equality / hashCode / copyWith. Every
 data class is `@freezed` with `fromJson`/`toJson` if it crosses the API boundary.
 
 **Generated code via build_runner.** Always include the standard commands in the spec:
-- `dart run build_runner build --delete-conflicting-outputs` — one-shot generation
-- `dart run build_runner watch --delete-conflicting-outputs` — watch mode for development
+- `dart run build_runner build --delete-conflicting-outputs` â€” one-shot generation
+- `dart run build_runner watch --delete-conflicting-outputs` â€” watch mode for development
 
 **Material 3 only.** `ThemeData(useMaterial3: true)`. Do not mix in Cupertino-only widgets
-in cross-platform screens — use `Adaptive*` constructors or platform-aware wrappers if
+in cross-platform screens â€” use `Adaptive*` constructors or platform-aware wrappers if
 truly necessary.
 
 **go_router for navigation.** Do not use raw `Navigator.push`/`Navigator.pop`. All

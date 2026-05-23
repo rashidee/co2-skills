@@ -1,6 +1,6 @@
----
+﻿---
 name: specgen-react-mui
-model: claude-opus-4-7
+model: claude-opus-4-6
 effort: high
 description: >
   Generate a detailed specification document for building a React SPA (Single Page
@@ -17,7 +17,7 @@ description: >
   "scaffold spec for a React MUI app", or any request for a specification document
   describing a React + MUI + TypeScript application. Even if the user only mentions
   a subset of the stack (e.g., "React SPA" or "React with Keycloak" or "React MUI dashboard"),
-  this skill likely applies — ask and confirm.
+  this skill likely applies â€” ask and confirm.
 ---
 
 # React SPA Specification Generator
@@ -27,8 +27,8 @@ blueprint for building a React Single Page Application. The spec is intended to 
 by a developer or a coding agent to produce a fully functional project scaffold.
 
 The specification does NOT generate code. It produces a detailed, opinionated technical
-document describing every layer of the application — from Vite configuration to MUI theme
-to React Query patterns — so that implementation becomes a mechanical exercise.
+document describing every layer of the application â€” from Vite configuration to MUI theme
+to React Query patterns â€” so that implementation becomes a mechanical exercise.
 
 ## Technology Stack
 
@@ -75,61 +75,61 @@ Include in the version table only when the corresponding integration is selected
 The spec must include these in the npm configuration section (always):
 
 **Production dependencies:**
-- `react` + `react-dom` — Core React
-- `@mui/material` + `@mui/icons-material` — MUI component library and icons
-- `@emotion/react` + `@emotion/styled` — MUI v6 styling engine
-- `react-router-dom` — Client-side routing
-- `@tanstack/react-query` — Server state and data fetching
-- `zustand` — Global client state management
-- `react-hook-form` — Form state management
-- `@hookform/resolvers` — Zod integration for React Hook Form
-- `zod` — Schema validation
-- `axios` — HTTP client
+- `react` + `react-dom` â€” Core React
+- `@mui/material` + `@mui/icons-material` â€” MUI component library and icons
+- `@emotion/react` + `@emotion/styled` â€” MUI v6 styling engine
+- `react-router-dom` â€” Client-side routing
+- `@tanstack/react-query` â€” Server state and data fetching
+- `zustand` â€” Global client state management
+- `react-hook-form` â€” Form state management
+- `@hookform/resolvers` â€” Zod integration for React Hook Form
+- `zod` â€” Schema validation
+- `axios` â€” HTTP client
 
 **Development dependencies:**
-- `typescript` — Type checking
-- `@types/react` + `@types/react-dom` — React type definitions
-- `vite` + `@vitejs/plugin-react` — Build tooling
-- `eslint` + `@typescript-eslint/*` — Linting
+- `typescript` â€” Type checking
+- `@types/react` + `@types/react-dom` â€” React type definitions
+- `vite` + `@vitejs/plugin-react` â€” Build tooling
+- `eslint` + `@typescript-eslint/*` â€” Linting
 
 ### Conditional Dependencies
 
 **If Auth = Keycloak or OIDC:**
-- `oidc-client-ts` — OAuth2/OIDC PKCE client
-- `react-oidc-context` — React context wrapper for oidc-client-ts
+- `oidc-client-ts` â€” OAuth2/OIDC PKCE client
+- `react-oidc-context` â€” React context wrapper for oidc-client-ts
 
 **If DataGrid = yes:**
-- `@mui/x-data-grid` — Advanced data grid component
+- `@mui/x-data-grid` â€” Advanced data grid component
 
 **If Charts = yes:**
-- `@mui/x-charts` — Chart components
+- `@mui/x-charts` â€” Chart components
 
 **If DatePickers = yes:**
-- `@mui/x-date-pickers` — Date/time picker components
-- `date-fns` — Date manipulation library
+- `@mui/x-date-pickers` â€” Date/time picker components
+- `date-fns` â€” Date manipulation library
 
 **If WebSocket = yes:**
-- `socket.io-client` — WebSocket client
+- `socket.io-client` â€” WebSocket client
 
 **If i18n = yes:**
-- `react-i18next` + `i18next` — Internationalization
-- `i18next-browser-languagedetector` — Auto language detection
-- `i18next-http-backend` — Lazy translation loading
+- `react-i18next` + `i18next` â€” Internationalization
+- `i18next-browser-languagedetector` â€” Auto language detection
+- `i18next-http-backend` â€” Lazy translation loading
 
 **If RichText = yes:**
-- `react-quill-new` — Rich text editor (Quill-based, React 19 compatible)
-- `dompurify` + `@types/dompurify` — HTML sanitization for rich text content
+- `react-quill-new` â€” Rich text editor (Quill-based, React 19 compatible)
+- `dompurify` + `@types/dompurify` â€” HTML sanitization for rich text content
 
 **If Reporting = yes:**
-- `xlsx` — Client-side XLSX file generation
-- `papaparse` + `@types/papaparse` — Client-side CSV generation
-- Report service (Node.js companion): `puppeteer`, `express`, `cors` — server-side HTML-to-PDF via headless Chrome
+- `xlsx` â€” Client-side XLSX file generation
+- `papaparse` + `@types/papaparse` â€” Client-side CSV generation
+- Report service (Node.js companion): `puppeteer`, `express`, `cors` â€” server-side HTML-to-PDF via headless Chrome
 
 ## When the Skill Triggers
 
 Generate the spec when the user provides an **application name** and **version** that
 corresponds to one of the custom applications defined in `CLAUDE.md`. The skill
-reads all required inputs from the project's context files — no interactive Q&A is needed
+reads all required inputs from the project's context files â€” no interactive Q&A is needed
 for the core inputs.
 
 The user invokes this skill by specifying the target application and version, for example:
@@ -162,7 +162,7 @@ This skill uses standardized input resolution. Provide:
 ### Application Folder Resolution
 
 The application name is matched against root-level application folders:
-1. Strip any leading `<number>_` prefix from folder names (e.g., `1_admin` → `admin`)
+1. Strip any leading `<number>_` prefix from folder names (e.g., `1_admin` â†’ `admin`)
 2. Match case-insensitively against the provided application name
 3. Accept snake_case, kebab-case, or title-case input (all match the same folder)
 4. If no match found, list available applications and stop
@@ -189,13 +189,13 @@ When a version is provided, only include user stories, NFRs, and constraints fro
 When `module:<name>` is provided:
 - Only generate the `SPEC.md` for that specific module
 - Other existing module spec files remain untouched
-- `SPECIFICATION.md` (root) gets a partial update — only that module's entry in the TOC
+- `SPECIFICATION.md` (root) gets a partial update â€” only that module's entry in the TOC
   is added or updated; all other TOC entries are preserved as-is
 
 ## Gathering Input
 
 The specification is driven by **six input sources** read from the project's context files.
-The skill does NOT ask the user for auth, API backend URL, or optional component choices —
+The skill does NOT ask the user for auth, API backend URL, or optional component choices â€”
 it **determines** these automatically from the context.
 
 ### Input 1: Application Name (from CLAUDE.md)
@@ -205,7 +205,7 @@ From CLAUDE.md (already loaded in context), locate the target application under 
 
 - **Application name**: The section heading (e.g., "Admin Portal", "Landing Page")
 - **Application description**: The description paragraph below the heading
-- **Dependencies**: The "Depends on" list — primary source for determining backend API
+- **Dependencies**: The "Depends on" list â€” primary source for determining backend API
   base URL, authentication provider, and optional components
 
 The application name is used to derive:
@@ -232,7 +232,7 @@ The user stories directly inform:
 - Which form fields and validation schemas apply
 - Which MUI components best match the described UI
 
-**Important:** Items with strikethrough (`~~text~~`) are deprecated — do NOT include them
+**Important:** Items with strikethrough (`~~text~~`) are deprecated â€” do NOT include them
 as active requirements. List them in the "Removed / Replaced" subsection of the
 traceability table.
 
@@ -251,7 +251,7 @@ These inform:
 - Validation rules (character limits, format requirements)
 - Performance constraints (lazy loading, caching)
 
-NFRs should be mapped to specific technical decisions in the spec — for example, an NFR
+NFRs should be mapped to specific technical decisions in the spec â€” for example, an NFR
 stating "paginated with 10 items per page" confirms which React Query pagination pattern
 to use, while "must support filtering" confirms which Zustand slice manages filter state.
 
@@ -264,7 +264,7 @@ hard boundaries that the spec must enforce:
 - Business rules (e.g., "category must exist before creating content")
 - Access control (e.g., "only ADMIN role can access user management")
 
-Constraints are embedded directly into the relevant module blueprint — they inform
+Constraints are embedded directly into the relevant module blueprint â€” they inform
 Zod validation schemas, API call parameters, and route guard configurations.
 
 ### Input 5: Module Model (from model/ folder)
@@ -307,12 +307,12 @@ HTML files organized by role in subfolders.
 - Navigation structure from sidebar/header HTML files
 - Data display patterns (list pages, detail pages, create/edit forms)
 
-**IMPORTANT — Role folders inform access control, NOT URL paths.** The role-specific
+**IMPORTANT â€” Role folders inform access control, NOT URL paths.** The role-specific
 folder structure (e.g., `mockup/admin/content/hero-section.html`) determines:
-1. Which role can access the page → `<ProtectedRoute requiredRole="ADMIN" />`
+1. Which role can access the page â†’ `<ProtectedRoute requiredRole="ADMIN" />`
 2. Which navigation items appear for each role
 It does NOT determine the URL path. The URL path is always module-based:
-- `<Route path="/hero-section" />` — NOT `<Route path="/admin/hero-section" />`
+- `<Route path="/hero-section" />` â€” NOT `<Route path="/admin/hero-section" />`
 
 The mockup screens directly map to:
 - React page components (one per HTML screen)
@@ -389,7 +389,7 @@ If Auth = Keycloak, also extract from CLAUDE.md:
 - Keycloak realm: Default derived from project name
 - Keycloak client ID: Default `<project-slug>-spa`
 - Keycloak issuer URI: Default `http://localhost:8180/realms/<realm>`
-- Keycloak roles: Infer from mockup role folders (e.g., `admin` → `ADMIN`, `editor` → `EDITOR`)
+- Keycloak roles: Infer from mockup role folders (e.g., `admin` â†’ `ADMIN`, `editor` â†’ `EDITOR`)
 
 If Auth = Local (API-managed JWT):
 - Login/logout handled by API calls to the backend
@@ -418,15 +418,15 @@ Present it to the user for confirmation:
 
 ```
 Optional Component Determination:
-- Backend API:    http://localhost:<port>/api (from CLAUDE.md Port Allocation table → depends on backend app)
-- Authentication: Keycloak PKCE (from CLAUDE.md → depends on Single Sign On)
-- DataGrid:       yes (from PRD.md → NFR mentions sortable user list with bulk actions)
+- Backend API:    http://localhost:<port>/api (from CLAUDE.md Port Allocation table â†’ depends on backend app)
+- Authentication: Keycloak PKCE (from CLAUDE.md â†’ depends on Single Sign On)
+- DataGrid:       yes (from PRD.md â†’ NFR mentions sortable user list with bulk actions)
 - Charts:         no
-- DatePickers:    yes (from PRD.md → hero section effective/expiration date fields)
+- DatePickers:    yes (from PRD.md â†’ hero section effective/expiration date fields)
 - WebSocket:      no
 - i18n:           no
-- RichText:       yes (from PRD.md → blog content editor requires rich text)
-- Reporting:      yes (from PRD.md → Report module with Report interface NFR)
+- RichText:       yes (from PRD.md â†’ blog content editor requires rich text)
+- Reporting:      yes (from PRD.md â†’ Report module with Report interface NFR)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -448,7 +448,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Design tokens**: MUI theme colors extracted from mockup CSS/inline styles
 
 **Auto-derived from CLAUDE.md (Port Allocation table):**
-- **Backend API base URL**: Look up the backend application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Construct the base URL as `http://localhost:<port>/api/v1`. Do NOT hardcode `8080` — the port MUST match the allocated port for the backend application this SPA depends on.
+- **Backend API base URL**: Look up the backend application's port from the `Port Allocation` table in the `Custom Applications` section of `CLAUDE.md`. Construct the base URL as `http://localhost:<port>/api/v1`. Do NOT hardcode `8080` â€” the port MUST match the allocated port for the backend application this SPA depends on.
 
 **Optional (use sensible defaults if not found in context):**
 - **Dev server port**: Default `3000`
@@ -460,13 +460,13 @@ After determination, these values are needed. Most are derived automatically:
 Once inputs are gathered from context files and optional components are determined,
 generate the specification as a **multi-file output split by module**. Read the spec
 template at `references/spec-template.md` for the exact structure and content of each
-section. The template is the authoritative guide — follow it closely.
+section. The template is the authoritative guide â€” follow it closely.
 
 The specification is split into two categories:
 
-1. **Root `SPECIFICATION.md`** — Table of Contents, shared infrastructure, MUI theme,
+1. **Root `SPECIFICATION.md`** â€” Table of Contents, shared infrastructure, MUI theme,
    routing, auth configuration, and application-level sections that apply across all modules.
-2. **Per-module `<module-name>/SPEC.md`** — Each module gets its own folder with a
+2. **Per-module `<module-name>/SPEC.md`** â€” Each module gets its own folder with a
    self-contained specification covering that module's complete blueprint.
 
 This split enables a coding agent to:
@@ -477,7 +477,7 @@ This split enables a coding agent to:
 not generic placeholders. Specifically:
 
 - **Modules** must use the actual module names from PRD.md and MODEL.md
-  (e.g., `heroSection`, `productService`, `blog` — not `module1`, `module2`)
+  (e.g., `heroSection`, `productService`, `blog` â€” not `module1`, `module2`)
 - **TypeScript types** must match the actual fields defined in the module model files,
   not placeholder `fieldOne`/`fieldTwo`
 - **API hooks** must expose functions matching the actual user stories (e.g., if a story
@@ -494,21 +494,21 @@ not generic placeholders. Specifically:
   **ALL traceability sub-tables (User Stories, NFRs, AND Constraints) MUST include the
   `| Version |` column.**
 - **Removed / Replaced items**: The traceability section must include a "Removed / Replaced"
-  subsection listing deprecated items — showing the removed ID, the version that removed it,
+  subsection listing deprecated items â€” showing the removed ID, the version that removed it,
   the replacement ID (if any), and a brief reason.
 
 ### Output Structure
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← TOC + shared/application-level specs
-├── hero-section/
-│   └── SPEC.md                         ← Module blueprint for Hero Section
-├── product-service/
-│   └── SPEC.md                         ← Module blueprint for Product and Service
-├── blog/
-│   └── SPEC.md                         ← Module blueprint for Blog
-├── ...                                 ← One folder per module from PRD.md
+â”œâ”€â”€ SPECIFICATION.md                    â† TOC + shared/application-level specs
+â”œâ”€â”€ hero-section/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Hero Section
+â”œâ”€â”€ product-service/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Product and Service
+â”œâ”€â”€ blog/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint for Blog
+â”œâ”€â”€ ...                                 â† One folder per module from PRD.md
 ```
 
 ### What Goes in `SPECIFICATION.md` (Root)
@@ -571,7 +571,7 @@ VITE_KEYCLOAK_CLIENT_ID=sc-worker-mobile-spa
 
 **Rules:**
 - Only include variables that are actually used in the application code via `import.meta.env`
-- Use actual values from SECRET.md — never use placeholders or `TODO`
+- Use actual values from SECRET.md â€” never use placeholders or `TODO`
 - If SECRET.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - Both `.env.development` and `.env.production` are gitignored
@@ -587,7 +587,7 @@ palette (primary, secondary, error, warning, success), typography (font family, 
 shape (border-radius), and component overrides.
 Read `references/component-patterns.md` for theme setup patterns.
 
-#### 6. Authentication Configuration *(conditional — include only if Auth != none)*
+#### 6. Authentication Configuration *(conditional â€” include only if Auth != none)*
 **If Auth = Keycloak:** PKCE Authorization Code flow using `oidc-client-ts` +
 `react-oidc-context`. `AuthProvider` wraps the app, `useAuth()` hook exposes user and
 tokens, Axios interceptor attaches Bearer token, protected route component checks
@@ -599,7 +599,7 @@ header, token refresh interceptor handles 401 responses, protected route compone
 redirects unauthenticated users.
 
 #### 7. Router Configuration
-React Router v7 route tree — lazy-loaded page components, protected routes with role
+React Router v7 route tree â€” lazy-loaded page components, protected routes with role
 guards, public routes, 404 fallback.
 Read `references/routing-patterns.md` for route patterns.
 
@@ -665,16 +665,16 @@ Vite production build (`npm run build`), chunk splitting strategy (vendor chunk,
 feature lazy chunks), environment variable injection, static hosting notes (nginx config
 for SPA routing).
 
-#### 20. Internationalisation *(conditional — include only if i18n = yes)*
+#### 20. Internationalisation *(conditional â€” include only if i18n = yes)*
 `react-i18next` setup, `I18nextProvider` wrapping the app, lazy-loaded translation
 namespaces per module (e.g., `heroSection.json`), `useTranslation()` hook usage pattern,
 language switcher component.
 
-#### 21. WebSocket Integration *(conditional — include only if WebSocket = yes)*
+#### 21. WebSocket Integration *(conditional â€” include only if WebSocket = yes)*
 `socket.io-client` setup, connection management Zustand store, custom `useSocket()`
 hook, event subscription patterns, reconnection handling.
 
-#### 22. Reporting (Puppeteer) *(conditional — include only if Reporting = yes)*
+#### 22. Reporting (Puppeteer) *(conditional â€” include only if Reporting = yes)*
 Client-side report UI components and server-side Puppeteer PDF generation service.
 Includes report list page (MUI DataGrid or Card grid grouped by domain), report parameter
 form page (React Hook Form + Zod + MUI), report preview dialog (iframe-based HTML preview),
@@ -684,7 +684,7 @@ Tailwind CDN for Puppeteer rendering, report layout components (React components
 tabular/summary reports as HTML), client-side XLSX export via `xlsx` library, client-side
 CSV export via `PapaParse`, lightweight Node.js Express report service using Puppeteer for
 HTML-to-PDF conversion (deployed as sidecar or microservice), Vite proxy configuration for
-development. Report layouts are fully AI-agent-developed React components — no visual
+development. Report layouts are fully AI-agent-developed React components â€” no visual
 designers needed. Read `references/reporting-patterns.md` for the full reporting
 architecture.
 
@@ -699,16 +699,16 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **Header** with module name and back-reference to root `SPECIFICATION.md`
 - **Traceability**: User story IDs, NFR IDs, constraint IDs, table/collection names,
   mockup screen filenames, all with version tags
-- **TypeScript Types** — interfaces/types matching the module model fields (field-for-field)
-- **Zod Schemas** — validation schemas for create/update forms, derived from PRD constraints
-- **API Functions** — Axios-based API calls matching user story data operations
-- **TanStack Query Hooks** — `useQuery` and `useMutation` hooks wrapping API functions
+- **TypeScript Types** â€” interfaces/types matching the module model fields (field-for-field)
+- **Zod Schemas** â€” validation schemas for create/update forms, derived from PRD constraints
+- **API Functions** â€” Axios-based API calls matching user story data operations
+- **TanStack Query Hooks** â€” `useQuery` and `useMutation` hooks wrapping API functions
 - **Zustand Feature Store** (if the module has complex client state beyond server cache)
-- **Page Components** — one per mockup screen, using MUI components matching the mockup layout
-- **Form Components** — create/edit forms with React Hook Form + Zod + MUI controllers
-- **Route Definitions** — React Router routes for this module
-- **Navigation Items** — sidebar nav entries for each role that can access this module
-- **Complete code samples** for every component — continuous and copy-pasteable
+- **Page Components** â€” one per mockup screen, using MUI components matching the mockup layout
+- **Form Components** â€” create/edit forms with React Hook Form + Zod + MUI controllers
+- **Route Definitions** â€” React Router routes for this module
+- **Navigation Items** â€” sidebar nav entries for each role that can access this module
+- **Complete code samples** for every component â€” continuous and copy-pasteable
 
 See `references/spec-template.md` for the exact per-module template structure.
 
@@ -738,13 +738,13 @@ The generated specification is a **folder of files**, not a single document:
 
 ```
 <app_folder>/context/specification/
-├── SPECIFICATION.md                    ← Root: TOC + shared/application-level specs
-├── <module-1>/
-│   └── SPEC.md                         ← Module blueprint (self-contained)
-├── <module-2>/
-│   └── SPEC.md
-├── <module-N>/
-│   └── SPEC.md
+â”œâ”€â”€ SPECIFICATION.md                    â† Root: TOC + shared/application-level specs
+â”œâ”€â”€ <module-1>/
+â”‚   â””â”€â”€ SPEC.md                         â† Module blueprint (self-contained)
+â”œâ”€â”€ <module-2>/
+â”‚   â””â”€â”€ SPEC.md
+â”œâ”€â”€ <module-N>/
+â”‚   â””â”€â”€ SPEC.md
 ```
 
 ## Constraints (Non-Negotiable)
@@ -752,7 +752,7 @@ The generated specification is a **folder of files**, not a single document:
 These constraints apply to every code sample in the generated spec:
 
 **TypeScript everywhere.** All files use `.tsx` or `.ts` extensions. No `.js` or `.jsx`.
-No `any` type — use `unknown` with type narrowing, or proper type inference.
+No `any` type â€” use `unknown` with type narrowing, or proper type inference.
 
 **Feature-based architecture.** Every module maps to `src/features/<module>/`. Nothing
 module-specific leaks into `src/shared/` or `src/lib/`. Shared utilities must be
