@@ -59,8 +59,7 @@ co2-skills/
 │   ├── depgen-k8s/
 │   ├── conductor-feature-prepare/
 │   ├── conductor-feature-develop/
-│   ├── conductor-defect/
-│   └── conductor-upgrade-version/
+│   └── conductor-defect/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
