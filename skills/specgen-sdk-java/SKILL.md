@@ -459,7 +459,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Auth scheme**: Auto-determined (see above)
 - **Optional protocols**: Auto-determined (see above)
 
-**From SECRET.md (if present, for the demo/diagnostics `main()`):**
+**From ENVIRONMENT.md (if present, for the demo/diagnostics `main()`):**
 
 - API host, port, default credential â€” used as default values for the diagnostic
   smoke-test only. Never bundle into the JAR; load from environment at runtime.

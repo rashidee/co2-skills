@@ -64,7 +64,7 @@ The application name is matched against root-level application folders:
 | File | Resolved Path |
 |------|---------------|
 | CLAUDE.md | Project root `CLAUDE.md` |
-| SECRET.md | Project root `SECRET.md` |
+| ENVIRONMENT.md | Project root `ENVIRONMENT.md` |
 | SPECIFICATION.md | `<app_folder>/context/specification/SPECIFICATION.md` |
 | Source code | `<app_folder>/` (pom.xml, composer.json, package.json, etc.) |
 | Application config | Stack-dependent (see detection) |
@@ -352,7 +352,7 @@ Read `references/k8s-patterns.md` for the complete manifest templates per resour
 
 When generating manifests for the target environment:
 
-- **ConfigMap and Secret values**: Read `SECRET.md` from the project root. If SECRET.md
+- **ConfigMap and Secret values**: Read `ENVIRONMENT.md` from the project root. If ENVIRONMENT.md
   contains environment-specific credentials (organized by environment), use the matching
   values for the target environment. If values are not found, use `TODO` as placeholder.
 - **Resource limits**: Use sensible defaults. If the CLAUDE.md environment description

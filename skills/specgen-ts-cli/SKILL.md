@@ -517,20 +517,21 @@ program instance so that `<tool> --version` prints the correct version.
 The version MUST also be included in JSON output when `--json` flag is used (e.g.,
 `{"version": "1.0.3", "data": {...}}`).
 
-#### 3b. `.env` File Generation from SECRET.md
-Generate a `.env` file at the project root by reading `SECRET.md` from the project root.
-The `.env` file maps SECRET.md credential and platform values to the environment variable
+#### 3b. `.env` File Generation from ENVIRONMENT.md
+Generate a `.env` file at the project root by reading `ENVIRONMENT.md` from the project root.
+The `.env` file maps ENVIRONMENT.md credential and platform values to the environment variable
 names used by the CLI application. The spec must define the complete `.env` content with
-actual values from SECRET.md.
+actual values from ENVIRONMENT.md.
 
 **Process:**
-1. Read `SECRET.md` from the project root
-2. Extract relevant values from `# Credential` section (API hosts, ports, tokens) and
-   `# Platform` section (Node.js path, etc.)
+1. Read `ENVIRONMENT.md` from the project root
+2. Extract credential values from `ENVIRONMENT.md` (`# Supporting 3rd Party Applications`
+   and `# External Services` for API hosts, ports, tokens); read any toolchain paths
+   (e.g., Node.js) from `DEVTOOL.md`
 3. Map each value to the corresponding environment variable name used by the CLI
 4. Generate the `.env` file with `KEY=value` pairs
 
-**Example `.env` output (derived from SECRET.md):**
+**Example `.env` output (derived from ENVIRONMENT.md):**
 ```properties
 # API
 API_BASE_URL=http://localhost:8080/api/v1
@@ -542,8 +543,8 @@ NODE_HOME=C:\nvm4w\nodejs
 
 **Rules:**
 - Only include variables that are actually used by the application (via `process.env`)
-- Use actual values from SECRET.md â€” never use placeholders or `TODO`
-- If SECRET.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from ENVIRONMENT.md â€” never use placeholders or `TODO`
+- If ENVIRONMENT.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file must be loaded using `dotenv` (add as a dependency if not already present)
 - The `.env` file is gitignored

@@ -52,6 +52,7 @@ co2-skills/
 │   ├── specgen-spring-jpa-restapi/
 │   ├── specgen-laravel-eloquent-bladehtmx/
 │   ├── specgen-react-mui/
+│   ├── specgen-react-tailwind/
 │   ├── specgen-flutter-riverpod/
 │   ├── specgen-ts-cli/
 │   ├── specgen-sdk-java/
@@ -188,6 +189,7 @@ The CO2 workflow is technology-agnostic by design. Every `specgen-*` skill takes
 | `specgen-spring-jpa-restapi` | Spring Boot 3 REST API |
 | `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
 | `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
+| `specgen-react-tailwind` | React 19 + TypeScript 5 + Vite 6 + Tailwind CSS v3 + Headless UI v2 + Heroicons |
 | `specgen-flutter-riverpod` | Flutter 3 + Dart 3 + Riverpod 2 + Hive 2 + Dio 5 + go_router 14 + Firebase Messaging |
 | `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
 | `specgen-sdk-java` | Java SDK library — Maven Multi-Release fat JAR (JDK 8 baseline + JDK 11+ overlay) + OkHttp |

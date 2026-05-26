@@ -601,23 +601,25 @@ final info = await PackageInfo.fromPlatform();
 final versionLabel = 'v${info.version}+${info.buildNumber}';
 ```
 
-#### 3b. `.env` File Generation from SECRET.md
+#### 3b. `.env` File Generation from ENVIRONMENT.md
 Generate `.env.development` and `.env.production` files at the project root for use with
-`flutter_dotenv`. The `.env.development` file is populated by reading `SECRET.md` from
+`flutter_dotenv`. The `.env.development` file is populated by reading `ENVIRONMENT.md` from
 the project root, mapping credential and platform values to plain environment variable
 names (no `VITE_` prefix â€” Flutter does not use Vite). The `.env.production` file uses
 placeholder values for production.
 
 **Process:**
-1. Read `SECRET.md` from the project root
-2. Extract relevant values from `# Credential` section (backend API host/port,
-   Keycloak host/realm/client, Firebase config) and `# Platform` section
+1. Read `ENVIRONMENT.md` from the project root
+2. Extract credential values from `ENVIRONMENT.md` (`# Supporting 3rd Party Applications`
+   for Keycloak host/realm/client, plus `# External Services` such as Firebase config); the
+   backend API host/port comes from the `# Port Allocation` table in `CLAUDE.md`. Read any
+   toolchain paths from `DEVTOOL.md`
 3. Map each value to the corresponding environment variable name
 4. Generate `.env.development` with actual local values
 5. Generate `.env.production` with production placeholder values
 6. Register both files under `assets:` in `pubspec.yaml`
 
-**Example `.env.development` output (derived from SECRET.md):**
+**Example `.env.development` output (derived from ENVIRONMENT.md):**
 ```properties
 # Backend API
 API_BASE_URL=http://10.0.2.2:<port from CLAUDE.md Port Allocation table>/api/v1
@@ -632,8 +634,8 @@ KEYCLOAK_REDIRECT_URI=com.example.mobile_app:/oauth2redirect
 
 **Rules:**
 - Use plain environment variable names; access via `dotenv.env['API_BASE_URL']`
-- Use actual values from SECRET.md â€” never use placeholders or `TODO`
-- If SECRET.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from ENVIRONMENT.md â€” never use placeholders or `TODO`
+- If ENVIRONMENT.md does not exist or a value is not found, use sensible defaults for local
   development (Android emulator uses `10.0.2.2` for host's `localhost`)
 - Both `.env.development` and `.env.production` are gitignored, but the **files MUST
   still be declared under `assets:`** in `pubspec.yaml` so `flutter_dotenv` can load them

@@ -418,7 +418,7 @@ and cross-referencing with PRD.md NFRs and constraints.
 | No database dependency listed | Database = none |
 
 Also check `CLAUDE.md`'s database section for the exact database name, and read
-`SECRET.md` (in the project root) for host, port, and credentials to use in the
+`ENVIRONMENT.md` (in the project root) for host, port, and credentials to use in the
 spec's application configuration.
 
 ### Authentication Detection
@@ -517,7 +517,7 @@ After determination, these values are needed. Most are derived automatically:
 - **Authentication**: Auto-determined (see above)
 - **Scheduling**: Auto-determined (see above)
 - **Messaging**: Auto-determined (see above)
-- **Database name/credentials**: From SECRET.md (root-level file with local environment credentials)
+- **Database name/credentials**: From ENVIRONMENT.md (root-level file with local environment credentials)
 - **User roles**: From mockup sidebar files
 - **Design tokens**: From MOCKUP.html Tailwind config
 
@@ -728,20 +728,21 @@ the **footer** of every page. Expose it by injecting `AppProperties` into a
 `footer.html`) as `${appVersion}` and render it as `v{version}` (e.g., `v1.0.3`).
 Do NOT use `@Value("${app.version}")` in controllers or templates.
 
-#### 3b. `.env` File Generation from SECRET.md
-Generate a `.env` file at the project root by reading `SECRET.md` from the project root.
-The `.env` file maps SECRET.md credential and platform values to the environment variable
+#### 3b. `.env` File Generation from ENVIRONMENT.md
+Generate a `.env` file at the project root by reading `ENVIRONMENT.md` from the project root.
+The `.env` file maps ENVIRONMENT.md credential and platform values to the environment variable
 names referenced in `application.yml`. The spec must define the complete `.env` content
-with actual values from SECRET.md.
+with actual values from ENVIRONMENT.md.
 
 **Process:**
-1. Read `SECRET.md` from the project root
-2. Extract relevant values from `# Credential` section (database hosts, ports, usernames,
-   passwords) and `# Platform` section (JDK path, Maven path, Node.js path, etc.)
+1. Read `ENVIRONMENT.md` from the project root
+2. Extract credential values from `ENVIRONMENT.md` (`# Supporting 3rd Party Applications`
+   for database hosts, ports, usernames, passwords, plus Keycloak/RabbitMQ); read toolchain
+   paths (JDK, Maven, Node.js) from `DEVTOOL.md`
 3. Map each value to the corresponding `${ENV_VAR}` name used in `application.yml`
 4. Generate the `.env` file with `KEY=value` pairs
 
-**Example `.env` output (derived from SECRET.md):**
+**Example `.env` output (derived from ENVIRONMENT.md):**
 ```properties
 # Database
 DB_HOST=localhost
@@ -771,8 +772,8 @@ MAVEN_HOME=C:\Users\rashidee.rashid.BESTINET\apache-maven-3.9.12
 
 **Rules:**
 - Only include variables that are actually referenced in `application.yml`
-- Use actual values from SECRET.md â€” never use placeholders or `TODO`
-- If SECRET.md does not exist or a value is not found, use sensible defaults for local
+- Use actual values from ENVIRONMENT.md â€” never use placeholders or `TODO`
+- If ENVIRONMENT.md does not exist or a value is not found, use sensible defaults for local
   development (e.g., `localhost`, default ports)
 - The `.env` file is gitignored (already covered in `.gitignore`)
 
