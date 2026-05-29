@@ -86,6 +86,7 @@ Only include conditional sections that apply based on user selections.
 **Authentication**: {{AUTH}}     (from CLAUDE.md dependencies + PRD.md NFRs)
 **Scheduling**: {{SCHEDULING}}   (from PRD.md NFRs)
 **Messaging**: {{MESSAGING}}     (from CLAUDE.md dependencies)
+**Internationalisation**: {{I18N}}   (from PRD.md language requirements; e.g., `yes (en, ms)` or `no`)
 
 ### Technology Stack
 (Render the core stack version table from SKILL.md, plus selected optional integration versions)
@@ -2136,6 +2137,211 @@ The report DTO (e.g., `StaffReportDTO`) is a flat bean whose field names map 1:1
 `JRDesignField` names declared in `buildDesign()`. See `references/jasper-patterns.md`
 for the complete `ReportDefinition` interface, `ReportDesignHelper`, `ReportService`,
 `ReportRegistry`, `ReportPageController`, view models, and JTE templates.
+
+---
+
+## Section 23: Internationalisation (i18n) [CONDITIONAL — Include only if i18n = yes]
+
+> Omit this entire section when i18n = no. When omitted, do NOT render a locale/language
+> switcher anywhere — JTE templates use literal copy.
+
+Uses Spring's **built-in `MessageSource`** — no third-party dependency. The active locale is
+resolved per request from a cookie (switchable via a `lang` request param), and message keys
+are exposed to JTE templates through a `Localizer` helper registered as a global model
+attribute (mirroring how `appVersion` is exposed for the footer).
+
+### 23.1 `app.i18n` Configuration (`application.yml`)
+
+Application-owned i18n config lives under the `app:` namespace (see Section 3a). Spring's own
+message-bundle settings live under `spring.messages`.
+
+```yaml
+spring:
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+app:
+  i18n:
+    default-locale: ${APP_DEFAULT_LOCALE:en}
+    supported-locales: ${APP_SUPPORTED_LOCALES:en,ms}
+```
+
+`.env` additions:
+
+```properties
+APP_DEFAULT_LOCALE=en
+APP_SUPPORTED_LOCALES=en,ms
+```
+
+Bind once via a record in the application-level `config` subpackage:
+
+```java
+@ConfigurationProperties(prefix = "app.i18n")
+public record I18nProperties(String defaultLocale, List<String> supportedLocales) {
+    public List<Locale> locales() {
+        return supportedLocales.stream().map(Locale::forLanguageTag).toList();
+    }
+    public Locale defaultLocaleAsLocale() {
+        return Locale.forLanguageTag(defaultLocale);
+    }
+}
+```
+
+### 23.2 I18n Configuration (`shared/config/I18nConfig.java`)
+
+```java
+@Configuration
+@RequiredArgsConstructor
+public class I18nConfig implements WebMvcConfigurer {
+
+    private final I18nProperties i18nProperties;
+
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("i18n/messages");
+        source.setDefaultEncoding("UTF-8");
+        source.setFallbackToSystemLocale(false);
+        return source;
+    }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        CookieLocaleResolver resolver = new CookieLocaleResolver("LOCALE");
+        resolver.setDefaultLocale(i18nProperties.defaultLocaleAsLocale());
+        resolver.setCookieMaxAge(Duration.ofDays(365));
+        return resolver;
+    }
+
+    @Bean
+    public LocaleChangeInterceptor localeChangeInterceptor() {
+        LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
+        interceptor.setParamName("lang"); // /any/path?lang=ms
+        return interceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(localeChangeInterceptor());
+    }
+
+    // Wire bean-validation messages to the same bundle so @NotBlank etc. are localized.
+    @Bean
+    public LocalValidatorFactoryBean getValidator(MessageSource messageSource) {
+        LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
+        bean.setValidationMessageSource(messageSource);
+        return bean;
+    }
+}
+```
+
+### 23.3 Localizer Helper + Global Model Attribute
+
+JTE has no native i18n, so a `Localizer` resolves keys against the current request locale and
+is exposed to every template as `${t}` (alongside `${appVersion}`).
+
+```java
+// shared/i18n/Localizer.java
+@Component
+@RequiredArgsConstructor
+public class Localizer {
+    private final MessageSource messageSource;
+
+    public String msg(String code, Object... args) {
+        return messageSource.getMessage(code, args, code, LocaleContextHolder.getLocale());
+    }
+}
+```
+
+```java
+// shared/web/GlobalModelAttributes.java
+@ControllerAdvice
+@RequiredArgsConstructor
+public class GlobalModelAttributes {
+    private final AppProperties appProperties;
+    private final Localizer localizer;
+    private final I18nProperties i18nProperties;
+
+    @ModelAttribute("appVersion")
+    public String appVersion() { return appProperties.version(); }
+
+    @ModelAttribute("t")
+    public Localizer localizer() { return localizer; }
+
+    @ModelAttribute("currentLocale")
+    public String currentLocale() { return LocaleContextHolder.getLocale().toLanguageTag(); }
+
+    @ModelAttribute("supportedLocales")
+    public List<String> supportedLocales() { return i18nProperties.supportedLocales(); }
+}
+```
+
+### 23.4 Resource Bundles (`src/main/resources/i18n/`)
+
+Default bundle (`messages.properties`) holds English; one `messages_<locale>.properties` per
+additional locale. Keys are namespaced by module slug.
+
+```properties
+# i18n/messages.properties (default / en)
+app.title=Hub Middleware
+common.create=Create
+common.save=Save
+common.cancel=Cancel
+location-information.title=Location Information
+location-information.create=Create Location
+
+# i18n/messages_ms.properties
+app.title=Hub Middleware
+common.create=Cipta
+common.save=Simpan
+common.cancel=Batal
+location-information.title=Maklumat Lokasi
+location-information.create=Cipta Lokasi
+```
+
+### 23.5 Language Switcher Fragment (`fragments/locale-switcher.jte`)
+
+```jte
+@import {{base}}.shared.i18n.Localizer
+@param Localizer t
+@param String currentLocale
+@param java.util.List<String> supportedLocales
+
+<div x-data="{ open: false }" class="relative">
+    <button @click="open = !open" type="button"
+            class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+        <span>${currentLocale.toUpperCase()}</span>
+    </button>
+    <div x-show="open" @click.outside="open = false" x-cloak
+         class="absolute right-0 mt-1 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        @for(String loc : supportedLocales)
+            <a hx-get="?lang=${loc}" hx-on::after-request="window.location.reload()"
+               href="?lang=${loc}"
+               class="block px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${loc.equals(currentLocale) ? "font-semibold text-primary-600" : "text-gray-700 dark:text-gray-200"}">
+                ${loc.toUpperCase()}
+            </a>
+        @endfor
+    </div>
+</div>
+```
+
+The `lang` param is consumed by `LocaleChangeInterceptor`, which asks `CookieLocaleResolver`
+to persist the choice in the `LOCALE` cookie. Include this fragment in `HeaderFragment`
+beside the theme switcher. **Only when i18n = yes.**
+
+### 23.6 JTE Usage Conventions
+
+```jte
+<h1>${t.msg("location-information.title")}</h1>
+<button>${t.msg("common.create")}</button>
+```
+
+> **Per-module keys.** Each module adds its display strings to every
+> `messages_<locale>.properties` bundle under its own slug namespace
+> (e.g., `corridor.title`, `corridor.empty-state`) and references them via
+> `${t.msg("corridor.title")}`. See the per-module SPEC.md template.
 
 ---
 

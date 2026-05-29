@@ -7,7 +7,8 @@ description: >
   application with server-rendered views (JTE), Tailwind CSS, Alpine.js, htmx, and
   Spring Modulith packaging. Database (MongoDB, PostgreSQL, MySQL, or none), authentication
   (Keycloak OAuth2 Client, Spring Security form login, or none), scheduling (Quartz +
-  Spring Batch or none), and messaging (RabbitMQ pub/sub or none) are configurable
+  Spring Batch or none), messaging (RabbitMQ pub/sub or none), and internationalisation
+  (multi-locale via Spring's native MessageSource, or none) are configurable
   based on user input.
   Standardized input: application name (mandatory), version (mandatory), module (optional).
   Use this skill whenever the user asks to create a spec, specification, blueprint, or
@@ -110,6 +111,13 @@ The spec must include these in the Maven configuration section (always):
 **If Messaging = yes:**
 - Spring Boot AMQP Starter (`spring-boot-starter-amqp`)
   *(shared with Remote Partitioning â€” if both are selected, include the dependency once)*
+
+**If i18n = yes:**
+- No extra dependency â€” uses Spring's **built-in `MessageSource`** (part of `spring-context`,
+  already on the classpath via `starter-web`). Resource bundles under
+  `src/main/resources/i18n/`, a `CookieLocaleResolver`, and a `LocaleChangeInterceptor`
+  provide locale resolution and switching; a small `Localizer` helper exposes messages to
+  JTE templates.
 
 **If Reporting = yes:**
 - JasperReports (`net.sf.jasperreports:jasperreports:7.0.3`) â€” report engine with JRDesign API for programmatic layout
@@ -484,6 +492,29 @@ Reporting is determined from PRD.md content:
 - JTE templates for report list and parameter form pages
 - Multi-format export: PDF (OpenPDF), XLSX (Apache POI), CSV
 
+### Internationalisation Detection
+
+Internationalisation is determined from PRD.md content:
+
+| Content Pattern | i18n Selection |
+|---|---|
+| PRD.md mentions multiple languages or localization (e.g., "English and Bahasa Malaysia", "multilingual", "support multiple locales") | i18n = yes |
+| NFRs require translatable UI, locale-specific date/number formatting, or a language switcher | i18n = yes |
+| User stories describe choosing/switching the interface language | i18n = yes |
+| No language/localization requirements found | i18n = no |
+
+**If i18n = yes**, the spec includes:
+- An `I18nConfig` providing a `MessageSource`, a `CookieLocaleResolver`, and a `LocaleChangeInterceptor`
+- Resource bundles under `src/main/resources/i18n/` (`messages.properties` + `messages_<locale>.properties`)
+- An `app.i18n` config block (`default-locale`, `supported-locales`) under the `app:` namespace
+- A `Localizer` helper exposed as a global `@ModelAttribute` so JTE templates resolve message keys
+- A language switcher fragment (htmx-driven, hitting `?lang=<locale>`)
+- Bean-validation message localization wired to the same `MessageSource`
+
+**If i18n = no**, do NOT generate a locale/language switcher or any message-bundle scaffolding â€”
+JTE templates use literal copy. This is the existing "do NOT generate UI without backend
+support" constraint (see Constraints below).
+
 ### Summary of Determination
 
 After analyzing all inputs, produce a determination summary before generating the spec.
@@ -498,6 +529,7 @@ Optional Component Determination:
   - Remote Partitioning: no
 - Messaging:     yes (from CLAUDE.md â†’ depends on Hub to HC/SC Adapter Message Queue)
 - Reporting:     yes (from PRD.md â†’ Report module with Report interface NFR)
+- Internationalisation: yes (en, ms) (from PRD.md â†’ English + Bahasa Malaysia required)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -527,6 +559,8 @@ After determination, these values are needed. Most are derived automatically:
 **Optional (use sensible defaults if not found in context):**
 - **Default theme**: Default `light` (supports `light`/`dark`)
 - **Log level**: Default `INFO` for application, `WARN` for frameworks
+- **Default locale**: Default `en` (only relevant if i18n = yes)
+- **Supported locales**: Derived from PRD.md language requirements (e.g., `en`, `ms`); default `[en]`
 
 ## Generating the Specification
 
@@ -961,6 +995,22 @@ and calls module services to produce DTOs (never repositories directly), preserv
 Modulith module boundaries. Read `references/jasper-patterns.md` for the full reporting
 architecture.
 
+#### 24. Internationalisation (i18n) *(conditional â€” include only if i18n = yes)*
+Spring's built-in `MessageSource` localization. Covers: an `I18nConfig` declaring a
+`ResourceBundleMessageSource` (basename `i18n/messages`, UTF-8, fallback disabled), a
+`CookieLocaleResolver` (cookie `LOCALE`, default from `app.i18n.default-locale`), and a
+`LocaleChangeInterceptor` (param `lang`) registered through a `WebMvcConfigurer`; resource
+bundles under `src/main/resources/i18n/` (`messages.properties` as default/en plus
+`messages_<locale>.properties` per supported locale, with module keys namespaced by module
+slug, e.g. `location-information.title`); an `app.i18n` block under the `app:` namespace
+(`default-locale`, `supported-locales`) bound to an `I18nProperties` record; a `Localizer`
+helper registered as a global `@ModelAttribute("t")` via `@ControllerAdvice` (mirroring how
+`appVersion` is exposed) so JTE templates resolve keys with `${t.msg("location-information.title")}`
+against `LocaleContextHolder.getLocale()`; a language switcher JTE fragment (htmx `hx-get`
+to `?lang=<locale>` with `hx-refresh`); and bean-validation localization by pointing a
+`LocalValidatorFactoryBean` at the same `MessageSource`. The language switcher is the ONLY
+locale UI element and MUST NOT be rendered when i18n = no.
+
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 
 For EACH module from PRD.md and MODEL.md, create a folder named after the
@@ -984,6 +1034,10 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **Fragment controllers** for htmx partial updates
 - **View models** with fields matching what mockup screens display
 - **JTE templates** (list, detail, create, edit, row fragments)
+- **Message keys** *(only if i18n = yes)* â€” the module's display strings added to each
+  `i18n/messages_<locale>.properties` bundle under a module-slug key namespace
+  (e.g., `location-information.title`, `location-information.create`), referenced from this
+  module's JTE templates via `${t.msg("location-information.title")}` instead of literal copy
 - **Complete code samples** for every component â€” continuous and copy-pasteable
 
 **Separating UI Layer from Messaging/Async Pipeline:**
@@ -1055,7 +1109,7 @@ The generated specification is a **folder of files**, not a single document:
 - **Root folder**: `<app_folder>/context/specification/`
 - **Root file**: `SPECIFICATION.md` â€” contains the Table of Contents (with links to
   each module's `SPEC.md`), all shared infrastructure sections (1â€“9), and all
-  application-level cross-cutting sections (10â€“22, excluding module blueprints)
+  application-level cross-cutting sections (10â€“24, excluding module blueprints)
 - **Module folders**: One folder per module from PRD.md, named in kebab-case
   (e.g., `location-information/`, `corridor/`, `employer/`)
 - **Module files**: Each `SPEC.md` is self-contained with full code samples for that
@@ -1133,8 +1187,11 @@ in a minimal CSS output missing most styling.
 **Do NOT generate UI elements without backend support.** Every interactive UI element
 in the spec (buttons, dropdowns, toggles) must be backed by a requirement in PRD.md
 or a functional backend endpoint. Specifically: do NOT include a locale/language
-switcher unless PRD.md has i18n requirements. Do NOT include features "for future use"
-â€” they will be non-functional and confuse users.
+switcher unless i18n = yes (i.e., PRD.md has internationalisation requirements). When
+i18n = yes, the language switcher and its backing `MessageSource`/`LocaleResolver`
+infrastructure are specified in Section 24 (Internationalisation); when i18n = no, omit
+all of it. Do NOT include features "for future use" â€” they will be non-functional and
+confuse users.
 
 **HTMX navigation in sidebar and header fragments MUST use direct module URLs**, NOT
 `/api/content/...` prefixed paths. The pattern is: `hx-get="${item.getHref()}"` with

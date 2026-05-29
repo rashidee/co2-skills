@@ -7,8 +7,9 @@ description: >
   application with server-rendered views (Blade), Tailwind CSS, Alpine.js, htmx, and
   nwidart/laravel-modules modular packaging. Database (MongoDB, PostgreSQL, MySQL, or none),
   authentication (Keycloak OAuth2 Client, Laravel Breeze form login, or none), scheduling
-  (Laravel Task Scheduling + Queue Batching or none), and messaging (RabbitMQ pub/sub or
-  none) are configurable based on user input.
+  (Laravel Task Scheduling + Queue Batching or none), messaging (RabbitMQ pub/sub or
+  none), and internationalisation (multi-locale via Laravel's native translation system,
+  or none) are configurable based on user input.
   Standardized input: application name (mandatory), version (mandatory), module (optional).
   Use this skill whenever the user asks to create a spec, specification, blueprint, or
   technical design document for a new Laravel web application with server-side rendering.
@@ -96,6 +97,14 @@ The spec must include these in the Composer configuration section (always):
 **If Messaging = yes:**
 - `vladimir-yuldashev/laravel-queue-rabbitmq` â€” RabbitMQ queue driver
 - `php-amqplib/php-amqplib` â€” Low-level AMQP for advanced exchange patterns
+
+**If i18n = yes:**
+- No extra package â€” uses Laravel's **built-in localization** (`lang/` directory, `__()` /
+  `trans()` / `@lang` helpers, `trans_choice()` for pluralization, `app()->setLocale()`).
+- Locale is resolved per request by a custom `SetLocale` middleware (session â†’ cookie â†’
+  `Accept-Language` header â†’ configured default).
+- Each module contributes its own translation namespace via its module service provider
+  (`loadTranslationsFrom()`), keeping module strings self-contained.
 
 **If Reporting = yes:**
 - `spatie/browsershot` â€” PDF generation via Puppeteer (headless Chrome) with full CSS support
@@ -468,6 +477,28 @@ Reporting is determined from PRD.md content:
 - Report controller with parameter form and download endpoint
 - Blade templates for report list, parameter form, and PDF report layouts (Tailwind-styled)
 
+### Internationalisation Detection
+
+Internationalisation is determined from PRD.md content:
+
+| Content Pattern | i18n Selection |
+|---|---|
+| PRD.md mentions multiple languages or localization (e.g., "English and Bahasa Malaysia", "multilingual", "support multiple locales") | i18n = yes |
+| NFRs require translatable UI, locale-specific date/number formatting, or a language switcher | i18n = yes |
+| User stories describe choosing/switching the interface language | i18n = yes |
+| No language/localization requirements found | i18n = no |
+
+**If i18n = yes**, the spec includes:
+- `config/app.php` `locale` / `fallback_locale` + an `app.supported_locales` list
+- A `SetLocale` middleware (session â†’ cookie â†’ `Accept-Language` â†’ default) registered on the web group
+- Per-locale translation files (`lang/<locale>/...`) plus per-module translation namespaces
+- A locale-switch route/controller persisting the choice to session + cookie
+- A language switcher partial (Alpine.js dropdown in the header)
+- Localized validation messages (`lang/<locale>/validation.php`)
+
+**If i18n = no**, do NOT generate a locale/language switcher or any translation scaffolding â€”
+Blade templates use literal copy. Never add a non-functional language switcher "for future use".
+
 ### Summary of Determination
 
 After analyzing all inputs, produce a determination summary before generating the spec.
@@ -481,6 +512,7 @@ Optional Component Determination:
   - Batch Processing: no
 - Messaging:     yes (from CLAUDE.md â†’ depends on Hub to HC/SC Adapter Message Queue)
 - Reporting:     yes (from PRD.md â†’ Report module with Report interface NFR)
+- Internationalisation: yes (en, ms) (from PRD.md â†’ English + Bahasa Malaysia required)
 ```
 
 If the user disagrees with any determination, allow them to override before proceeding.
@@ -509,6 +541,8 @@ After determination, these values are needed. Most are derived automatically:
 **Optional (use sensible defaults if not found in context):**
 - **Default theme**: Default `light` (supports `light`/`dark`)
 - **Log level**: Default `info` for application, `warning` for frameworks
+- **Default locale**: Default `en` (only relevant if i18n = yes)
+- **Supported locales**: Derived from PRD.md language requirements (e.g., `en`, `ms`); default `['en']`
 
 ## Generating the Specification
 
@@ -841,6 +875,21 @@ multi-format export. Report Blade templates are fully AI-agent-developed â€�
 designers needed. Read `references/reporting-patterns.md` for the full reporting
 architecture.
 
+#### 24. Internationalisation (Localization) *(conditional â€” include only if i18n = yes)*
+Laravel's built-in localization. Covers: `config/app.php` `locale`/`fallback_locale` and
+the `app.supported_locales` list; a `SetLocale` middleware resolving the active locale
+(session â†’ cookie â†’ `Accept-Language` header â†’ default) and calling `app()->setLocale()`,
+registered on the `web` middleware group; per-locale translation files under `lang/`
+(`lang/<locale>/messages.php`, `lang/<locale>/validation.php`) plus per-module translation
+namespaces loaded via each module's service provider (`loadTranslationsFrom()`); a
+locale-switch route + controller that validates the requested locale against the supported
+list and persists it to session and a long-lived cookie (htmx-aware â€” returns `HX-Refresh`
+for partial requests); a language switcher partial (Alpine.js dropdown in the header,
+CSRF-protected); and Blade usage conventions (`__('messages.welcome')`, `@lang`,
+`trans_choice()` for pluralization, namespaced `__('locationinformation::messages.title')`),
+including locale-aware date formatting via `Carbon::setLocale()` / `->translatedFormat()`.
+The language switcher is the ONLY locale UI element and MUST NOT be rendered when i18n = no.
+
 ### What Goes in Each `<module>/SPEC.md` (Per-Module)
 
 For EACH module from PRD.md and MODEL.md, create a folder named after the
@@ -865,6 +914,10 @@ and implement independently (after the shared infrastructure is in place). It mu
 - **View models** (spatie/laravel-view-models) with fields matching what mockup screens display
 - **Blade templates** (list, detail, create, edit, row fragments)
 - **Form Request** classes for validation
+- **Translation namespace** *(only if i18n = yes)* â€” a module translation file per locale
+  (e.g., `Modules/<Module>/lang/<locale>/messages.php`) registered via the module service
+  provider's `loadTranslationsFrom(..., '<module-slug>')`, and Blade templates that reference
+  keys through the namespace (`__('<module-slug>::messages.<key>')`) instead of literal copy
 - **Complete code samples** for every component â€” continuous and copy-pasteable
 
 **Separating UI Layer from Messaging/Async Pipeline:**
@@ -924,7 +977,7 @@ The generated specification is a **folder of files**, not a single document:
 - **Root folder**: `<app_folder>/context/specification/`
 - **Root file**: `SPECIFICATION.md` â€” contains the Table of Contents (with links to
   each module's `SPEC.md`), all shared infrastructure sections (1â€“9), and all
-  application-level cross-cutting sections (10â€“23, excluding module blueprints)
+  application-level cross-cutting sections (10â€“24, excluding module blueprints)
 - **Module folders**: One folder per module from PRD.md, named in kebab-case
   (e.g., `location-information/`, `corridor/`, `employer/`)
 - **Module files**: Each `SPEC.md` is self-contained with full code samples for that

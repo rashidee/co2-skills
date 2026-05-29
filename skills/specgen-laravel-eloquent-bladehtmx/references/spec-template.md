@@ -84,6 +84,7 @@ Only include conditional sections that apply based on user selections.
 **Authentication**: {{AUTH}}     (from CLAUDE.md dependencies + PRD.md NFRs)
 **Scheduling**: {{SCHEDULING}}   (from PRD.md NFRs)
 **Messaging**: {{MESSAGING}}     (from CLAUDE.md dependencies)
+**Internationalisation**: {{I18N}}   (from PRD.md language requirements; e.g., `yes (en, ms)` or `no`)
 
 ### Technology Stack
 (Render the core stack version table from SKILL.md, plus selected optional integration versions)
@@ -608,6 +609,180 @@ Reference the corresponding `references/` files for detailed patterns:
 
 ---
 
+## Section 24: Internationalisation (Localization) [CONDITIONAL — Include only if i18n = yes]
+
+> Omit this entire section when i18n = no. When omitted, do NOT render a locale/language
+> switcher anywhere — Blade templates use literal copy.
+
+Uses Laravel's **built-in localization** — no third-party package. The active locale is
+resolved per request, persisted across requests, and exposed to every Blade view.
+
+### 24.1 Configuration (`config/app.php`)
+
+```php
+// config/app.php
+'locale'           => env('APP_LOCALE', 'en'),
+'fallback_locale'  => env('APP_FALLBACK_LOCALE', 'en'),
+
+// Application-owned: the locales this app actually ships translations for.
+'supported_locales' => [
+    'en' => 'English',
+    'ms' => 'Bahasa Malaysia',
+],
+```
+
+`.env` additions:
+
+```properties
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+```
+
+### 24.2 Locale Resolution Middleware
+
+```php
+// app/Http/Middleware/SetLocale.php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+
+class SetLocale
+{
+    public function handle(Request $request, Closure $next)
+    {
+        $supported = array_keys(config('app.supported_locales'));
+
+        $locale = $request->session()->get('locale')
+            ?? $request->cookie('locale')
+            ?? $request->getPreferredLanguage($supported) // Accept-Language negotiation
+            ?? config('app.locale');
+
+        if (! in_array($locale, $supported, true)) {
+            $locale = config('app.locale');
+        }
+
+        app()->setLocale($locale);
+
+        return $next($request);
+    }
+}
+```
+
+Register on the `web` middleware group in `bootstrap/app.php`:
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->web(append: [\App\Http\Middleware\SetLocale::class]);
+})
+```
+
+### 24.3 Locale Switch Route + Controller
+
+```php
+// routes/web.php
+Route::post('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
+    ->name('locale.switch');
+```
+
+```php
+// app/Http/Controllers/LocaleController.php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class LocaleController extends Controller
+{
+    public function switch(Request $request, string $locale)
+    {
+        abort_unless(array_key_exists($locale, config('app.supported_locales')), 404);
+
+        $request->session()->put('locale', $locale);
+        cookie()->queue(cookie('locale', $locale, 60 * 24 * 365)); // 1 year
+
+        // htmx requests: ask the client to do a full refresh so all copy re-renders.
+        if ($request->header('HX-Request')) {
+            return response()->noContent()->header('HX-Refresh', 'true');
+        }
+
+        return redirect()->back();
+    }
+}
+```
+
+### 24.4 Language Switcher Partial (header)
+
+```blade
+{{-- resources/views/partials/locale-switcher.blade.php --}}
+<div x-data="{ open: false }" class="relative">
+    <button @click="open = !open" type="button"
+            class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+        </svg>
+        <span>{{ config('app.supported_locales')[app()->getLocale()] }}</span>
+    </button>
+    <div x-show="open" @click.outside="open = false" x-cloak
+         class="absolute right-0 mt-1 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        @foreach (config('app.supported_locales') as $code => $label)
+            <form method="POST" action="{{ route('locale.switch', $code) }}"
+                  hx-post="{{ route('locale.switch', $code) }}" hx-swap="none">
+                @csrf
+                <button type="submit"
+                        class="block w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700
+                               {{ app()->getLocale() === $code ? 'font-semibold text-primary-600' : 'text-gray-700 dark:text-gray-200' }}">
+                    {{ $label }}
+                </button>
+            </form>
+        @endforeach
+    </div>
+</div>
+```
+
+Include it in `resources/views/partials/header.blade.php` next to the theme switcher.
+
+### 24.5 Translation Files
+
+Application-level strings:
+
+```php
+// lang/en/messages.php
+return [
+    'welcome'        => 'Welcome',
+    'items_count'    => '{0} No items|{1} :count item|[2,*] :count items', // trans_choice()
+];
+
+// lang/ms/messages.php
+return [
+    'welcome'        => 'Selamat datang',
+    'items_count'    => '{0} Tiada item|{1} :count item|[2,*] :count item',
+];
+```
+
+Localized validation messages live in `lang/<locale>/validation.php` (publish Laravel's
+defaults, then add per-locale overrides).
+
+### 24.6 Blade Usage Conventions
+
+```blade
+<h1>{{ __('messages.welcome') }}</h1>
+<p>{{ trans_choice('messages.items_count', $count, ['count' => $count]) }}</p>
+
+{{-- Module-namespaced key (registered by the module service provider) --}}
+<h2>{{ __('location-information::messages.title') }}</h2>
+
+{{-- Locale-aware date --}}
+<span>{{ $record->created_at->locale(app()->getLocale())->translatedFormat('d F Y') }}</span>
+```
+
+> **Per-module translations.** Each module registers its own namespace in its service
+> provider — `$this->loadTranslationsFrom(module_path('LocationInformation', 'lang'), 'location-information');`
+> — so module copy resolves via `__('location-information::messages.<key>')`. See the
+> per-module SPEC.md template for the module-level translation file.
+
+---
+
 # Part B: Per-Module SPEC.md Template
 
 Each module from PRD.md gets its own `<module-name>/SPEC.md` file.
@@ -1034,11 +1209,37 @@ class {{Module}}ServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(module_path('{{Module}}', 'database/migrations'));
         $this->loadViewsFrom(module_path('{{Module}}', 'resources/views'), '{{module}}');
         $this->loadRoutesFrom(module_path('{{Module}}', 'routes/web.php'));
+        // [If i18n = yes] register this module's translation namespace
+        $this->loadTranslationsFrom(module_path('{{Module}}', 'lang'), '{{module-slug}}');
     }
 }
 ```
 
-## 15. [If Messaging] Messaging Pipeline
+## 15. [If i18n] Module Translations
+
+(Only include if i18n = yes. One file per supported locale; keys are referenced from this
+module's Blade templates via the `{{module-slug}}::` namespace registered in the service
+provider above.)
+
+```php
+// Modules/{{Module}}/lang/en/messages.php
+return [
+    'title'       => '{{Module Title}}',
+    'create'      => 'Create {{Module Title}}',
+    'empty_state' => 'No records yet',
+];
+
+// Modules/{{Module}}/lang/ms/messages.php
+return [
+    'title'       => '{{Module Title (ms)}}',
+    'create'      => 'Cipta {{Module Title (ms)}}',
+    'empty_state' => 'Tiada rekod lagi',
+];
+```
+
+Blade templates in this module reference keys as `{{ __('{{module-slug}}::messages.title') }}`.
+
+## 16. [If Messaging] Messaging Pipeline
 
 (Only include if the module has async processing NFRs)
 
@@ -1058,7 +1259,7 @@ class {{Module}}ServiceProvider extends ServiceProvider
 
 When a module has BOTH user-facing screens AND async processing NFRs, the SPEC.md
 MUST clearly separate these into distinct sections as shown above (Sections 9-12 for
-UI, Section 15 for messaging). This enables the implementation orchestrator to track
+UI, Section 16 for messaging). This enables the implementation orchestrator to track
 and implement each concern independently.
 ```
 
