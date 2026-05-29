@@ -1,6 +1,6 @@
 ﻿---
 name: modelgen-relational
-model: claude-opus-4-6
+model: claude-opus-4-8
 effort: xhigh
 description: >
   Extract module models from Agile user stories using Domain-Driven Design (DDD) principles.

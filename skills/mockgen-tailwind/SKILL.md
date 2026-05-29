@@ -1,6 +1,6 @@
 ﻿---
 name: mockgen-tailwind
-model: claude-opus-4-6
+model: claude-opus-4-8
 effort: high
 description: >
   Generate HTML mockup screens from PRD.md files for UI/UX human designer review.

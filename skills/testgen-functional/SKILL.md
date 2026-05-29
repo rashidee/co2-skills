@@ -1,6 +1,6 @@
 ﻿---
 name: testgen-functional
-model: claude-opus-4-6
+model: claude-opus-4-8
 effort: high
 description: >
   Generate Playwright E2E test plan and specification documents from project artifacts

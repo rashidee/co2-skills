@@ -1,6 +1,6 @@
 ---
 name: specgen-react-tailwind
-model: claude-opus-4-6
+model: claude-opus-4-8
 effort: high
 description: >
   Generate a detailed specification document for building a React SPA (Single Page
