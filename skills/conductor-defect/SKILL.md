@@ -788,7 +788,16 @@ After all bugs have been processed (every bug has a terminal status):
 1. Update BUG_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
    - Update all Summary table counts
-2. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) â€” **one entry per version processed**:
+2. **Regenerate the traceability matrix** so the new `[BUG-XXX]` source markers (Step 2.5) and any
+   code changes are reflected in the requirement-to-code links:
+   ```
+   Skill(skill: "tracegen-matrix", args: "<app_folder> version:<highest-version-processed>")
+   ```
+   - If a `module` filter was active for this run, pass it through: append ` module:<module>`.
+   - It updates `<app_folder>/context/TRACEABILITY.md` and appends its own `CHANGELOG.md` row.
+   - This does **not** require the codebase-memory MCP — `tracegen-matrix` resolves links from the
+     in-source traceability / `[BUG-XXX]` comments, with a name-based source-scan fallback.
+3. Append entries to `CHANGELOG.md` in the application folder (`<app_folder>/CHANGELOG.md`) â€” **one entry per version processed**:
    - Read `<app_folder>/CHANGELOG.md`. If it does not exist, create it with context header.
    - For EACH version in the resolved version list (ascending order):
      - Search for a `## {version}` heading matching this version.
@@ -796,7 +805,7 @@ After all bugs have been processed (every bug has a terminal status):
      - If the section **does not exist**: insert a new section after the `---` below the context header and before any existing `## vX.Y.Z` section (newest-first ordering), with a new table header and the first row.
      - Row format: `| {YYYY-MM-DD} | {application_name} | conductor-defect | {module or "All"} | Fixed {count} bugs ({list of BUG codes for this version}) |`
    - **Never modify or delete existing rows.**
-3. Output the Ralph Loop completion promise: `<promise>ALL BUGS RESOLVED</promise>`
+4. Output the Ralph Loop completion promise: `<promise>ALL BUGS RESOLVED</promise>`
 
 ## Critical Rules
 

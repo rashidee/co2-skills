@@ -1055,7 +1055,27 @@ Extracted from IMPLEMENTATION_MASTER.md execution order and module details.>
 - Include only sections that are relevant to the actual specification — do NOT add sections for
   features that are not part of the spec (e.g., skip messaging section if no messaging is configured)
 
-#### Step 5.3: Update Tracking and Complete
+#### Step 5.3: Generate Traceability Matrix
+
+After the README is generated and BEFORE finalizing tracking, regenerate the requirement-to-code
+traceability matrix so every PRD requirement ID is linked to the source code that now implements it
+(the per-file `Implements:` / `NFR:` / `Constraints:` comments written in Step 3.3 are the source
+of the links).
+
+1. Invoke the traceability generator (pass the resolved app folder and the version just completed):
+   ```
+   Skill(skill: "tracegen-matrix", args: "<app_folder> version:<current-version>")
+   ```
+   - If a `module` filter was active for this run, pass it through: append ` module:<module>`.
+   - When processing multiple versions, invoke once after the LAST version (the matrix reflects the
+     full current code state); a per-version invocation is also acceptable.
+2. Wait for it to complete. It writes/updates `<app_folder>/context/TRACEABILITY.md` and appends its
+   own `CHANGELOG.md` row.
+3. This step does **not** require the codebase-memory MCP — `tracegen-matrix` resolves links from
+   the in-source traceability comments, falling back to name-based source scanning, and only uses
+   codebase-memory for extra precision when it happens to be installed.
+
+#### Step 5.4: Update Tracking and Complete
 
 1. Update IMPLEMENTATION_MASTER.md:
    - Set top-level `**Status**:` to `COMPLETED`
