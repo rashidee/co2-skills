@@ -113,6 +113,7 @@ The skills to invoke the `clean-up` process are:
 | util-projectsync | /util-projectsync            | Project Structure Sync & Validation              | Validates dependencies (circular, missing, logical) across all applications in CLAUDE.md. Creates missing application folders, scaffolds PRD.md and BUG.md from templates, and adds missing module sections. Inserts [TODO] annotations in CLAUDE.md for validation failures. |
 | util-usanalyzer  | /util-usanalyzer app1        | Quality Check                                    | Identify any quality issues in the PRD.md such as incomplete stories, bad references, contradictions and duplicates. Output a report with the identified issues and suggestions for improvement. Example: "User Story 1 is incomplete because it does not have the acceptance criteria."                                                                                                    |
 | util-ustagger    | /util-ustagger app1 v1.0.3   | Traceability                                     | Each newly added point in PRD.md will be tagged with a unique 9-character ID code, which can be used for traceability in the later stages of the development. Example: [USL000009], [NFRL000009], [CONL000009], [REFL000009]                                                                                                                                                                |
+| util-updprd      | /util-updprd "add password reset for all users" | Requirement Change                | Applies a free-form requirement change to the PRD.md files across the project. Determines the impacted applications, modules and subsections, decides per item whether to add/cancel/modify User Stories, NFRs, Constraints, References and Tests, auto-classifies the change as major/minor/patch, and layers the new/updated items under a NEW version tag on top of the existing versions in each PRD.md (prior versions kept immutable). Tags new items via util-ustagger and appends a CHANGELOG.md entry per impacted application. |
 | util-preparek8senv | /util-preparek8senv [env]  | K8s Infrastructure Preparation                   | Generates K8s StatefulSet manifests for all 3rd party supporting applications for a single target environment. Creates/updates ENVIRONMENT.md with per-environment configs. Output directly in environment/ folder (no per-environment subfolders — gitignored, each machine maintains its own copy).                                                                                          |
 
 ## Data Model
@@ -190,6 +191,7 @@ Example skill invocation for technical specification generation:
 /specgen-laravel-eloquent-bladehtmx <app_name> ## For generating Laravel 12 web application technical specification with Blade, Tailwind and htmx
 /specgen-react-mui <app_name> ## For generating React 19 SPA technical specification with TypeScript, Vite, Material UI and more.
 /specgen-react-tailwind <app_name> ## For generating React 19 SPA technical specification with TypeScript, Vite, Tailwind CSS, Headless UI and more.
+/specgen-nextjs-react-tailwind <app_name> ## For generating Next.js 15 full-stack web application technical specification with App Router, Server Actions, Drizzle + SQLite, tiered auth (OIDC / hand-rolled sessions / Better Auth), Tailwind CSS v4 and shadcn/ui.
 /specgen-flutter-riverpod <app_name> ## For generating Flutter 3 mobile application technical specification with Riverpod, Hive, Dio, go_router and Firebase Messaging.
 /specgen-ts-cli <app_name> ## For generating Node.js CLI application technical specification with TypeScript, Commander.js and tsup.
 ~~~
@@ -503,6 +505,7 @@ This is the **highest impact area** for contribution. The CO2 workflow is design
 | `specgen-laravel-eloquent-bladehtmx` | Laravel 12 + Blade + Tailwind + htmx |
 | `specgen-react-mui` | React 19 + TypeScript 5 + Vite 6 + Material UI v6 |
 | `specgen-react-tailwind` | React 19 + TypeScript 5 + Vite 6 + Tailwind CSS v3 + Headless UI v2 + Heroicons |
+| `specgen-nextjs-react-tailwind` | Next.js 15 (App Router) + React 19 + TypeScript 5 + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + SQLite + tiered auth (OIDC / hand-rolled sessions / Better Auth) + Biome + Vitest + Playwright |
 | `specgen-flutter-riverpod` | Flutter 3 + Dart 3 + Riverpod 2 + Hive 2 + Dio 5 + go_router 14 + Firebase Messaging |
 | `specgen-ts-cli` | Node.js CLI + TypeScript + Commander.js + tsup + pkg |
 | `specgen-sdk-java` | Java SDK library — Maven Multi-Release fat JAR (JDK 8 baseline + JDK 11+ overlay) + OkHttp |
@@ -510,7 +513,7 @@ This is the **highest impact area** for contribution. The CO2 workflow is design
 We are looking for contributors to create new `specgen-*` skills for other technology stacks, such as:
 
 - **Backend**: Django, FastAPI, Express.js, NestJS, ASP.NET Core, Ruby on Rails, Phoenix (Elixir), Go (Gin/Echo/Fiber)
-- **Frontend**: Next.js, Nuxt.js, SvelteKit, Remix, Astro
+- **Frontend**: Nuxt.js, SvelteKit, Remix, Astro
 - **Mobile**: React Native, Swift (iOS), Kotlin (Android)
 - **Full-stack**: T3 Stack, RedwoodJS, Adonis.js, Meteor
 
